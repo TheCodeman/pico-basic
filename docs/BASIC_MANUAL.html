@@ -36,6 +36,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#connecting">Connecting</a></li>
 <li><a href="#the-terminal">The terminal</a></li>
 <li><a href="#first-program">First program</a></li>
+<li><a href="#autorunbas">AUTORUN.BAS</a></li>
 <li><a href="#editing-a-line">Editing a line</a></li>
 </ul>
 </li>
@@ -217,6 +218,23 @@ SAVE "HELLO"
 <li><code>SYSTEM</code> (or <code>BYE</code>) clears everything and starts BASIC afresh, as after a
   reset (files on the disk stay).</li>
 </ul>
+<h3 id="autorunbas">AUTORUN.BAS</h3>
+<p>At power-up (and after a reset, but not after <code>SYSTEM</code>) BASIC runs
+<code>AUTORUN.BAS</code> if there is one: on the SD card first, so a card can override,
+else on the flash disk. It starts straight away, without waiting for a
+terminal, so a board on its own (on a USB charger, say) runs it too; what
+it prints is lost until a terminal connects. When it ends, or stops with an
+error or Ctrl-C, the <code>Ok</code> prompt follows as usual.</p>
+<pre><code>NEW
+10 NEOPIXEL OPEN: NEOPIXEL BRIGHT 40
+20 NEOPIXEL FILL 0, 0, 255: NEOPIXEL SHOW
+SAVE "AUTORUN"
+</code></pre>
+<p>To start without it: hold <strong>GP20</strong> low at power-up (the Maker Pi Pico's
+first button), or press <strong>Esc</strong> or <strong>Ctrl-C</strong> within a second if the
+terminal is already open (the banner says so). <code>KILL "AUTORUN.BAS"</code> removes
+it. <code>RUN "NEODEMO"</code> saved as AUTORUN (<code>LOAD "NEODEMO"</code> then
+<code>SAVE "AUTORUN"</code>) makes the board start into the demo.</p>
 <h3 id="editing-a-line">Editing a line</h3>
 <p>At the <code>Ok</code> prompt and in <code>INPUT</code>:</p>
 <table>

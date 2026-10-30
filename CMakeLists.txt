@@ -106,6 +106,11 @@ else()
     target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=0)
 endif()
 
+# AUTORUN.BAS runs at power-up; held low then, this pin skips it (the Maker
+# Pi Pico's GP20 button; it gets a pull-up, so nothing connected never skips).
+set(AUTORUN_SKIP_PIN 20 CACHE STRING "Pin held low at power-up to skip AUTORUN.BAS (-1: none)")
+target_compile_definitions(pico_basic PRIVATE AUTORUN_SKIP_PIN=${AUTORUN_SKIP_PIN})
+
 # -DDISK_TRACE=ON: a build that starts USB first, waits for a terminal, and
 # prints each step of mounting (and formatting) the flash disk.
 option(DISK_TRACE "Trace the flash disk's mount and format on the console" OFF)

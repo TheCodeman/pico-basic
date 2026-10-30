@@ -111,6 +111,26 @@ runs straight away:
 - `SYSTEM` (or `BYE`) clears everything and starts BASIC afresh, as after a
   reset (files on the disk stay).
 
+### AUTORUN.BAS
+
+At power-up (and after a reset, but not after `SYSTEM`) BASIC runs
+`AUTORUN.BAS` if there is one: on the SD card first, so a card can override,
+else on the flash disk. It starts straight away, without waiting for a
+terminal, so a board on its own (on a USB charger, say) runs it too; what
+it prints is lost until a terminal connects. When it ends, or stops with an
+error or Ctrl-C, the `Ok` prompt follows as usual.
+
+    NEW
+    10 NEOPIXEL OPEN: NEOPIXEL BRIGHT 40
+    20 NEOPIXEL FILL 0, 0, 255: NEOPIXEL SHOW
+    SAVE "AUTORUN"
+
+To start without it: hold **GP20** low at power-up (the Maker Pi Pico's
+first button), or press **Esc** or **Ctrl-C** within a second if the
+terminal is already open (the banner says so). `KILL "AUTORUN.BAS"` removes
+it. `RUN "NEODEMO"` saved as AUTORUN (`LOAD "NEODEMO"` then
+`SAVE "AUTORUN"`) makes the board start into the demo.
+
 ### Editing a line
 
 At the `Ok` prompt and in `INPUT`:

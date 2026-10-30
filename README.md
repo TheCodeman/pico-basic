@@ -85,6 +85,14 @@ editing has history, and `EDIT n` puts a line on the input line.
 and `PEEK` of the text screen give spaces, because a terminal can't be read
 back.
 
+## AUTORUN.BAS
+
+At power-up BASIC runs `AUTORUN.BAS` if there is one, from the SD card first,
+else from the flash disk, without waiting for a terminal. Holding GP20 low at
+power-up (the Maker Pi Pico's first button), or Esc / Ctrl-C within a second
+from an open terminal, skips it; Ctrl-C stops it. `-DAUTORUN_SKIP_PIN=-1`
+(or another pin) at build time changes the skip pin.
+
 ## The SD card
 
 A microSD card over SPI is a second drive, `SD:` (or `1:`), next to the

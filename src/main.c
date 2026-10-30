@@ -12,12 +12,14 @@
 #include <stdlib.h>
 
 #include "basic.h"
+#include "ff.h"
 #include "flash_disk.h"
 #if PICO_BASIC_SD
 #include "sd_card.h"
 #endif
 #include "hardware/clocks.h"
 #include "hardware/flash.h"
+#include "hardware/gpio.h"
 #include "hardware/sync.h"
 #if !PICO_RP2040
 #include "hardware/psram.h"
@@ -107,8 +109,48 @@ void board_banner(void) {
 /// Runs BASIC (on its own stack); SYSTEM comes back here.
 /// @param arg unused
 static void run_basic(void *arg) {
-    (void)arg;
-    basic_main(NULL);
+    basic_main(arg);
+}
+
+#ifndef AUTORUN_SKIP_PIN
+#define AUTORUN_SKIP_PIN 20  ///< held low at power-up: AUTORUN.BAS isn't run (-1: none)
+#endif
+
+/// AUTORUN.BAS on the SD card (so a card can override), else on the flash
+/// disk: the program to run at power-up, or NULL.
+/// @return its path, or NULL
+static const char *autorun(void) {
+    static const char *const paths[] = {"SD:/AUTORUN.BAS", "FLASH:/AUTORUN.BAS"};
+    FILINFO info;
+    for (unsigned i = 0; i < sizeof paths / sizeof *paths; ++i)
+        if (f_stat(paths[i], &info) == FR_OK && !(info.fattrib & AM_DIR))
+            return paths[i];
+    return NULL;
+}
+
+/// Whether to leave AUTORUN.BAS alone this time: the skip pin held low (a
+/// Maker Pi Pico's GP20 button), or Esc or Ctrl-C from a terminal already
+/// there within a second. So a program that goes wrong can't lock you out.
+/// @return skip it
+static bool autorun_skipped(void) {
+#if AUTORUN_SKIP_PIN >= 0
+    gpio_init(AUTORUN_SKIP_PIN);
+    gpio_pull_up(AUTORUN_SKIP_PIN);  // nothing connected reads 1: no skip
+    sleep_us(100);
+    bool held = !gpio_get(AUTORUN_SKIP_PIN);
+    gpio_set_pulls(AUTORUN_SKIP_PIN, false, false);
+    if (held)
+        return true;
+#endif
+    if (stdio_usb_connected()) {
+        absolute_time_t until = make_timeout_time_ms(1000);
+        while (!time_reached(until)) {
+            int c = getchar_timeout_us(10000);
+            if (c == 3 || c == 27)
+                return true;
+        }
+    }
+    return false;
 }
 
 int main(void) {
@@ -178,15 +220,29 @@ int main(void) {
 #if PICO_BASIC_SD
     sd_error = sd_card_mount();
 #endif
+    // At power-up (not after SYSTEM) AUTORUN.BAS runs, if there is one. Then
+    // there's no waiting for a terminal: the board may be on its own.
+    const char *first = autorun();
     // A terminal already open on the USB port connects within a second or
     // so of the board appearing; without one, BASIC starts anyway.
-    for (int ms = 0; ms < CONNECT_WAIT_MS && !stdio_usb_connected(); ms += 10)
+    for (int ms = 0; !first && ms < CONNECT_WAIT_MS && !stdio_usb_connected(); ms += 10)
         sleep_ms(10);
     sleep_ms(50);  // some terminals miss what comes right after they connect
     printf("\x1b[0m\x1b[2J\x1b[H");
     board_banner();
+    if (first) {
+        const char *drive = first[0] == 'S' ? "SD:" : "FLASH:";
+        printf("AUTORUN.BAS on %s (Esc or Ctrl-C now skips it)\n", drive);
+        if (autorun_skipped()) {
+            printf("AUTORUN.BAS skipped\n");
+            first = NULL;
+        } else {
+            printf("Running AUTORUN.BAS (from %s); Ctrl-C stops it\n", drive);
+        }
+    }
     for (;;) {
-        call_on_stack(run_basic, NULL, basic_stack, sizeof basic_stack);
+        call_on_stack(run_basic, (void *)first, basic_stack, sizeof basic_stack);
+        first = NULL;
         printf("\n");
     }
 }
