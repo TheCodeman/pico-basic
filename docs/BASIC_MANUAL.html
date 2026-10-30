@@ -79,7 +79,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 </ul>
 </div>
 </div>
-<p>Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 board, used from
+<p>Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 or RP2040 board, used from
 a serial terminal. It keeps its programs and data files on a FAT disk in the
 board's own flash, swaps files with the PC by XMODEM, plays tones on a
 speaker pin, and drives the chip's GPIO, PWM, ADC, I2C, SPI and a second
@@ -112,10 +112,21 @@ MOD music) aren't in this build; section 10 lists them.</p>
 <td>about 15 MB</td>
 <td>about 8.4 MB (8 MB PSRAM + SRAM)</td>
 </tr>
+<tr>
+<td>Raspberry Pi Pico (the original)</td>
+<td>RP2040, GPIO 0-29</td>
+<td>about 1 MB</td>
+<td>about 190 KB (SRAM)</td>
+</tr>
 </tbody>
 </table>
-<p>The two boards need different builds (<code>build/pico_basic.uf2</code> for the Pico 2,
-<code>build-plus2/pico_basic.uf2</code> for the Pico Plus 2; see the README).</p>
+<p>Each board needs its own build: <code>build/pico_basic.uf2</code> for the Pico 2,
+<code>build-plus2/pico_basic.uf2</code> for the Pico Plus 2 and
+<code>build-pico/pico_basic.uf2</code> for the Pico (see the README). On the RP2040,
+BASIC is the same language, but with less memory and no floating-point
+hardware, so arithmetic-heavy programs run several times slower than on an
+RP2350, and a 32 KB stack there has no hardware guard (BASIC still checks it
+itself).</p>
 <h3 id="loading-it-onto-the-board">Loading it onto the board</h3>
 <ul>
 <li><strong>BOOTSEL:</strong> hold the BOOTSEL button while plugging the board into USB,
@@ -1109,8 +1120,8 @@ waves of one voice, so a note waits for the one before it.</p>
 <h2 id="7-hardware-gpio-pwm-adc-i2c-spi-com1">7. Hardware: GPIO, PWM, ADC, I2C, SPI, COM1</h2>
 <h3 id="pins">Pins</h3>
 <p>Pins are given by their GP number; <code>LED</code> means the board's LED (GP25). The
-Pico 2 has GP0-29 (GP23-25 and GP29 aren't on its header: power control,
-VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
+Pico and Pico 2 have GP0-29 (GP23-25 and GP29 aren't on the header: power
+control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 <p>Pins BASIC itself uses are refused, e.g. <code>GP15 is used by the speaker
 (BEEP, SOUND, PLAY)</code> followed by <code>Illegal function call</code>:</p>
 <table>
@@ -1165,7 +1176,7 @@ VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 </tr>
 <tr>
 <td><code>ADC(pin)</code></td>
-<td>An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico 2, GP40-46 on the Pico Plus 2. <code>V = ADC(26) * 3.3 / 4095</code></td>
+<td>An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico and Pico 2, GP40-46 on the Pico Plus 2. <code>V = ADC(26) * 3.3 / 4095</code></td>
 </tr>
 <tr>
 <td><code>TEMP()</code></td>
@@ -1292,6 +1303,9 @@ comes straight back.</p>
   small ones (strings, program lines, variables) in the faster SRAM until it
   runs low, so programs get about 8.4 MB.</li>
 <li><strong>Pico 2:</strong> everything is in SRAM, about 450 KB.</li>
+<li><strong>Pico (RP2040):</strong> everything is in SRAM, about 190 KB: room for a long
+  program, but <code>DIM A(20000)</code> (8 bytes an element) is about the most one
+  array can have.</li>
 <li><code>FRE(0)</code> (and the banner) give the memory free. A program line is refused
   if it would leave less than 16 KB for data, and any allocation if it would
   leave less than 4 KB.</li>

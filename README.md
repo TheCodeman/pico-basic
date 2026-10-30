@@ -1,6 +1,6 @@
 # Pico BASIC (standalone)
 
-A GW-BASIC style BASIC for the RP2350 on its own: no HDMI, no keyboard or
+A GW-BASIC style BASIC for the RP2350 and RP2040 on their own: no HDMI, no keyboard or
 USB drive. You use it from a terminal program on the PC, over the board's own
 USB port, and it keeps its files in the Pico's own flash.
 
@@ -20,6 +20,8 @@ board's side of `basic_port.h`.
 - **Pimoroni Pico Plus 2** (RP2350B, 16 MB flash, 8 MB PSRAM): it has a 15 MB
   flash disk. The PSRAM is found at start-up, and big blocks such as arrays
   go there.
+- **Raspberry Pi Pico** (RP2040, 2 MB flash): a 1 MB flash disk and about
+  190 KB for BASIC. No floating-point hardware, so maths is slower.
 
 ## Building
 
@@ -32,7 +34,8 @@ cmake --build build
 ```
 
 To build for the Pico Plus 2, configure with
-`-DPICO_BOARD=pimoroni_pico_plus2_rp2350`. Either build writes
+`-DPICO_BOARD=pimoroni_pico_plus2_rp2350`, and for the original Pico with
+`-DPICO_BOARD=pico` (e.g. `cmake -B build-pico -G Ninja -DPICO_BOARD=pico`). Either build writes
 `build/pico_basic.uf2` (in that build folder). To load it, hold BOOTSEL
 while plugging the board into USB and copy the file over; once BASIC runs,
 `picotool load -f` can reboot it and load a new one through the same port. A

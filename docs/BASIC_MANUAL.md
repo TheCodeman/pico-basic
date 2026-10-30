@@ -1,6 +1,6 @@
 # Pico BASIC User's Manual
 
-Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 board, used from
+Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 or RP2040 board, used from
 a serial terminal. It keeps its programs and data files on a FAT disk in the
 board's own flash, swaps files with the PC by XMODEM, plays tones on a
 speaker pin, and drives the chip's GPIO, PWM, ADC, I2C, SPI and a second
@@ -19,9 +19,15 @@ MOD music) aren't in this build; section 10 lists them.
 |---|---|---|---|
 | Raspberry Pi Pico 2 | RP2350A, GPIO 0-29 | about 3 MB | about 450 KB (SRAM) |
 | Pimoroni Pico Plus 2 | RP2350B, GPIO 0-47 | about 15 MB | about 8.4 MB (8 MB PSRAM + SRAM) |
+| Raspberry Pi Pico (the original) | RP2040, GPIO 0-29 | about 1 MB | about 190 KB (SRAM) |
 
-The two boards need different builds (`build/pico_basic.uf2` for the Pico 2,
-`build-plus2/pico_basic.uf2` for the Pico Plus 2; see the README).
+Each board needs its own build: `build/pico_basic.uf2` for the Pico 2,
+`build-plus2/pico_basic.uf2` for the Pico Plus 2 and
+`build-pico/pico_basic.uf2` for the Pico (see the README). On the RP2040,
+BASIC is the same language, but with less memory and no floating-point
+hardware, so arithmetic-heavy programs run several times slower than on an
+RP2350, and a 32 KB stack there has no hardware guard (BASIC still checks it
+itself).
 
 ### Loading it onto the board
 
@@ -549,8 +555,8 @@ waves of one voice, so a note waits for the one before it.
 ### Pins
 
 Pins are given by their GP number; `LED` means the board's LED (GP25). The
-Pico 2 has GP0-29 (GP23-25 and GP29 aren't on its header: power control,
-VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.
+Pico and Pico 2 have GP0-29 (GP23-25 and GP29 aren't on the header: power
+control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.
 
 Pins BASIC itself uses are refused, e.g. `GP15 is used by the speaker
 (BEEP, SOUND, PLAY)` followed by `Illegal function call`:
@@ -568,7 +574,7 @@ Pins BASIC itself uses are refused, e.g. `GP15 is used by the speaker
 | `PIN(pin)` | Reads a pin, making an unused pin an input. `IF PIN(16) = 0 THEN PRINT "PRESSED"` |
 | `PWM pin, freq[, duty]` | PWM at 8 Hz-10 MHz with a duty of 0-100 % (default 50). `PWM pin, 0` stops it. `PWM 16, 1000, 25` |
 | `SERVO pin, angle` | A hobby servo, 0-180 degrees (0.5-2.5 ms pulses at 50 Hz). `SERVO 16, 90` |
-| `ADC(pin)` | An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico 2, GP40-46 on the Pico Plus 2. `V = ADC(26) * 3.3 / 4095` |
+| `ADC(pin)` | An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico and Pico 2, GP40-46 on the Pico Plus 2. `V = ADC(26) * 3.3 / 4095` |
 | `TEMP()` | The chip's temperature in °C (uncalibrated: within a few degrees). |
 | `PINS` | Lists every pin and what it is doing. |
 
@@ -654,6 +660,9 @@ comes straight back.
   small ones (strings, program lines, variables) in the faster SRAM until it
   runs low, so programs get about 8.4 MB.
 - **Pico 2:** everything is in SRAM, about 450 KB.
+- **Pico (RP2040):** everything is in SRAM, about 190 KB: room for a long
+  program, but `DIM A(20000)` (8 bytes an element) is about the most one
+  array can have.
 - `FRE(0)` (and the banner) give the memory free. A program line is refused
   if it would leave less than 16 KB for data, and any allocation if it would
   leave less than 4 KB.

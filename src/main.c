@@ -1,6 +1,6 @@
 /**
  * @file main.c
- * @brief Pico BASIC on its own: a GW-BASIC style BASIC on an RP2350, used from
+ * @brief Pico BASIC on its own: a GW-BASIC style BASIC on an RP2350 or RP2040, used from
  * a serial terminal, with its files in the Pico's flash.
  *
  * @author Ken Segler
@@ -14,7 +14,9 @@
 #include "basic.h"
 #include "flash_disk.h"
 #include "hardware/clocks.h"
+#if !PICO_RP2040
 #include "hardware/psram.h"
+#endif
 #include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
 #include "psram_heap.h"
@@ -38,9 +40,13 @@ static uint8_t basic_stack[BASIC_STACK] __attribute__((aligned(8)));
 static const char *disk_error;
 
 void board_banner(void) {
+#if PICO_RP2040
+    printf("Pico BASIC %s for the RP2040 (%s)\n", PICO_BASIC_VERSION, PICO_BASIC_BOARD);
+#else
     printf("Pico BASIC %s for the RP2350 (%s)\n", PICO_BASIC_VERSION, PICO_BASIC_BOARD);
     if (psram_present())
         printf("PSRAM: %u MB\n", (unsigned)(psram_get_size() >> 20));
+#endif
     if (disk_error) {
         printf("Flash disk: %s; files won't work\n", disk_error);
     } else {

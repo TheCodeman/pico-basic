@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.13)
 # A plain Pico 2 (RP2350A, 4 MB flash) by default; for the Pimoroni Pico Plus 2
 # (RP2350B, 16 MB flash, 8 MB PSRAM) configure with
 #   -DPICO_BOARD=pimoroni_pico_plus2_rp2350
+# and for the original Pico (RP2040, 2 MB flash) with -DPICO_BOARD=pico.
 set(PICO_BOARD pico2 CACHE STRING "Board type")
 
 include(pico_sdk_import.cmake)
@@ -17,7 +18,6 @@ add_executable(pico_basic
     src/basic.c
     src/basic_port_serial.c
     src/flash_disk.c
-    src/psram_heap.c
     src/stack_switch.c
     src/xfer.c
     src/fatfs/ff.c
@@ -32,11 +32,17 @@ target_link_libraries(pico_basic
     hardware_flash
     hardware_i2c
     hardware_irq
-    hardware_psram
     hardware_pwm
     hardware_spi
-    hardware_xip_cache
 )
+
+# The RP2350 boards can have PSRAM; the RP2040 has none (psram_none.c says so).
+if(PICO_PLATFORM STREQUAL "rp2040")
+    target_sources(pico_basic PRIVATE src/psram_none.c)
+else()
+    target_sources(pico_basic PRIVATE src/psram_heap.c)
+    target_link_libraries(pico_basic hardware_psram hardware_xip_cache)
+endif()
 
 # Where the flash disk starts: the program below it, the disk to the end of
 # the flash (3 MB on a Pico 2, 15 MB on a Pico Plus 2).

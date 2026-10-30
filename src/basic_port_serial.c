@@ -1,6 +1,6 @@
 /**
  * @file basic_port_serial.c
- * @brief basic_port.h for a bare RP2350 board with a serial terminal.
+ * @brief basic_port.h for a bare RP2350 or RP2040 board with a serial terminal.
  *
  * Text goes to and from a terminal (ANSI/VT100) on the board's USB port (a
  * USB serial device) through stdio. There
@@ -432,7 +432,7 @@ bool port_stack_low(void) {
 }
 
 // ---- GPIO -------------------------------------------------------------------
-// The RP2350A (Pico 2) has GPIO 0-29 with ADC on GP26-29; the RP2350B (Pico
+// The RP2040 (Pico) and RP2350A (Pico 2) have GPIO 0-29 with ADC on GP26-29; the RP2350B (Pico
 // Plus 2) has GPIO 0-47 with ADC on GP40-47.
 
 #include "hardware/adc.h"
@@ -602,7 +602,7 @@ double port_temperature(void) {
     for (int i = 0; i < 16; ++i)  // the sensor is noisy
         sum += adc_read();
     double volts = sum / 16.0 * 3.3 / 4096;
-    return 27 - (volts - 0.706) / 0.001721;  // RP2350 datasheet formula
+    return 27 - (volts - 0.706) / 0.001721;  // the RP2040 and RP2350 datasheets' formula
 }
 
 void port_pins_list(void) {
@@ -822,7 +822,7 @@ int port_serial_room(void) {
 }
 
 // ---- I2C and SPI ------------------------------------------------------------------
-// The RP2350's own controllers. Which one a pin belongs to follows from its
+// The chip's own controllers. Which one a pin belongs to follows from its
 // number: I2C SDA on even pins and SCL on odd ones, I2C0 or I2C1 by (pin / 2)
 // mod 2; SPI in groups of four (MISO, CS, SCK, MOSI), SPI0 or SPI1 by
 // (pin / 8) mod 2.

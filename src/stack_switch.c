@@ -26,6 +26,20 @@ char *stack_bottom(void) {
 /// @param top its top
 static void __attribute__((noinline)) switch_and_call(void (*fn)(void *), void *arg, char *low,
                                                       char *top) {
+#if PICO_RP2040
+    // The Cortex-M0+ has no stack limit register: port_stack_low's checks
+    // are all that guards the bottom.
+    (void)low;
+    __asm volatile(
+        "mov r4, sp\n"
+        "mov sp, %[top]\n"
+        "mov r0, %[arg]\n"
+        "blx %[fn]\n"
+        "mov sp, r4\n"
+        :
+        : [top] "r"(top), [arg] "r"(arg), [fn] "r"(fn)
+        : "r0", "r1", "r2", "r3", "r4", "r12", "lr", "memory", "cc");
+#else
     __asm volatile(
         "mov r4, sp\n"
         "mrs r5, msplim\n"
@@ -38,6 +52,7 @@ static void __attribute__((noinline)) switch_and_call(void (*fn)(void *), void *
         :
         : [low] "r"(low), [top] "r"(top), [arg] "r"(arg), [fn] "r"(fn)
         : "r0", "r1", "r2", "r3", "r4", "r5", "r12", "lr", "memory", "cc");
+#endif
 }
 
 void call_on_stack(void (*fn)(void *), void *arg, void *stack, size_t size) {
