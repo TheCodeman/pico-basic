@@ -313,3 +313,20 @@ void *port_realloc(void *p, size_t n);
 /// Frees a block from port_alloc, port_calloc or port_realloc.
 /// @param p the block, or NULL
 void port_release(void *p);
+
+/// XSEND "file": sends it over the console by XMODEM (1K blocks with CRC-16,
+/// or 128-byte blocks with a checksum if the receiver asks). XRECV "file":
+/// receives one into it (CRC-16, or a checksum if the sender only has that;
+/// 128- or 1K-byte blocks), replacing a file of that name, with XMODEM's ^Z
+/// padding taken off the end. `msg` gets what happened; false if it failed.
+/// @param path the file
+/// @param msg set to what happened
+/// @param size room in msg
+/// @return it got through
+bool port_xsend(const char *path, char *msg, int size);
+/// Receives a file by XMODEM (see port_xsend).
+/// @param path the file
+/// @param msg set to what happened
+/// @param size room in msg
+/// @return it got through
+bool port_xrecv(const char *path, char *msg, int size);

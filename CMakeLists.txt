@@ -19,6 +19,7 @@ add_executable(pico_basic
     src/flash_disk.c
     src/psram_heap.c
     src/stack_switch.c
+    src/xfer.c
     src/fatfs/ff.c
     src/fatfs/ffunicode.c
 )

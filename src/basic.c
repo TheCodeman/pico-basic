@@ -1327,7 +1327,7 @@ static const char *const statement_words[] = {
     "NAME", "NEW", "NEXT", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
     "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
-    "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WINDOW", "WRITE",
+    "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WINDOW", "WRITE", "XRECV", "XSEND",
 };
 
 /// The words of a list grouped by first letter, built on first use.
@@ -6915,6 +6915,26 @@ static void do_image(void) {
     }
 }
 
+/// XSEND "file" / XRECV "file": a file to or from the terminal by XMODEM.
+/// @param send XSEND (else XRECV)
+static void do_xmodem(bool send) {
+    char name[96];
+    file_name_arg(name, sizeof name, false);
+    if (!at_end_of_statement())
+        error(E_SYNTAX);
+    out_str(send ? "Start the XMODEM receive on the terminal now."
+                 : "Start the XMODEM send on the terminal now.");
+    out_newline();
+    out_flush();
+    char msg[100];
+    bool ok = send ? port_xsend(name, msg, sizeof msg) : port_xrecv(name, msg, sizeof msg);
+    out_newline();
+    out_str(msg);
+    out_newline();
+    if (!ok)
+        error(E_DEVICE_IO);
+}
+
 /// SAVEIMAGE "file": the whole screen as an 8-bit BMP (.BMP added if the name
 /// has no extension).
 static void do_saveimage(void) {
@@ -8418,6 +8438,10 @@ static int statement(void) {
         do_image();
     } else if (accept_word("SAVEIMAGE")) {
         do_saveimage();
+    } else if (accept_word("XSEND")) {
+        do_xmodem(true);
+    } else if (accept_word("XRECV")) {
+        do_xmodem(false);
     } else if (accept("PAUSE")) {
         do_pause();
     } else if (accept("BEEP")) {

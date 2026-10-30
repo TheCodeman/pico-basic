@@ -341,6 +341,44 @@ Differences from GW-BASIC:
 - Ctrl-Z (byte 26) ends a file for INPUT # and INPUT$, as in GW-BASIC, so
   binary files are best read with random access (GET).
 
+### XMODEM: XSEND and XRECV (standalone build)
+
+On the standalone serial-terminal build these two commands copy a file
+between the flash disk and the PC, over the terminal line, by XMODEM:
+
+| Statement | Does |
+|---|---|
+| `XRECV "file"` | Receives a file from the terminal's XMODEM send and saves it as `file`, replacing any file of that name. It asks for CRC-16, falling back to checksums for an old sender, and takes 128- or 1K-byte blocks. The ^Z padding XMODEM adds at the end is taken off. If the transfer fails, the partial file is deleted. |
+| `XSEND "file"` | Sends the file to the terminal's XMODEM receive, in 1K blocks with CRC-16, or 128-byte blocks with a checksum if the receiver asks for those. |
+
+Type the command, then start the transfer on the PC within a minute.
+Pressing Ctrl-X a few times in the terminal cancels it. XMODEM doesn't send
+the file's name, so you give it on both ends.
+For example, to load a program written on the PC:
+
+    XRECV "GAME.BAS"
+    (send GAME.BAS from the terminal)
+    LOAD "GAME"
+    RUN
+
+Because the padding is removed, a binary file that really ends in ^Z
+(byte 26) bytes loses them. The PC's receiver may keep the padding: lrzsz's
+`rx` does, unless it is run with `-a` (text) for a text file.
+
+How to start the PC's side:
+
+- **minicom:** Ctrl-A S, then pick xmodem and the file to send. Ctrl-A R
+  receives. minicom runs lrzsz's `sx` and `rx` for this.
+- **picocom:** start it with `--send-cmd "sx -vv" --receive-cmd "rx -vv"`.
+  Then Ctrl-A Ctrl-S sends a file, and Ctrl-A Ctrl-R receives one (type the
+  name to save it as).
+- **Tera Term:** File > Transfer > XMODEM > Send... or Receive... (choose
+  CRC or 1K).
+- **From a shell** (with the terminal program closed):
+
+        sx GAME.BAS < /dev/ttyACM0 > /dev/ttyACM0
+        rx GAME.BAS < /dev/ttyACM0 > /dev/ttyACM0
+
 ### Serial port (COM1)
 
 The serial port works like a file: open it with a "COM1:" name, then use

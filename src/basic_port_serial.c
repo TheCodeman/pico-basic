@@ -922,3 +922,183 @@ bool port_spi_transfer(const uint8_t *out, uint8_t *in, int n) {
         spi_write_blocking(spi_bus, out, n);
     return true;
 }
+
+// ---- XMODEM over the console: XSEND and XRECV ---------------------------------------
+// xfer.c (from pico-os) does the protocol; this gives it the console's UART
+// (raw: stdio would turn LF into CR LF) and files on the flash disk.
+
+#include "ff.h"
+#include "hardware/uart.h"
+#include "xfer.h"
+
+/// The console's UART.
+#define CONSOLE_UART ((uart_inst_t *)PICO_DEFAULT_UART_INSTANCE())
+
+/// A file being sent or received.
+typedef struct {
+    FIL f;         ///< the file
+    bool writing;  ///< being received
+} xfile_t;
+
+/// XRECV has created its file (so a broken download is deleted, but not a
+/// file of that name that was there before nothing arrived).
+static bool xrecv_created;
+
+/// A byte from the console, waiting up to timeout_ms.
+/// @param ctx unused
+/// @param timeout_ms how long to wait
+/// @return the byte, or XFER_TIMEOUT
+static int x_getc(void *ctx, unsigned timeout_ms) {
+    (void)ctx;
+    if (!uart_is_readable_within_us(CONSOLE_UART, timeout_ms * 1000u))
+        return XFER_TIMEOUT;
+    return uart_getc(CONSOLE_UART);
+}
+
+/// Sends bytes to the console.
+/// @param ctx unused
+/// @param data the bytes
+/// @param len their count
+static void x_write(void *ctx, const uint8_t *data, int len) {
+    (void)ctx;
+    uart_write_blocking(CONSOLE_UART, data, len);
+}
+
+/// Opens the file to send.
+/// @param ctx unused
+/// @param path its path
+/// @param size set to its size
+/// @param name set to its name (XMODEM doesn't send it)
+/// @param name_size room in name
+/// @return the file, or NULL
+static void *x_open_read(void *ctx, const char *path, uint32_t *size, char *name, int name_size) {
+    (void)ctx;
+    xfile_t *x = malloc(sizeof *x);
+    if (!x)
+        return NULL;
+    if (f_open(&x->f, path, FA_READ) != FR_OK) {
+        free(x);
+        return NULL;
+    }
+    x->writing = false;
+    *size = f_size(&x->f);
+    snprintf(name, name_size, "%s", path);
+    return x;
+}
+
+/// Opens the file to receive into, replacing one of that name (as SAVE does).
+/// @param ctx unused
+/// @param name its name
+/// @param size unused (XMODEM doesn't send it)
+/// @param resume unused (ZMODEM only)
+/// @param offset set to 0
+/// @param saved_as set to the name
+/// @param saved_as_size room in saved_as
+/// @return the file, or NULL
+static void *x_open_write(void *ctx, const char *name, uint32_t size, bool resume, uint32_t *offset,
+                          char *saved_as, int saved_as_size) {
+    (void)ctx, (void)size, (void)resume;
+    xfile_t *x = malloc(sizeof *x);
+    if (!x)
+        return NULL;
+    if (f_open(&x->f, name, FA_READ | FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
+        free(x);
+        return NULL;
+    }
+    x->writing = true;
+    xrecv_created = true;
+    *offset = 0;
+    snprintf(saved_as, saved_as_size, "%s", name);
+    return x;
+}
+
+/// Reads from the file being sent.
+/// @param ctx unused
+/// @param file the file
+/// @param buf where
+/// @param len how many
+/// @return bytes read, or -1
+static int x_read(void *ctx, void *file, uint8_t *buf, int len) {
+    (void)ctx;
+    UINT got;
+    return f_read(&((xfile_t *)file)->f, buf, len, &got) == FR_OK ? (int)got : -1;
+}
+
+/// Seeks in the file being sent (ZMODEM only).
+/// @param ctx unused
+/// @param file the file
+/// @param offset where
+/// @return done
+static bool x_seek(void *ctx, void *file, uint32_t offset) {
+    (void)ctx;
+    return f_lseek(&((xfile_t *)file)->f, offset) == FR_OK;
+}
+
+/// Writes received bytes to the file.
+/// @param ctx unused
+/// @param file the file
+/// @param buf the bytes
+/// @param len their count
+/// @return written
+static bool x_write_file(void *ctx, void *file, const uint8_t *buf, int len) {
+    (void)ctx;
+    UINT done;
+    return f_write(&((xfile_t *)file)->f, buf, len, &done) == FR_OK && done == (UINT)len;
+}
+
+/// XMODEM pads the last block with ^Z (SUB): takes them off the end of a
+/// received file, so it comes back the size it was sent.
+/// @param f the file
+static void strip_padding(FIL *f) {
+    FSIZE_t size = f_size(f);
+    uint8_t tail[128];
+    UINT got;
+    FSIZE_t start = size > sizeof tail ? size - sizeof tail : 0;
+    if (f_lseek(f, start) != FR_OK || f_read(f, tail, (UINT)(size - start), &got) != FR_OK)
+        return;
+    while (got && tail[got - 1] == 0x1a)
+        --got;
+    if (start + got < size && f_lseek(f, start + got) == FR_OK)
+        f_truncate(f);
+}
+
+/// Closes the file; a broken download is deleted.
+/// @param ctx unused
+/// @param file the file
+/// @param ok it all arrived
+static void x_close(void *ctx, void *file, bool ok) {
+    (void)ctx;
+    xfile_t *x = file;
+    if (x->writing && ok)
+        strip_padding(&x->f);
+    f_close(&x->f);
+    // FatFs keeps no name in a FIL: x_open_write's name is the one the
+    // caller passed, so a broken download is deleted there (port_xrecv).
+    free(x);
+}
+
+/// The transfers' callbacks.
+static const xfer_io_t xmodem_io = {NULL,   x_getc, x_write,      x_open_read, x_open_write,
+                                    x_read, x_seek, x_write_file, x_close,     NULL};
+
+bool port_xsend(const char *path, char *msg, int size) {
+    fflush(stdout);
+    uart_tx_wait_blocking(CONSOLE_UART);
+    xfer_result_t res;
+    const char *paths[1] = {path};
+    xfer_send(&xmodem_io, XFER_XMODEM_1K, paths, 1, &res);
+    snprintf(msg, size, "%s", res.message);
+    return res.ok;
+}
+
+bool port_xrecv(const char *path, char *msg, int size) {
+    fflush(stdout);
+    uart_tx_wait_blocking(CONSOLE_UART);
+    xfer_result_t res;
+    xrecv_created = false;
+    xfer_receive(&xmodem_io, XFER_XMODEM, path, &res);
+    if (!res.ok && xrecv_created)
+        f_unlink(path);
+    snprintf(msg, size, "%s", res.message);
+    return res.ok;
+}

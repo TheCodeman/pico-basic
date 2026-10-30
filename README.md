@@ -85,4 +85,17 @@ Getting files on and off:
 - **Programs:** paste the listing into the terminal at the `Ok` prompt (the
   numbered lines go into the program), then `SAVE "NAME"`. To get one back,
   `LOAD` it, `LIST` it and copy the text from the terminal.
-- **Anything else** (planned): XMODEM send and receive commands.
+- **Any file**, by XMODEM: `XRECV "NAME"` receives one from the terminal,
+  and `XSEND "NAME"` sends one. Start the terminal's XMODEM send or receive
+  after typing the command:
+  - minicom: Ctrl-A S to send, Ctrl-A R to receive (it uses lrzsz).
+  - picocom: `--send-cmd "sx -vv" --receive-cmd "rx -vv"`, then Ctrl-A
+    Ctrl-S or Ctrl-A Ctrl-R.
+  - Tera Term: File > Transfer > XMODEM.
+  - A shell, with the terminal closed: `sx FILE < /dev/ttyACM0 > /dev/ttyACM0`
+    or `rx FILE < /dev/ttyACM0 > /dev/ttyACM0`.
+
+  XMODEM's ^Z padding is taken off files the board receives (the PC's `rx`
+  keeps it unless run with `-a`). A failed receive deletes
+  its partial file. Ctrl-X a few times cancels a transfer. The protocol code
+  (`src/xfer.c`) is pico-os's.
