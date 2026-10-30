@@ -162,12 +162,12 @@ it as <code>usb-Raspberry_Pi_Pico_...</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td>GP15 (pin 20)</td>
+<td>GP22 (pin 29)</td>
 <td>a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY</td>
 </tr>
 <tr>
-<td>GP16-19, 3V3, GND</td>
-<td>a microSD card breakout, as drive <code>SD:</code> (section 4)</td>
+<td>GP10, 11, 12, 15, 3V3, GND</td>
+<td>a microSD card module, as drive <code>SD:</code> (section 4)</td>
 </tr>
 <tr>
 <td>SWD (the debug pins)</td>
@@ -866,26 +866,26 @@ level shifter is fine too, powered from 3V3 or VSYS as it says):</p>
 <table>
 <thead>
 <tr>
-<th>Card / breakout</th>
+<th>Card / module</th>
 <th>Pico pin</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>DO (MISO)</td>
-<td>GP16 (pin 21)</td>
+<td>CLK (SCK)</td>
+<td>GP10 (pin 14)</td>
+</tr>
+<tr>
+<td>SDI / DI (MOSI)</td>
+<td>GP11 (pin 15)</td>
+</tr>
+<tr>
+<td>SDO / DO (MISO)</td>
+<td>GP12 (pin 16)</td>
 </tr>
 <tr>
 <td>CS</td>
-<td>GP17 (pin 22)</td>
-</tr>
-<tr>
-<td>CLK (SCK)</td>
-<td>GP18 (pin 24)</td>
-</tr>
-<tr>
-<td>DI (MOSI)</td>
-<td>GP19 (pin 25)</td>
+<td>GP15 (pin 20)</td>
 </tr>
 <tr>
 <td>3V3 (VCC)</td>
@@ -893,12 +893,12 @@ level shifter is fine too, powered from 3V3 or VSYS as it says):</p>
 </tr>
 <tr>
 <td>GND</td>
-<td>GND (pin 23)</td>
+<td>GND (pin 18)</td>
 </tr>
 </tbody>
 </table>
-<p>(These are SPI0's pins. Others can be chosen when BASIC is built: see the
-README.) The banner shows the card: <code>SD card (SD:): 7580 MB, 7571 MB free</code>,
+<p>(These are SPI1's pins; GP13 is left free. Others can be chosen when BASIC
+is built: see the README.) The banner shows the card: <code>SD card (SD:): 7580 MB, 7571 MB free</code>,
 or <code>SD card (SD:): none</code>.</p>
 <ul>
 <li>Use it with a drive in front of a name: <code>SAVE "SD:GAME"</code>,
@@ -912,8 +912,8 @@ or <code>SD card (SD:): none</code>.</p>
 <li>A card can be put in or taken out while BASIC runs: the next use of <code>SD:</code>
   finds the new one. Close files on it first (CLOSE) and don't pull it out
   while it is being written.</li>
-<li>While a card is in, its four pins and SPI0 are BASIC's: <code>PIN</code>, <code>PWM</code> and
-  <code>SPI OPEN</code> on SPI0 refuse them (<code>SPI OPEN</code> on SPI1, its default, is fine).
+<li>While a card is in, its four pins and SPI1 are BASIC's: <code>PIN</code>, <code>PWM</code> and
+  <code>SPI OPEN</code> on SPI1 refuse them (<code>SPI OPEN</code> on SPI0, its default, is fine).
   Without a card they are free.</li>
 </ul>
 <h3 id="files-from-programs">Files from programs</h3>
@@ -1104,7 +1104,7 @@ the end). lrzsz's <code>rx</code> does, unless run as <code>rx -a</code> for a t
 also converts line ends). Because BASIC removes it, a binary file that
 really ends in ^Z bytes loses them on the way in.</p>
 <h2 id="6-sound">6. Sound</h2>
-<p>A square wave on <strong>GP15</strong> (another pin if BASIC was built with a different
+<p>A square wave on <strong>GP22</strong> (another pin if BASIC was built with a different
 <code>SOUND_PIN</code>), for a piezo buzzer or a small speaker through a resistor.</p>
 <table>
 <thead>
@@ -1187,7 +1187,7 @@ waves of one voice, so a note waits for the one before it.</p>
 <p>Pins are given by their GP number; <code>LED</code> means the board's LED (GP25). The
 Pico and Pico 2 have GP0-29 (GP23-25 and GP29 aren't on the header: power
 control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
-<p>Pins BASIC itself uses are refused, e.g. <code>GP15 is used by the speaker
+<p>Pins BASIC itself uses are refused, e.g. <code>GP22 is used by the speaker
 (BEEP, SOUND, PLAY)</code> followed by <code>Illegal function call</code>:</p>
 <table>
 <thead>
@@ -1198,11 +1198,11 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 </thead>
 <tbody>
 <tr>
-<td>GP15</td>
+<td>GP22</td>
 <td>the speaker</td>
 </tr>
 <tr>
-<td>GP16-19</td>
+<td>GP10, 11, 12, 15</td>
 <td>the SD card, while one is in</td>
 </tr>
 <tr>
@@ -1262,7 +1262,7 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
   changing one's frequency prints a warning naming its partner. The chip has
   only 8 slices for GP0-31, so GP16-31 use the same ones as GP0-15: GP2 and
   GP18 (and GP3 and GP19) give the very same signal, with no warning. The
-  speaker's slice (GP15) is shared with GP14, GP30 and GP31: PWM there and
+  speaker's slice (GP22) is shared with GP6, GP7 and GP23: PWM there and
   sound interfere.</li>
 <li><code>RUN</code>, <code>NEW</code> and <code>SYSTEM</code> set every pin BASIC used back to an input and
   stop PWM. <code>END</code>, errors and Ctrl-C leave pins as they are, so they can be
@@ -1310,7 +1310,7 @@ GP16-19 SPI0 ...). RUN, NEW and SYSTEM close them.</p>
 </tr>
 <tr>
 <td><code>SPI OPEN [sck, mosi, miso[, khz[, mode]]]</code></td>
-<td>Starts SPI, by default on <strong>GP10 (SCK), GP11 (MOSI), GP8 (MISO)</strong>, SPI1, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with <code>PIN</code> (<strong>GP9</strong> is free for it).</td>
+<td>Starts SPI, by default on <strong>GP18 (SCK), GP19 (MOSI), GP16 (MISO)</strong>, SPI0, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with <code>PIN</code> (<strong>GP17</strong> is free for it). (SPI1 is the SD card's.)</td>
 </tr>
 <tr>
 <td><code>SPI WRITE item[, item...]</code></td>
@@ -1331,8 +1331,8 @@ before OPEN gives <code>Device unavailable</code> (68). Both can be caught with
 ON ERROR.</p>
 <pre><code>10 I2C OPEN: I2C SCAN
 20 T = I2CREAD(&amp;H48, 0): PRINT "LM75 at &amp;H48:"; T
-30 PIN 9, 1: SPI OPEN: PIN 9, 0: SPI WRITE &amp;H9F
-40 ID$ = SPI$(STRING$(3, 0)): PIN 9, 1: PRINT LEN(ID$); "bytes"
+30 PIN 17, 1: SPI OPEN: PIN 17, 0: SPI WRITE &amp;H9F
+40 ID$ = SPI$(STRING$(3, 0)): PIN 17, 1: PRINT LEN(ID$); "bytes"
 </code></pre>
 <h3 id="serial-port-com1">Serial port (COM1)</h3>
 <p>A serial port on the chip's UART1 (the console is on USB). It works
@@ -1651,7 +1651,7 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 </tr>
 <tr>
 <td>SPIFLASH.BAS</td>
-<td>reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI1 on GP8-11)</td>
+<td>reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP16-19)</td>
 </tr>
 </tbody>
 </table>

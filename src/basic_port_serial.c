@@ -38,7 +38,7 @@
 #endif
 
 #ifndef SOUND_PIN
-#define SOUND_PIN 15  ///< BEEP, SOUND and PLAY: a piezo or speaker (through a resistor) to ground
+#define SOUND_PIN 22  ///< BEEP, SOUND and PLAY: a piezo or speaker (through a resistor) to ground
 #endif
 
 /// What the screen-only features say if asked anyway.
@@ -920,7 +920,7 @@ const char *port_spi_open(int sck, int mosi, int miso, int khz, int mode) {
     if (sck < 0 || mosi < 0 || miso < 0 || sck >= PIN_COUNT || mosi >= PIN_COUNT || miso >= PIN_COUNT ||
         sck % 4 != 2 || mosi % 4 != 3 || miso % 4 != 0 || ((sck / 8) & 1) != ((mosi / 8) & 1) ||
         ((sck / 8) & 1) != ((miso / 8) & 1))
-        return "SPI needs SCK, MOSI and MISO of one SPI (e.g. GP10, GP11, GP8)";
+        return "SPI needs SCK, MOSI and MISO of one SPI (e.g. GP18, GP19, GP16)";
     const char *why = pin_free(sck);
     if (!why)
         why = pin_free(mosi);

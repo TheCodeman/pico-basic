@@ -16,19 +16,19 @@
 #include "pico/stdlib.h"
 
 #ifndef SD_SPI
-#define SD_SPI  0   ///< the SPI controller: 0 or 1
+#define SD_SPI  1   ///< the SPI controller: 0 or 1
 #endif
 #ifndef SD_MISO
-#define SD_MISO 16  ///< card DO (data out)
+#define SD_MISO 12  ///< card SDO / DO (data out)
 #endif
 #ifndef SD_CS
-#define SD_CS   17  ///< card CS
+#define SD_CS   15  ///< card CS
 #endif
 #ifndef SD_SCK
-#define SD_SCK  18  ///< card CLK
+#define SD_SCK  10  ///< card CLK
 #endif
 #ifndef SD_MOSI
-#define SD_MOSI 19  ///< card DI (data in)
+#define SD_MOSI 11  ///< card SDI / DI (data in)
 #endif
 #ifndef SD_SPI_KHZ
 #define SD_SPI_KHZ 25000  ///< the clock once the card is set up

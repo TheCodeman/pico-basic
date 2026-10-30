@@ -41,7 +41,7 @@ while plugging the board into USB and copy the file over; once BASIC runs,
 `picotool load -f` can reboot it and load a new one through the same port. A
 Debug Probe on the SWD pins works too (OpenOCD: see the manual).
 
-Options: `-DSOUND_PIN=15` sets the speaker pin. `-DFLASH_DISK_OFFSET=0x100000`
+Options: `-DSOUND_PIN=22` sets the speaker pin. `-DFLASH_DISK_OFFSET=0x100000`
 sets where the disk starts in the flash; the program must fit below it.
 
 ## Connecting
@@ -57,9 +57,9 @@ terminal, and shows its banner again to one that connects later.
 | Pico pin | To |
 |---|---|
 | USB | the PC: power and the console |
-| GP15 (pin 20) | optional: a piezo or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY |
+| GP22 (pin 29) | optional: a piezo or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY |
 
-Use 3.3 V logic levels only. The speaker pin is reserved, and so is GP47
+Use 3.3 V logic levels only. The speaker pin (GP22) is reserved, and so is GP47
 (the PSRAM) on the Pico Plus 2: `PIN`, `PWM`, `I2C` and `SPI` refuse them.
 Every other pin is free, GP0 and GP1 included. COM1 uses UART1, with TX on
 GP4, GP8 or GP20 and RX on GP5, GP9 or GP21.
@@ -93,19 +93,21 @@ or exFAT, formatted on a PC. `SAVE "SD:GAME"`, `FILES "SD:"`,
 card can be swapped while BASIC runs. The banner shows it, or
 `SD card (SD:): none`.
 
-| microSD breakout | Pico pin |
+| microSD module | Pico pin |
 |---|---|
-| DO (MISO) | GP16 (pin 21) |
-| CS | GP17 (pin 22) |
-| CLK (SCK) | GP18 (pin 24) |
-| DI (MOSI) | GP19 (pin 25) |
+| CLK (SCK) | GP10 (pin 14) |
+| SDI / DI (MOSI) | GP11 (pin 15) |
+| SDO / DO (MISO) | GP12 (pin 16) |
+| CS | GP15 (pin 20) |
 | VCC | 3V3(OUT) (pin 36), 3.3 V only |
-| GND | GND (pin 23) |
+| GND | GND (pin 18) |
 
-Build options: `-DPICO_BASIC_SD=OFF` leaves it out; `-DSD_SPI=1
--DSD_MISO=12 -DSD_CS=13 -DSD_SCK=10 -DSD_MOSI=11` (for example) choose other
-pins (one SPI's MISO, SCK and MOSI pins; CS any). While a card is in, its
-pins and that SPI are refused to `PIN`, `PWM` and `SPI OPEN`.
+That is SPI1; BASIC's own `SPI OPEN` then defaults to SPI0 (GP18 SCK, GP19
+MOSI, GP16 MISO, GP17 free for CS). Build options: `-DPICO_BASIC_SD=OFF`
+leaves the card out; `-DSD_SPI=0 -DSD_MISO=16 -DSD_CS=17 -DSD_SCK=18
+-DSD_MOSI=19` (for example) choose other pins (one SPI's MISO, SCK and MOSI
+pins; CS any). While a card is in, its pins and that SPI are refused to
+`PIN`, `PWM` and `SPI OPEN`.
 
 ## The flash disk
 

@@ -51,7 +51,7 @@ endif()
 # the flash (3 MB on a Pico 2, 15 MB on a Pico Plus 2).
 set(FLASH_DISK_OFFSET 0x100000 CACHE STRING "Flash disk start, bytes from the start of the flash (a multiple of 4096)")
 # BEEP, SOUND and PLAY: a piezo or small speaker (through a resistor) on this pin.
-set(SOUND_PIN 15 CACHE STRING "GPIO for the speaker")
+set(SOUND_PIN 22 CACHE STRING "GPIO for the speaker")
 
 target_compile_definitions(pico_basic PRIVATE
     BASIC_NO_SCREEN=1
@@ -73,17 +73,23 @@ if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
 endif()
 
 # A microSD card over SPI as a second drive ("1:" or "SD:"). Default pins:
-# SPI0 with MISO GP16, CS GP17, SCK GP18, MOSI GP19 (the usual Pico SD
-# wiring; SPI1, BASIC's own SPI OPEN default, stays free).
+# SPI1 with SCK GP10, MOSI GP11 (card SDI), MISO GP12 (card SDO), CS GP15.
+# BASIC's own SPI OPEN then defaults to SPI0 (SCK GP18, MOSI GP19, MISO
+# GP16, GP17 free for CS), so the two don't meet.
 option(PICO_BASIC_SD "An SD card over SPI as drive 1: (SD:)" ON)
-set(SD_SPI 0 CACHE STRING "SD card: SPI controller (0 or 1)")
-set(SD_MISO 16 CACHE STRING "SD card: MISO pin (card DO)")
-set(SD_CS 17 CACHE STRING "SD card: CS pin")
-set(SD_SCK 18 CACHE STRING "SD card: SCK pin (card CLK)")
-set(SD_MOSI 19 CACHE STRING "SD card: MOSI pin (card DI)")
+set(SD_SPI 1 CACHE STRING "SD card: SPI controller (0 or 1)")
+set(SD_MISO 12 CACHE STRING "SD card: MISO pin (card SDO / DO)")
+set(SD_CS 15 CACHE STRING "SD card: CS pin")
+set(SD_SCK 10 CACHE STRING "SD card: SCK pin (card CLK)")
+set(SD_MOSI 11 CACHE STRING "SD card: MOSI pin (card SDI / DI)")
 if(PICO_BASIC_SD)
+    if(SD_SPI EQUAL 1)
+        set(SPI_SCK_DEFAULT 18)  # SPI OPEN on SPI0
+    else()
+        set(SPI_SCK_DEFAULT 10)  # SPI OPEN on SPI1
+    endif()
     target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=1 SD_SPI=${SD_SPI} SD_MISO=${SD_MISO}
-        SD_CS=${SD_CS} SD_SCK=${SD_SCK} SD_MOSI=${SD_MOSI})
+        SD_CS=${SD_CS} SD_SCK=${SD_SCK} SD_MOSI=${SD_MOSI} SPI_SCK_DEFAULT=${SPI_SCK_DEFAULT})
 else()
     target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=0)
 endif()

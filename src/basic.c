@@ -6186,7 +6186,9 @@ static void do_pwm(void) {
 // ---- I2C and SPI (Pico extensions) ------------------------------------------
 
 #define I2C_SDA_DEFAULT 2   ///< GP2/GP3: I2C1, clear of COM1 (GP4/5), HDMI and the WiFi pins
+#ifndef SPI_SCK_DEFAULT
 #define SPI_SCK_DEFAULT 10  ///< GP10 SCK, GP11 MOSI, GP8 MISO: SPI1 (GP9 is free for CS)
+#endif
 
 /// Bytes from a list of numbers (0-255) and strings, into buf; NOSTOP (at the
 /// end) sets *nostop. The count.
