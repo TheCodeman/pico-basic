@@ -53,18 +53,23 @@ int port_key(uint32_t timeout_us) {
     if (!timeout_us && now - last_poll < 200)
         return -1;
     last_poll = now;
+    int c = getchar_timeout_us(timeout_us);
+    if (c == PICO_ERROR_TIMEOUT)
+        c = -1;
     // A terminal that connects after start-up (or again, after closing)
-    // missed the banner: show it, and a prompt.
-    bool connected = stdio_usb_connected();
+    // missed the banner: show it, and a prompt, before the key that came
+    // with it is echoed. A key arriving counts as connected too: a terminal
+    // can send before the USB line state says it is there.
+    bool connected = c >= 0 || stdio_usb_connected();
     if (connected && !was_connected) {
-        sleep_ms(50);  // some terminals miss what comes right after they connect
+        if (c < 0)
+            sleep_ms(50);  // some terminals miss what comes right after they connect
         printf("\n");
         board_banner();
         printf("Ok\n");
     }
     was_connected = connected;
-    int c = getchar_timeout_us(timeout_us);
-    return c == PICO_ERROR_TIMEOUT ? -1 : c;
+    return c;
 }
 
 /// The IBM PC's pictures for control codes 1-31, as Unicode.
