@@ -5,6 +5,7 @@
 50 REM Keys: Space or N next, P previous, + and - brightness, Q quits.
 55 REM It moves on by itself every 8 seconds until a key or button is used.
 60 PN = 28: N = 1: BT = 1: AU = 1
+65 IF BT THEN PINMODE 20, PULLUP: PINMODE 21, PULLUP: PINMODE 22, PULLUP
 70 NEOPIXEL OPEN PN, N
 80 BR = 64: NF = 8: E = 1: T = 0
 90 DIM NM$(8): FOR I = 1 TO NF: READ NM$(I): NEXT

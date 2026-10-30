@@ -1440,8 +1440,9 @@ comes straight back.</p>
 <li><strong>microSD slot:</strong> drive <code>SD:</code> as it is (SPI1, GP10-15).</li>
 <li><strong>Buzzer:</strong> GP18, for BEEP, SOUND and PLAY (its mute switch turns it
   off); the 3.5 mm audio jack is on GP18 (left) and GP19 (right).</li>
-<li><strong>Buttons:</strong> GP20, GP21 and GP22, with their own pull-ups: <code>PIN(20)</code> is 0
-  while the button is pressed.</li>
+<li><strong>Buttons:</strong> GP20, GP21 and GP22, pressed = 0. Turn their pull-ups on
+  first (<code>PINMODE 20, PULLUP</code> and so on), or a released button can read 0
+  now and then; then <code>PIN(20)</code> is 0 while the button is pressed.</li>
 <li><strong>RGB LED:</strong> a WS2812B on GP28: <code>NEOPIXEL OPEN</code> (with no arguments)
   then <code>NEOPIXEL 0, 255, 0, 0: NEOPIXEL SHOW</code> lights it red.</li>
 <li><strong>LEDs:</strong> every GPIO has one, so they show what the pins are doing.</li>

@@ -734,8 +734,9 @@ BASIC's defaults fit this carrier board:
 - **microSD slot:** drive `SD:` as it is (SPI1, GP10-15).
 - **Buzzer:** GP18, for BEEP, SOUND and PLAY (its mute switch turns it
   off); the 3.5 mm audio jack is on GP18 (left) and GP19 (right).
-- **Buttons:** GP20, GP21 and GP22, with their own pull-ups: `PIN(20)` is 0
-  while the button is pressed.
+- **Buttons:** GP20, GP21 and GP22, pressed = 0. Turn their pull-ups on
+  first (`PINMODE 20, PULLUP` and so on), or a released button can read 0
+  now and then; then `PIN(20)` is 0 while the button is pressed.
 - **RGB LED:** a WS2812B on GP28: `NEOPIXEL OPEN` (with no arguments)
   then `NEOPIXEL 0, 255, 0, 0: NEOPIXEL SHOW` lights it red.
 - **LEDs:** every GPIO has one, so they show what the pins are doing.
