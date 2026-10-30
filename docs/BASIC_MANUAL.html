@@ -1401,7 +1401,8 @@ sent with <code>NEOPIXEL SHOW</code>.</p>
 30 NEOPIXEL SHOW</p>
 </li>
 </ul>
-<p><code>examples/NEOPIXEL.BAS</code> shows red, green and blue, then a rainbow.</p>
+<p><code>examples/NEOPIXEL.BAS</code> shows red, green and blue, then a rainbow;
+<code>examples/NEODEMO.BAS</code> has eight effects to step through.</p>
 <h3 id="serial-port-com1">Serial port (COM1)</h3>
 <p>A serial port on the chip's UART1 (the console is on USB). It works
 like a file: open it with a "COM1:" name, then use PRINT #, WRITE #, INPUT #,
@@ -1730,6 +1731,10 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 <tr>
 <td>I2CSCAN.BAS</td>
 <td>lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7</td>
+</tr>
+<tr>
+<td>NEODEMO.BAS</td>
+<td>eight NeoPixel effects (rainbow, breathe, colour wipe, chase, candle, sparkle, police, heartbeat), changing every 8 seconds; Space/N, P, + and - (or the Maker Pi Pico's buttons GP20-22) to choose, Q quits; one line sets a strip's pin and length</td>
 </tr>
 <tr>
 <td>NEOPIXEL.BAS</td>

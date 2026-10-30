@@ -691,7 +691,8 @@ sent with `NEOPIXEL SHOW`.
     20 FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
     30 NEOPIXEL SHOW
 
-`examples/NEOPIXEL.BAS` shows red, green and blue, then a rainbow.
+`examples/NEOPIXEL.BAS` shows red, green and blue, then a rainbow;
+`examples/NEODEMO.BAS` has eight effects to step through.
 
 ### Serial port (COM1)
 
@@ -854,6 +855,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | ANALOG.BAS | shows the ADC inputs and the chip temperature (GP26-29; change line 16 to `FIRST = 40: LAST = 46` on a Pico Plus 2) |
 | SERIAL.BAS | a small terminal on COM1 (GP8 TX, GP9 RX) |
 | I2CSCAN.BAS | lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7 |
+| NEODEMO.BAS | eight NeoPixel effects (rainbow, breathe, colour wipe, chase, candle, sparkle, police, heartbeat), changing every 8 seconds; Space/N, P, + and - (or the Maker Pi Pico's buttons GP20-22) to choose, Q quits; one line sets a strip's pin and length |
 | NEOPIXEL.BAS | red, green, blue, then a rainbow on WS2812B LEDs (the Maker Pi Pico's RGB LED on GP28, or a strip) |
 | SPIFLASH.BAS | reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP4-7) |
 
