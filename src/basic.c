@@ -7475,6 +7475,16 @@ static void do_files(void) {
         out_str("File not found");
         out_newline();
     }
+    // As GW-BASIC: the disk's free space after the list.
+    FATFS *fs;
+    DWORD clusters;
+    if (f_getfree("", &clusters, &fs) == FR_OK) {
+        char buf[40];
+        snprintf(buf, sizeof buf, "%lu Bytes free",
+                 (unsigned long)((uint64_t)clusters * fs->csize * FF_MAX_SS));
+        out_str(buf);
+        out_newline();
+    }
     out_flush();
 }
 

@@ -40,7 +40,7 @@ runs straight away:
 | `CLEAR` | Clears variables (any arguments are ignored). |
 | `LOAD "file"[,R]` | Loads a program, and with `,R` runs it. Reads plain text and GW-BASIC tokenised files. |
 | `SAVE "file"` | Saves as plain text. `.BAS` is added if the name has no extension. |
-| `FILES ["pattern"]` | Lists files in the current folder, e.g. `FILES "*.BAS"`. |
+| `FILES ["pattern"]` | Lists files in the current folder, e.g. `FILES "*.BAS"`, then the disk's free space ("15331328 Bytes free"). |
 | `KILL "file"` | Deletes a file. |
 | `DELETE range` | Deletes program lines. |
 | `RENUM [new][,[old][,step]]` | Renumbers lines, and the GOTO/GOSUB/THEN/ELSE targets with them (default 10,first,10). |
