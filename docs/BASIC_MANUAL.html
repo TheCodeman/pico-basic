@@ -69,6 +69,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#7-hardware-gpio-pwm-adc-i2c-spi-com1">7. Hardware: GPIO, PWM, ADC, I2C, SPI, COM1</a><ul>
 <li><a href="#pins">Pins</a></li>
 <li><a href="#i2c-and-spi">I2C and SPI</a></li>
+<li><a href="#neopixels-ws2812b-leds">NeoPixels: WS2812B LEDs</a></li>
 <li><a href="#serial-port-com1">Serial port (COM1)</a></li>
 <li><a href="#the-cytron-maker-pi-pico">The Cytron Maker Pi Pico</a></li>
 </ul>
@@ -1261,6 +1262,10 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 <td><code>PINS</code></td>
 <td>Lists every pin and what it is doing.</td>
 </tr>
+<tr>
+<td><code>NEOPIXEL ...</code></td>
+<td>WS2812B LEDs (below).</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1340,6 +1345,63 @@ ON ERROR.</p>
 30 PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &amp;H9F
 40 ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
 </code></pre>
+<h3 id="neopixels-ws2812b-leds">NeoPixels: WS2812B LEDs</h3>
+<p>Strips, rings and single WS2812B ("NeoPixel") LEDs, on any free pin, driven
+by one of the chip's PIO state machines. Colours are kept in a buffer and
+sent with <code>NEOPIXEL SHOW</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEOPIXEL OPEN [pin[, count[, order$]]]</code></td>
+<td>Sets up <code>count</code> LEDs (1-1024, default 1) on <code>pin</code> (default <strong>GP28</strong>, the Maker Pi Pico's RGB LED), all off. <code>order$</code> is <code>"GRB"</code> (WS2812B, the default) or <code>"RGB"</code> for strips that take red first. Opening again replaces the strip.</td>
+</tr>
+<tr>
+<td><code>NEOPIXEL n, r, g, b</code></td>
+<td>LED <code>n</code> (0 first) to red, green and blue 0-255, in the buffer.</td>
+</tr>
+<tr>
+<td><code>NEOPIXEL FILL r, g, b</code></td>
+<td>Every LED to one colour.</td>
+</tr>
+<tr>
+<td><code>NEOPIXEL SHOW</code></td>
+<td>Sends the buffer to the LEDs.</td>
+</tr>
+<tr>
+<td><code>NEOPIXEL BRIGHT level</code></td>
+<td>Brightness 0-255 (255 at first) for the next SHOWs: full white is bright and draws 60 mA a LED.</td>
+</tr>
+<tr>
+<td><code>NEOPIXEL CLEAR</code></td>
+<td>All off, shown at once.</td>
+</tr>
+<tr>
+<td><code>NEOPIXEL CLOSE</code></td>
+<td>Frees the pin and the state machine.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The pin is refused to <code>PIN</code>, <code>PWM</code> and the rest while the strip is open;
+  <code>PINS</code> shows it. RUN, NEW and SYSTEM close it (the LEDs keep their last
+  colours: <code>NEOPIXEL CLEAR</code> first to turn them off).</li>
+<li>Using it before <code>NEOPIXEL OPEN</code> gives <code>Device unavailable</code> (68).</li>
+<li>
+<p>WS2812B LEDs want 5 V but take the Pico's 3.3 V data on a short wire.
+  Power a strip of more than a few LEDs from its own 5 V supply, join its
+  GND to the Pico's, and keep <code>BRIGHT</code> modest.</p>
+<p>10 NEOPIXEL OPEN 16, 8: NEOPIXEL BRIGHT 40
+20 FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
+30 NEOPIXEL SHOW</p>
+</li>
+</ul>
+<p><code>examples/NEOPIXEL.BAS</code> shows red, green and blue, then a rainbow.</p>
 <h3 id="serial-port-com1">Serial port (COM1)</h3>
 <p>A serial port on the chip's UART1 (the console is on USB). It works
 like a file: open it with a "COM1:" name, then use PRINT #, WRITE #, INPUT #,
@@ -1379,8 +1441,8 @@ comes straight back.</p>
   off); the 3.5 mm audio jack is on GP18 (left) and GP19 (right).</li>
 <li><strong>Buttons:</strong> GP20, GP21 and GP22, with their own pull-ups: <code>PIN(20)</code> is 0
   while the button is pressed.</li>
-<li><strong>RGB LED:</strong> a WS2812 on GP28 (it needs a timed serial signal BASIC
-  doesn't make).</li>
+<li><strong>RGB LED:</strong> a WS2812B on GP28: <code>NEOPIXEL OPEN</code> (with no arguments)
+  then <code>NEOPIXEL 0, 255, 0, 0: NEOPIXEL SHOW</code> lights it red.</li>
 <li><strong>LEDs:</strong> every GPIO has one, so they show what the pins are doing.</li>
 <li><strong>Free for your own use:</strong> COM1 (GP8/GP9), <code>SPI OPEN</code> (GP4-7), I2C
   (GP2/GP3) and the Grove connectors on those pins.</li>
@@ -1668,6 +1730,10 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 <tr>
 <td>I2CSCAN.BAS</td>
 <td>lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7</td>
+</tr>
+<tr>
+<td>NEOPIXEL.BAS</td>
+<td>red, green, blue, then a rainbow on WS2812B LEDs (the Maker Pi Pico's RGB LED on GP28, or a strip)</td>
 </tr>
 <tr>
 <td>SPIFLASH.BAS</td>

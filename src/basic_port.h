@@ -314,6 +314,21 @@ void *port_realloc(void *p, size_t n);
 /// @param p the block, or NULL
 void port_release(void *p);
 
+/// NEOPIXEL: a strip of WS2812B LEDs on one pin, driven by a PIO state
+/// machine. Open: `count` LEDs, GRB order (or RGB); NULL, or why not. Set
+/// puts a colour in the buffer; show sends the buffer (scaled by the
+/// brightness, 0-255); count is 0 while none is open.
+/// @param pin the data pin
+/// @param count the LEDs
+/// @param rgb the strip takes red first (else green, as WS2812B do)
+/// @return NULL, or why not
+const char *port_pixels_open(int pin, int count, bool rgb);
+void port_pixel_set(int n, int r, int g, int b);  ///< LED n's colour, 0-255 each
+void port_pixels_show(void);  ///< sends the colours to the LEDs
+void port_pixels_bright(int level);  ///< brightness 0-255 for the next shows
+int port_pixels_count(void);  ///< the LEDs open, or 0
+void port_pixels_close(void);  ///< frees the pin and the state machine
+
 /// XSEND "file": sends it over the console by XMODEM (1K blocks with CRC-16,
 /// or 128-byte blocks with a checksum if the receiver asks). XRECV "file":
 /// receives one into it (CRC-16, or a checksum if the sender only has that;

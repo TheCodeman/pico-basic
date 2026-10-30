@@ -497,6 +497,9 @@ static int spi_pins[3] = {-1, -1, -1};      ///< SCK, MOSI, MISO while SPI is op
 static int serial_cts = -1, serial_rts = -1;
 ///@}
 
+/// The NEOPIXEL strip's pin while one is open (-1: none).
+static int pixel_pin = -1;
+
 const char *port_pin_reserved(int pin) {
     if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
         return "the COM1 serial port (CLOSE it first)";
@@ -514,6 +517,8 @@ const char *port_pin_reserved(int pin) {
     if (sd_card_in_use() && sd_card_pin(pin))
         return "the SD card";
 #endif
+    if (pin >= 0 && pin == pixel_pin)
+        return "NEOPIXEL (NEOPIXEL CLOSE first)";
     return NULL;
 }
 
@@ -637,6 +642,8 @@ void port_pins_list(void) {
             else if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
                 snprintf(what, sizeof what, "COM1 %s", pin == serial_tx ? "TX" : pin == serial_rx ? "RX"
                                                        : pin == serial_cts ? "CTS" : "RTS");
+            else if (pin == pixel_pin)
+                snprintf(what, sizeof what, "NeoPixel x%d", port_pixels_count());
             else if (why)
                 snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker"
 #if PICO_BASIC_SD
@@ -661,10 +668,13 @@ void port_pins_list(void) {
 
 void port_i2c_close(void);
 void port_spi_close(void);
+void port_pixels_close(void);
+int port_pixels_count(void);
 
 void port_pins_reset(void) {
     port_i2c_close();
     port_spi_close();
+    port_pixels_close();
     for (int pin = 0; pin < PIN_COUNT; ++pin) {
         if (pin_use[pin] == UNUSED)
             continue;
@@ -1142,4 +1152,77 @@ bool port_xrecv(const char *path, char *msg, int size) {
         f_unlink(path);
     snprintf(msg, size, "%s", res.message);
     return res.ok;
+}
+
+// ---- NEOPIXEL: WS2812B LEDs on a PIO state machine ----------------------------------
+
+#include "hardware/pio.h"
+#include "ws2812.pio.h"
+
+static PIO pixel_pio;  ///< the PIO block in use
+static uint pixel_sm, pixel_offset;  ///< its state machine and where the program is
+static uint32_t *pixels;  ///< the colours, 0xRRGGBB
+static int pixel_count;  ///< the LEDs (0: none open)
+static int pixel_bright = 255;  ///< 0-255, applied when shown
+static bool pixel_rgb;  ///< red first (else green, as WS2812B want)
+
+const char *port_pixels_open(int pin, int count, bool rgb) {
+    port_pixels_close();
+    if (pin_use[pin] != UNUSED)
+        return "the pin is in use by PINMODE/PIN/PWM";
+    uint32_t *buf = calloc(count, sizeof *buf);
+    if (!buf)
+        return "not enough memory for the LEDs";
+    if (!pio_claim_free_sm_and_add_program_for_gpio_range(&ws2812_program, &pixel_pio, &pixel_sm,
+                                                          &pixel_offset, pin, 1, true)) {
+        free(buf);
+        return "no free PIO state machine";
+    }
+    ws2812_program_init(pixel_pio, pixel_sm, pixel_offset, pin, 800000);
+    pixels = buf;
+    pixel_count = count;
+    pixel_pin = pin;
+    pixel_rgb = rgb;
+    pixel_bright = 255;
+    return NULL;
+}
+
+void port_pixel_set(int n, int r, int g, int b) {
+    if (n >= 0 && n < pixel_count)
+        pixels[n] = (uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b;
+}
+
+void port_pixels_show(void) {
+    for (int i = 0; i < pixel_count; ++i) {
+        uint32_t c = pixels[i];
+        uint32_t r = (c >> 16 & 255) * pixel_bright / 255, g = (c >> 8 & 255) * pixel_bright / 255,
+                 b = (c & 255) * pixel_bright / 255;
+        uint32_t word = pixel_rgb ? r << 16 | g << 8 | b : g << 16 | r << 8 | b;
+        pio_sm_put_blocking(pixel_pio, pixel_sm, word << 8);  // 24 bits, top first
+    }
+    // The LEDs take the colours after the line has been low for 50 us (the
+    // last LED's bits are still going out when the FIFO empties: 30 us).
+    while (!pio_sm_is_tx_fifo_empty(pixel_pio, pixel_sm))
+        tight_loop_contents();
+    busy_wait_us(100);
+}
+
+void port_pixels_bright(int level) {
+    pixel_bright = level < 0 ? 0 : level > 255 ? 255 : level;
+}
+
+int port_pixels_count(void) {
+    return pixel_count;
+}
+
+void port_pixels_close(void) {
+    if (!pixel_count)
+        return;
+    pio_sm_set_enabled(pixel_pio, pixel_sm, false);
+    pio_remove_program_and_unclaim_sm(&ws2812_program, pixel_pio, pixel_sm, pixel_offset);
+    gpio_init(pixel_pin);
+    free(pixels);
+    pixels = NULL;
+    pixel_count = 0;
+    pixel_pin = -1;
 }

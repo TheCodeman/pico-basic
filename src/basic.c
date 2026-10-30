@@ -1332,7 +1332,7 @@ static const char *const statement_words[] = {
     "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "GET",
     "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
     "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MUSIC",
-    "NAME", "NEW", "NEXT", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
+    "NAME", "NEOPIXEL", "NEW", "NEXT", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
     "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
     "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WINDOW", "WRITE", "XRECV", "XSEND",
@@ -1566,8 +1566,18 @@ static int arg_int(void) {
 
 /// A GPIO number (or LED for the board's LED) that BASIC may use.
 /// @return the pin
+static int check_pin(int pin);
+
+/// A pin number argument (or LED), refused if the system uses it.
+/// @return the pin
 static int pin_arg(void) {
-    int pin = accept("LED") ? port_led_pin() : arg_int();
+    return check_pin(accept("LED") ? port_led_pin() : arg_int());
+}
+
+/// Illegal function call (after saying why) if BASIC can't have the pin.
+/// @param pin the pin
+/// @return the pin
+static int check_pin(int pin) {
     if (pin < 0 || pin >= port_pin_count())
         error(E_ILLEGAL_CALL);
     const char *why = port_pin_reserved(pin);
@@ -6183,6 +6193,87 @@ static void do_pwm(void) {
 }
 
 
+// ---- WS2812B LEDs: NEOPIXEL (a Pico extension) ------------------------------
+
+#define NEOPIXEL_PIN_DEFAULT 28  ///< the Maker Pi Pico's RGB LED
+#define NEOPIXEL_MAX 1024  ///< LEDs on one strip
+
+static void open_failed(const char *why);
+
+/// A colour part 0-255, else Illegal function call.
+/// @return it
+static int colour_arg(void) {
+    int v = arg_int();
+    if (v < 0 || v > 255)
+        error(E_ILLEGAL_CALL);
+    return v;
+}
+
+/// NEOPIXEL OPEN [pin[, count[, "RGB" | "GRB"]]] | NEOPIXEL n, r, g, b
+/// | NEOPIXEL FILL r, g, b | NEOPIXEL SHOW | NEOPIXEL CLEAR
+/// | NEOPIXEL BRIGHT level | NEOPIXEL CLOSE
+static void do_neopixel(void) {
+    if (accept_word("OPEN")) {
+        int pin = NEOPIXEL_PIN_DEFAULT, count = 1;
+        bool rgb = false;
+        skip_spaces();
+        if (!at_end_of_statement()) {
+            pin = pin_arg();
+            if (accept(",")) {
+                count = arg_int();
+                if (accept(",")) {
+                    const char *o = str_expr();
+                    if (slen(o) == 3 && !strncasecmp(o, "RGB", 3))
+                        rgb = true;
+                    else if (slen(o) != 3 || strncasecmp(o, "GRB", 3))
+                        error(E_ILLEGAL_CALL);
+                }
+            }
+        } else {
+            check_pin(pin);
+        }
+        if (count < 1 || count > NEOPIXEL_MAX)
+            error(E_ILLEGAL_CALL);
+        open_failed(port_pixels_open(pin, count, rgb));
+        return;
+    }
+    if (accept_word("CLOSE")) {
+        port_pixels_close();
+        return;
+    }
+    int count = port_pixels_count();
+    if (!count)
+        error(E_DEVICE_UNAVAILABLE);  // NEOPIXEL OPEN first
+    if (accept_word("SHOW")) {
+        port_pixels_show();
+    } else if (accept_word("CLEAR")) {
+        for (int i = 0; i < count; ++i)
+            port_pixel_set(i, 0, 0, 0);
+        port_pixels_show();
+    } else if (accept_word("FILL")) {
+        int r = colour_arg();
+        expect(",");
+        int g = colour_arg();
+        expect(",");
+        int b = colour_arg();
+        for (int i = 0; i < count; ++i)
+            port_pixel_set(i, r, g, b);
+    } else if (accept_word("BRIGHT")) {
+        port_pixels_bright(colour_arg());
+    } else {
+        int n = arg_int();
+        if (n < 0 || n >= count)
+            error(E_ILLEGAL_CALL);
+        expect(",");
+        int r = colour_arg();
+        expect(",");
+        int g = colour_arg();
+        expect(",");
+        int b = colour_arg();
+        port_pixel_set(n, r, g, b);
+    }
+}
+
 // ---- I2C and SPI (Pico extensions) ------------------------------------------
 
 #define I2C_SDA_DEFAULT 2   ///< GP2/GP3: I2C1, clear of COM1 (GP4/5), HDMI and the WiFi pins
@@ -8463,6 +8554,8 @@ static int statement(void) {
         do_pin();
     } else if (accept("PWM")) {
         do_pwm();
+    } else if (accept_word("NEOPIXEL")) {
+        do_neopixel();
     } else if (accept("SERVO")) {
         do_servo();
     } else if (accept_word("IMAGE")) {

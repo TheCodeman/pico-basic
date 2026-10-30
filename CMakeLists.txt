@@ -35,9 +35,13 @@ target_link_libraries(pico_basic
     pico_flash
     hardware_i2c
     hardware_irq
+    hardware_pio
     hardware_pwm
     hardware_spi
 )
+
+# NEOPIXEL's WS2812B driver runs on a PIO state machine.
+pico_generate_pio_header(pico_basic ${CMAKE_CURRENT_LIST_DIR}/src/ws2812.pio)
 
 # The RP2350 boards can have PSRAM; the RP2040 has none (psram_none.c says so).
 if(PICO_PLATFORM STREQUAL "rp2040")

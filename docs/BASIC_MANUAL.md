@@ -619,6 +619,7 @@ Pins BASIC itself uses are refused, e.g. `GP18 is used by the speaker
 | `ADC(pin)` | An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico and Pico 2, GP40-46 on the Pico Plus 2. `V = ADC(26) * 3.3 / 4095` |
 | `TEMP()` | The chip's temperature in °C (uncalibrated: within a few degrees). |
 | `PINS` | Lists every pin and what it is doing. |
+| `NEOPIXEL ...` | WS2812B LEDs (below). |
 
 - PWM pins come in pairs that share one frequency (GP0/1, GP2/3 and so on);
   changing one's frequency prints a warning naming its partner. The chip has
@@ -662,6 +663,36 @@ ON ERROR.
     30 PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &H9F
     40 ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
 
+### NeoPixels: WS2812B LEDs
+
+Strips, rings and single WS2812B ("NeoPixel") LEDs, on any free pin, driven
+by one of the chip's PIO state machines. Colours are kept in a buffer and
+sent with `NEOPIXEL SHOW`.
+
+| Statement | What it does |
+|---|---|
+| `NEOPIXEL OPEN [pin[, count[, order$]]]` | Sets up `count` LEDs (1-1024, default 1) on `pin` (default **GP28**, the Maker Pi Pico's RGB LED), all off. `order$` is `"GRB"` (WS2812B, the default) or `"RGB"` for strips that take red first. Opening again replaces the strip. |
+| `NEOPIXEL n, r, g, b` | LED `n` (0 first) to red, green and blue 0-255, in the buffer. |
+| `NEOPIXEL FILL r, g, b` | Every LED to one colour. |
+| `NEOPIXEL SHOW` | Sends the buffer to the LEDs. |
+| `NEOPIXEL BRIGHT level` | Brightness 0-255 (255 at first) for the next SHOWs: full white is bright and draws 60 mA a LED. |
+| `NEOPIXEL CLEAR` | All off, shown at once. |
+| `NEOPIXEL CLOSE` | Frees the pin and the state machine. |
+
+- The pin is refused to `PIN`, `PWM` and the rest while the strip is open;
+  `PINS` shows it. RUN, NEW and SYSTEM close it (the LEDs keep their last
+  colours: `NEOPIXEL CLEAR` first to turn them off).
+- Using it before `NEOPIXEL OPEN` gives `Device unavailable` (68).
+- WS2812B LEDs want 5 V but take the Pico's 3.3 V data on a short wire.
+  Power a strip of more than a few LEDs from its own 5 V supply, join its
+  GND to the Pico's, and keep `BRIGHT` modest.
+
+    10 NEOPIXEL OPEN 16, 8: NEOPIXEL BRIGHT 40
+    20 FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
+    30 NEOPIXEL SHOW
+
+`examples/NEOPIXEL.BAS` shows red, green and blue, then a rainbow.
+
 ### Serial port (COM1)
 
 A serial port on the chip's UART1 (the console is on USB). It works
@@ -704,8 +735,8 @@ BASIC's defaults fit this carrier board:
   off); the 3.5 mm audio jack is on GP18 (left) and GP19 (right).
 - **Buttons:** GP20, GP21 and GP22, with their own pull-ups: `PIN(20)` is 0
   while the button is pressed.
-- **RGB LED:** a WS2812 on GP28 (it needs a timed serial signal BASIC
-  doesn't make).
+- **RGB LED:** a WS2812B on GP28: `NEOPIXEL OPEN` (with no arguments)
+  then `NEOPIXEL 0, 255, 0, 0: NEOPIXEL SHOW` lights it red.
 - **LEDs:** every GPIO has one, so they show what the pins are doing.
 - **Free for your own use:** COM1 (GP8/GP9), `SPI OPEN` (GP4-7), I2C
   (GP2/GP3) and the Grove connectors on those pins.
@@ -823,6 +854,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | ANALOG.BAS | shows the ADC inputs and the chip temperature (GP26-29; change line 16 to `FIRST = 40: LAST = 46` on a Pico Plus 2) |
 | SERIAL.BAS | a small terminal on COM1 (GP8 TX, GP9 RX) |
 | I2CSCAN.BAS | lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7 |
+| NEOPIXEL.BAS | red, green, blue, then a rainbow on WS2812B LEDs (the Maker Pi Pico's RGB LED on GP28, or a strip) |
 | SPIFLASH.BAS | reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP4-7) |
 
 For example, from a shell (terminal closed) and then the terminal:

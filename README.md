@@ -70,7 +70,8 @@ The whole language: the program commands, the statements, the functions,
 `PRINT USING`, error trapping, events and data files (`OPEN`, random access,
 `FILES`, `KILL`, `NAME`, `MKDIR`, `CHDIR`). Also `COLOR`, `LOCATE` and `CLS`
 as ANSI codes, and `INKEY$` with cursor and function keys. Then `BEEP`,
-`SOUND` and `PLAY` on the speaker pin; `PIN`, `PWM`, `SERVO`, `ADC` and
+`SOUND` and `PLAY` on the speaker pin; `NEOPIXEL` for WS2812B LEDs (the
+Maker Pi Pico's RGB LED on GP28, or strips on any pin); `PIN`, `PWM`, `SERVO`, `ADC` and
 `TEMP()`; `I2C` and `SPI`; COM1; and `TIMER`, `DATE$` and `TIME$`. Line
 editing has history, and `EDIT n` puts a line on the input line.
 
