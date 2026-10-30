@@ -254,6 +254,14 @@ static void out_char(int c) {
         fflush(stdout);
         port_put_glyph(c);
         c = ' ';  // for the column count below
+#ifdef BASIC_NO_SCREEN
+    } else if (c >= 0x7f) {
+        // A terminal has no PC character set: the port sends the character's
+        // picture (CHR$(219) a block) as UTF-8.
+        fflush(stdout);
+        port_put_glyph(c);
+        c = ' ';
+#endif
     } else {
         putchar(c);
     }
@@ -2104,7 +2112,7 @@ static value_t builtin(void) {
         int v = port_adc(pin);
         if (v < 0) {
             out_flush();
-            printf("GP%d has no ADC (GP40-46 do)\n", pin);
+            printf("GP%d has no ADC\n", pin);
             error(E_ILLEGAL_CALL);
         }
         return num(v);

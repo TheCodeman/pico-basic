@@ -1,8 +1,12 @@
 # Pico BASIC (standalone)
 
-A GW-BASIC style BASIC for the RP2350 on its own: no HDMI, no USB keyboard
-or drive. You use it from a serial terminal, and it keeps its files in the
-Pico's own flash.
+A GW-BASIC style BASIC for the RP2350 on its own: no HDMI, no keyboard or
+USB drive. You use it from a terminal program on the PC, over the board's own
+USB port, and it keeps its files in the Pico's own flash.
+
+The manual is [docs/BASIC_MANUAL.md](docs/BASIC_MANUAL.md) (also as
+[PDF](docs/BASIC_MANUAL.pdf) and [HTML](docs/BASIC_MANUAL.html); remake them
+with `python3 tools/make_manual.py`).
 
 The interpreter (`src/basic.c`) is copied from pico-os (`src/basic/`). It is
 built with `BASIC_NO_SCREEN`, which makes the features that need a screen of
@@ -29,30 +33,33 @@ cmake --build build
 
 To build for the Pico Plus 2, configure with
 `-DPICO_BOARD=pimoroni_pico_plus2_rp2350`. Either build writes
-`build/pico_basic.uf2`. To load it, hold BOOTSEL while plugging the board
-into USB and copy the file over (USB only powers the board; the console is
-on the UART).
+`build/pico_basic.uf2` (in that build folder). To load it, hold BOOTSEL
+while plugging the board into USB and copy the file over; once BASIC runs,
+`picotool load -f` can reboot it and load a new one through the same port. A
+Debug Probe on the SWD pins works too (OpenOCD: see the manual).
 
 Options: `-DSOUND_PIN=15` sets the speaker pin. `-DFLASH_DISK_OFFSET=0x100000`
 sets where the disk starts in the flash; the program must fit below it.
 
-## Wiring
+## Connecting
+
+The console is the board's USB port, as a USB serial (CDC) device: plug it
+into the PC with a data cable and it appears as `/dev/ttyACM*` on Linux
+(`usb-Raspberry_Pi_Pico_...` in `/dev/serial/by-id/`), a COM port on
+Windows. Open it with any terminal (minicom, picocom, PuTTY, Tera Term), ANSI
+or VT100 with UTF-8, at least 80 x 30; the baud rate doesn't matter. For
+example: `picocom /dev/ttyACM1`. BASIC waits 3 seconds at start-up for a
+terminal, and shows its banner again to one that connects later.
 
 | Pico pin | To |
 |---|---|
-| GP0 (pin 1), UART0 TX | the terminal's RX (a USB-serial adapter or a Raspberry Pi Debug Probe) |
-| GP1 (pin 2), UART0 RX | the terminal's TX |
-| GND (pin 3) | the adapter's GND |
-| GP15 (pin 20) | a piezo or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY |
+| USB | the PC: power and the console |
+| GP15 (pin 20) | optional: a piezo or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY |
 
-Use 3.3 V logic levels only. Set the terminal to 115200 baud, 8N1, ANSI or
-VT100, with UTF-8 so that `CHR$(1)` and the other control-code pictures show.
-Suitable terminals include minicom, picocom, PuTTY and Tera Term.
-For example: `picocom -b 115200 /dev/ttyACM0`
-
-GP0, GP1 and the speaker pin are reserved, and so is GP47 (the PSRAM) on the
-Pico Plus 2: `PIN`, `PWM`, `I2C` and `SPI` refuse them. COM1 uses UART1, with
-TX on GP4, GP8 or GP20 and RX on GP5, GP9 or GP21.
+Use 3.3 V logic levels only. The speaker pin is reserved, and so is GP47
+(the PSRAM) on the Pico Plus 2: `PIN`, `PWM`, `I2C` and `SPI` refuse them.
+Every other pin is free, GP0 and GP1 included. COM1 uses UART1, with TX on
+GP4, GP8 or GP20 and RX on GP5, GP9 or GP21.
 
 ## What works
 
@@ -92,8 +99,8 @@ Getting files on and off:
   - picocom: `--send-cmd "sx -vv" --receive-cmd "rx -vv"`, then Ctrl-A
     Ctrl-S or Ctrl-A Ctrl-R.
   - Tera Term: File > Transfer > XMODEM.
-  - A shell, with the terminal closed: `sx FILE < /dev/ttyACM0 > /dev/ttyACM0`
-    or `rx FILE < /dev/ttyACM0 > /dev/ttyACM0`.
+  - A shell, with the terminal closed: `sx FILE < /dev/ttyACM1 > /dev/ttyACM1`
+    or `rx FILE < /dev/ttyACM1 > /dev/ttyACM1` (the board's port).
 
   XMODEM's ^Z padding is taken off files the board receives (the PC's `rx`
   keeps it unless run with `-a`). A failed receive deletes

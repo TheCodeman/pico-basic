@@ -1,0 +1,1580 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Pico BASIC User&#x27;s Manual</title>
+<style>
+@page { size: A4; margin: 18mm 16mm 18mm 16mm;
+        @bottom-center { content: counter(page); font: 9pt sans-serif; color: #666; } }
+body { font: 10.5pt/1.45 "DejaVu Sans", "Liberation Sans", sans-serif; color: #111; }
+h1.title { font-size: 30pt; margin: 60mm 0 4mm; color: #0b3d91; }
+.sub { font-size: 13pt; color: #444; }
+.cover img { width: 100%; margin-top: 16mm; image-rendering: pixelated; border: 1px solid #333; }
+.contents { page-break-before: always; }
+.tochead { font-size: 15pt; font-weight: bold; color: #0b3d91; margin-bottom: 4mm; }
+.toc ul { list-style: none; padding-left: 1.2em; }
+.toc > ul { padding-left: 0; }
+.toc a { color: #111; text-decoration: none; }
+h2 { color: #0b3d91; border-bottom: 2px solid #0b3d91; padding-bottom: 2px; margin-top: 1.6em;
+     page-break-before: always; }
+h3 { color: #0b3d91; margin-top: 1.3em; page-break-after: avoid; }
+table { border-collapse: collapse; width: 100%; margin: .6em 0; font-size: 9.2pt; }
+th, td { border: 1px solid #bbb; padding: 3px 6px; vertical-align: top; text-align: left; }
+th { background: #e8eef8; }
+tr { page-break-inside: avoid; }
+code { font: 9pt "DejaVu Sans Mono", monospace; background: #f2f2f2; padding: 0 2px; }
+pre { background: #10141c; color: #e6e6e6; padding: 8px 10px; border-radius: 4px;
+      font-size: 8.8pt; line-height: 1.35; page-break-inside: avoid; white-space: pre-wrap; }
+pre code { background: none; color: inherit; padding: 0; }
+figure { margin: .8em 0; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333; }
+</style></head><body>
+<div class="cover"><h1 class="title">Pico BASIC User&#x27;s Manual</h1>
+<div class="sub">Pico BASIC for the RP2350 &middot; October 30, 2026</div>
+</div>
+<div class="contents"><div class="tochead">Contents</div><div class="toc">
+<ul>
+<li><a href="#1-getting-started">1. Getting started</a><ul>
+<li><a href="#boards">Boards</a></li>
+<li><a href="#loading-it-onto-the-board">Loading it onto the board</a></li>
+<li><a href="#connecting">Connecting</a></li>
+<li><a href="#the-terminal">The terminal</a></li>
+<li><a href="#first-program">First program</a></li>
+<li><a href="#editing-a-line">Editing a line</a></li>
+</ul>
+</li>
+<li><a href="#2-program-and-direct-commands">2. Program and direct commands</a></li>
+<li><a href="#3-language">3. Language</a><ul>
+<li><a href="#numbers-strings-and-variables">Numbers, strings and variables</a></li>
+<li><a href="#arrays">Arrays</a></li>
+<li><a href="#operators-highest-priority-first">Operators, highest priority first</a></li>
+<li><a href="#flow-of-control">Flow of control</a></li>
+<li><a href="#variables-and-data">Variables and data</a></li>
+<li><a href="#text-output-and-input">Text output and input</a></li>
+<li><a href="#print-using">PRINT USING</a></li>
+<li><a href="#functions">Functions</a></li>
+<li><a href="#error-trapping">Error trapping</a></li>
+<li><a href="#events">Events</a></li>
+<li><a href="#memory-peek-and-poke">Memory: PEEK and POKE</a></li>
+</ul>
+</li>
+<li><a href="#4-the-flash-disk-and-data-files">4. The flash disk and data files</a><ul>
+<li><a href="#the-disk">The disk</a></li>
+<li><a href="#files-from-programs">Files from programs</a></li>
+</ul>
+</li>
+<li><a href="#5-moving-files-to-and-from-the-pc">5. Moving files to and from the PC</a><ul>
+<li><a href="#pasting-and-listing">Pasting and listing</a></li>
+<li><a href="#xmodem-xrecv-and-xsend">XMODEM: XRECV and XSEND</a></li>
+</ul>
+</li>
+<li><a href="#6-sound">6. Sound</a></li>
+<li><a href="#7-hardware-gpio-pwm-adc-i2c-spi-com1">7. Hardware: GPIO, PWM, ADC, I2C, SPI, COM1</a><ul>
+<li><a href="#pins">Pins</a></li>
+<li><a href="#i2c-and-spi">I2C and SPI</a></li>
+<li><a href="#serial-port-com1">Serial port (COM1)</a></li>
+</ul>
+</li>
+<li><a href="#8-memory">8. Memory</a></li>
+<li><a href="#9-errors">9. Errors</a></li>
+<li><a href="#10-not-in-this-build">10. Not in this build</a></li>
+<li><a href="#11-limits">11. Limits</a></li>
+<li><a href="#12-example-programs">12. Example programs</a></li>
+</ul>
+</div>
+</div>
+<p>Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 board, used from
+a serial terminal. It keeps its programs and data files on a FAT disk in the
+board's own flash, swaps files with the PC by XMODEM, plays tones on a
+speaker pin, and drives the chip's GPIO, PWM, ADC, I2C, SPI and a second
+UART. It needs no HDMI, no keyboard and no USB drive: just the board and a
+USB cable to the PC, where it appears as a serial port.</p>
+<p>It is the BASIC of the Pico 2 mini OS, built on its own. The features that
+need a screen of their own (graphics, sprites, pictures, fonts, the mouse,
+MOD music) aren't in this build; section 10 lists them.</p>
+<h2 id="1-getting-started">1. Getting started</h2>
+<h3 id="boards">Boards</h3>
+<table>
+<thead>
+<tr>
+<th>Board</th>
+<th>Chip</th>
+<th>Flash disk</th>
+<th>Memory for BASIC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Raspberry Pi Pico 2</td>
+<td>RP2350A, GPIO 0-29</td>
+<td>about 3 MB</td>
+<td>about 450 KB (SRAM)</td>
+</tr>
+<tr>
+<td>Pimoroni Pico Plus 2</td>
+<td>RP2350B, GPIO 0-47</td>
+<td>about 15 MB</td>
+<td>about 8.4 MB (8 MB PSRAM + SRAM)</td>
+</tr>
+</tbody>
+</table>
+<p>The two boards need different builds (<code>build/pico_basic.uf2</code> for the Pico 2,
+<code>build-plus2/pico_basic.uf2</code> for the Pico Plus 2; see the README).</p>
+<h3 id="loading-it-onto-the-board">Loading it onto the board</h3>
+<ul>
+<li><strong>BOOTSEL:</strong> hold the BOOTSEL button while plugging the board into USB,
+  then copy the <code>.uf2</code> file to the drive that appears. The board restarts
+  into BASIC, and the same USB port becomes its console.</li>
+<li><strong>picotool:</strong> while BASIC runs, <code>picotool load -f build/pico_basic.uf2</code>
+  (or <code>picotool reboot -f -u</code>, to get the BOOTSEL drive) reboots it over its
+  USB console port: no button needed.</li>
+<li><strong>Debug Probe (SWD):</strong> with Raspberry Pi's OpenOCD:<pre><code>OCD=$(ls -d ~/.pico-sdk/openocd/*/ | tail -1)
+"$OCD/openocd" -s "$OCD/scripts" -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
+    -c "adapter speed 5000" -c "program build-plus2/pico_basic.elf verify reset exit"
+</code></pre>
+</li>
+</ul>
+<p>Loading a new BASIC keeps the files on the flash disk (it lives above the
+program). Loading some other program that is bigger than 1 MB, or that uses
+the flash for itself, overwrites it.</p>
+<h3 id="connecting">Connecting</h3>
+<p>The console is the board's own <strong>USB port</strong>: connect it to the PC with a
+data USB cable (a charge-only cable or a power supply won't do). It appears
+as a USB serial port: <code>/dev/ttyACM0</code> (or the next free number, <code>ttyACM1</code>
+when a Debug Probe is plugged in too) on Linux, a <code>COM</code> port on Windows,
+<code>/dev/cu.usbmodem...</code> on a Mac. On Linux, <code>ls -l /dev/serial/by-id/</code> shows
+it as <code>usb-Raspberry_Pi_Pico_...</code>.</p>
+<p>The only other wiring is optional:</p>
+<table>
+<thead>
+<tr>
+<th>Board pin</th>
+<th>Connect to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP15 (pin 20)</td>
+<td>a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY</td>
+</tr>
+<tr>
+<td>SWD (the debug pins)</td>
+<td>a Raspberry Pi Debug Probe, for loading programs with OpenOCD (its UART isn't used)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3.3 V levels only</strong> on every pin: never connect RS-232 or 5 V signals
+straight to them.</p>
+<h3 id="the-terminal">The terminal</h3>
+<p>Any terminal program: the speed setting doesn't matter on a USB serial
+port (115200 8N1 is fine). Use ANSI or VT100, with the <strong>UTF-8</strong> character
+set, and make the window at least <strong>80 columns by 30 rows</strong> (BASIC's screen;
+LOCATE takes rows 1-30). For example:</p>
+<pre><code>picocom /dev/ttyACM1
+minicom -D /dev/ttyACM1
+</code></pre>
+<p>On Windows, PuTTY or Tera Term on the board's COM port. gtkterm and screen
+work too, but can't send files by XMODEM (section 5). On Linux your user
+needs to be in the <code>dialout</code> group to open the port.</p>
+<p>When the board starts it shows:</p>
+<pre><code>Pico BASIC 0.1 for the RP2350 (pimoroni_pico_plus2_rp2350)
+PSRAM: 8 MB
+Flash disk: 15336 KB, 15332 KB free
+Pico BASIC (GW-BASIC style). SYSTEM starts it afresh.
+8825424 Bytes free
+Ok
+</code></pre>
+<p>BASIC waits up to 3 seconds at start-up for a terminal; a terminal that
+connects later (or reconnects) gets the first three lines again and an <code>Ok</code>.
+The very first start-up formats the flash disk (a second or two).</p>
+<h3 id="first-program">First program</h3>
+<p>Lines that start with a number are stored as the program; anything else
+runs straight away:</p>
+<pre><code>10 FOR I = 1 TO 3
+20   PRINT "HELLO"; I
+30 NEXT
+RUN
+SAVE "HELLO"
+</code></pre>
+<ul>
+<li>Typing a line number alone deletes that line; retyping one replaces it.</li>
+<li><strong>Ctrl-C</strong> stops a running program with <code>Break in &lt;line&gt;</code>; <code>CONT</code> carries
+  on from there.</li>
+<li><code>SYSTEM</code> (or <code>BYE</code>) clears everything and starts BASIC afresh, as after a
+  reset (files on the disk stay).</li>
+</ul>
+<h3 id="editing-a-line">Editing a line</h3>
+<p>At the <code>Ok</code> prompt and in <code>INPUT</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Left, Right, Home, End</td>
+<td>move along the line</td>
+</tr>
+<tr>
+<td>Backspace, Delete</td>
+<td>delete before / at the cursor</td>
+</tr>
+<tr>
+<td>Insert</td>
+<td>switches between inserting and overwriting</td>
+</tr>
+<tr>
+<td>Esc</td>
+<td>clears the line</td>
+</tr>
+<tr>
+<td>Up, Down</td>
+<td>(at <code>Ok</code>) bring back the last 8 lines typed</td>
+</tr>
+<tr>
+<td>F1-F10</td>
+<td>type their soft-key text (<code>KEY LIST</code> shows it: F1 <code>LIST</code>, F2 <code>RUN</code> and Enter, ... as in GW-BASIC)</td>
+</tr>
+<tr>
+<td>Ctrl-C</td>
+<td>abandons the line</td>
+</tr>
+</tbody>
+</table>
+<p><code>EDIT n</code> (or <code>EDIT .</code>, the last line typed or the one that failed) puts a
+program line on the input line to change; Enter stores it. A long line runs
+on over several rows. Pasting a whole listing into the terminal at the <code>Ok</code>
+prompt enters it line by line.</p>
+<h2 id="2-program-and-direct-commands">2. Program and direct commands</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RUN</code></td>
+<td>Runs the program from the start (clears variables first).</td>
+</tr>
+<tr>
+<td><code>RUN line</code></td>
+<td>Runs from that line.</td>
+</tr>
+<tr>
+<td><code>RUN "file"</code></td>
+<td>Loads <code>file</code> and runs it.</td>
+</tr>
+<tr>
+<td><code>LIST [range]</code></td>
+<td>Lists the program, pausing every 28 lines (any key goes on, Q stops). A range is <code>n</code>, <code>n-</code>, <code>-n</code> or <code>n-m</code>.</td>
+</tr>
+<tr>
+<td><code>LLIST [range]</code></td>
+<td>Same as LIST (there's no printer).</td>
+</tr>
+<tr>
+<td><code>NEW</code></td>
+<td>Deletes the program and its variables.</td>
+</tr>
+<tr>
+<td><code>CLEAR</code></td>
+<td>Clears variables and closes files (any arguments are ignored).</td>
+</tr>
+<tr>
+<td><code>LOAD "file"[,R]</code></td>
+<td>Loads a program, and with <code>,R</code> runs it. <code>.BAS</code> is added if the name has no extension. Reads plain text and GW-BASIC tokenised files.</td>
+</tr>
+<tr>
+<td><code>SAVE "file"[,A]</code></td>
+<td>Saves as plain text (<code>,A</code> is accepted; text is the only format). <code>.BAS</code> is added if the name has no extension.</td>
+</tr>
+<tr>
+<td><code>MERGE "file"</code></td>
+<td>Adds the lines of a plain-text program to the one in memory (lines with the same number are replaced).</td>
+</tr>
+<tr>
+<td><code>CHAIN [MERGE] "file"[, [line][, ALL][, DELETE range]]</code></td>
+<td>Runs another program from a program, keeping open files. Only the variables named in <code>COMMON</code> are passed on, or all of them with <code>ALL</code>. <code>CHAIN MERGE</code> adds the file's lines (after deleting <code>range</code>) and keeps all variables.</td>
+</tr>
+<tr>
+<td><code>COMMON var[, var...]</code></td>
+<td>Names the variables CHAIN passes on (arrays as <code>A()</code>).</td>
+</tr>
+<tr>
+<td><code>FILES ["pattern"]</code></td>
+<td>Lists the files in the current folder (<code>FILES "*.BAS"</code>), then the disk's free space: <code>15331328 Bytes free</code>.</td>
+</tr>
+<tr>
+<td><code>KILL "file"</code></td>
+<td>Deletes a file.</td>
+</tr>
+<tr>
+<td><code>NAME "old" AS "new"</code></td>
+<td>Renames a file.</td>
+</tr>
+<tr>
+<td><code>DELETE range</code></td>
+<td>Deletes program lines.</td>
+</tr>
+<tr>
+<td><code>RENUM [new][,[old][,step]]</code></td>
+<td>Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RUN targets with them.</td>
+</tr>
+<tr>
+<td><code>AUTO [start][,step]</code></td>
+<td>Numbers new lines for you (default 10,10). A <code>*</code> after the number means that line exists: Enter keeps it. An empty line where none exists, or Ctrl-C, stops.</td>
+</tr>
+<tr>
+<td><code>EDIT n</code> / <code>EDIT .</code></td>
+<td>Puts line <code>n</code> on the input line to edit.</td>
+</tr>
+<tr>
+<td><code>CONT</code></td>
+<td>Continues after Ctrl-C or STOP.</td>
+</tr>
+<tr>
+<td><code>TRON</code> / <code>TROFF</code></td>
+<td>Turns line-number tracing on/off: each line's number is printed in brackets as it runs.</td>
+</tr>
+<tr>
+<td><code>SYSTEM</code> / <code>BYE</code></td>
+<td>Starts BASIC afresh.</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<pre><code>LOAD "PRIMES": LIST 10-50
+RENUM 100, , 10
+SAVE "PRIMES2"
+</code></pre>
+<h2 id="3-language">3. Language</h2>
+<h3 id="numbers-strings-and-variables">Numbers, strings and variables</h3>
+<ul>
+<li><strong>Single precision</strong> (<code>!</code>, and names without a type) keep 7 digits, as in
+  GW-BASIC: a value stored in one is rounded to single precision and prints
+  with up to 7 digits.</li>
+<li><strong>Double precision</strong> (<code>#</code>) keep about 15 digits (printed with up to 9);
+  calculations are always done in double precision.</li>
+<li><strong>Integers</strong> (<code>%</code>) hold whole numbers from -32768 to 32767: a value stored
+  in one is rounded (2.5 becomes 3), and one out of range gives Overflow.</li>
+<li><strong>Constants:</strong> <code>1.5</code>, <code>1E6</code>, <code>3#</code>, <code>5%</code>, hex <code>&amp;HFF</code>, octal <code>&amp;O17</code>.</li>
+<li><strong>Strings</strong> (<code>$</code>) are up to 255 characters and may hold any byte,
+  including CHR$(0).</li>
+<li><strong>Names</strong> are up to 40 characters: letters, digits and <code>.</code>, starting with
+  a letter, with an optional type character. <code>A$</code>, <code>A%</code>, <code>A!</code> and <code>A#</code> are
+  four different variables, and <code>A</code> is <code>A!</code> unless <code>DEFINT</code>/<code>DEFSNG</code>/
+  <code>DEFDBL</code>/<code>DEFSTR</code> say otherwise (after <code>DEFINT A-Z</code>, <code>A</code> is <code>A%</code>).</li>
+<li>An array and a plain variable may share a name: <code>A</code> and <code>A(3)</code> are
+  separate.</li>
+<li>Keywords are recognised without spaces (GW-BASIC style), so a variable
+  name must not start with a keyword: <code>PRINTER</code> reads as <code>PRINT ER</code>.</li>
+</ul>
+<h3 id="arrays">Arrays</h3>
+<ul>
+<li><code>DIM A(20), B$(5,5)</code>: indices start at 0; up to 8 dimensions.</li>
+<li>An array used without DIM gets 0-10 in each dimension.</li>
+<li><code>OPTION BASE 1</code> (before any array is used) makes subscripts start at 1.</li>
+<li><code>ERASE A, B$</code> deletes arrays, so they can be dimensioned again.</li>
+</ul>
+<h3 id="operators-highest-priority-first">Operators, highest priority first</h3>
+<table>
+<thead>
+<tr>
+<th>Operators</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>^</code></td>
+<td>power</td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>negation</td>
+</tr>
+<tr>
+<td><code>*</code> <code>/</code></td>
+<td>multiply, divide</td>
+</tr>
+<tr>
+<td><code>\</code></td>
+<td>integer division</td>
+</tr>
+<tr>
+<td><code>MOD</code></td>
+<td>remainder</td>
+</tr>
+<tr>
+<td><code>+</code> <code>-</code></td>
+<td>add, subtract (<code>+</code> also joins strings)</td>
+</tr>
+<tr>
+<td><code>=</code> <code>&lt;&gt;</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td>
+<td>comparisons, giving -1 for true and 0 for false (strings compare too)</td>
+</tr>
+<tr>
+<td><code>NOT</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>AND</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>OR</code> <code>XOR</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>EQV</code> <code>IMP</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The logical operators work bit by bit on integers, as in GW-BASIC.</p>
+<h3 id="flow-of-control">Flow of control</h3>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GOTO line</code></td>
+<td><code>GOTO 100</code></td>
+</tr>
+<tr>
+<td><code>GOSUB line</code> ... <code>RETURN</code></td>
+<td>RETURN ends the FOR and WHILE loops the subroutine started.</td>
+</tr>
+<tr>
+<td><code>ON n GOTO l1, l2, ...</code> / <code>ON n GOSUB ...</code></td>
+<td>Goes to the n-th line; past the end, carries on.</td>
+</tr>
+<tr>
+<td><code>IF cond THEN statements [ELSE statements]</code></td>
+<td><code>THEN 100</code> and <code>ELSE 200</code> jump to lines; <code>IF X GOTO 100</code> works too. <code>IF A &gt; 0 THEN PRINT "+" ELSE PRINT "-"</code></td>
+</tr>
+<tr>
+<td><code>FOR v = a TO b [STEP s]</code> ... <code>NEXT [v[, v...]]</code></td>
+<td><code>FOR I = 10 TO 1 STEP -1: PRINT I: NEXT</code></td>
+</tr>
+<tr>
+<td><code>EXIT FOR</code></td>
+<td>Leaves the innermost FOR loop (from QuickBASIC).</td>
+</tr>
+<tr>
+<td><code>WHILE cond</code> ... <code>WEND</code></td>
+<td><code>WHILE INKEY$ = "": WEND</code> waits for a key.</td>
+</tr>
+<tr>
+<td><code>END</code></td>
+<td>Ends the program (closes files).</td>
+</tr>
+<tr>
+<td><code>STOP</code></td>
+<td>Stops with <code>Break in &lt;line&gt;</code>; CONT goes on.</td>
+</tr>
+<tr>
+<td><code>PAUSE ms</code></td>
+<td>Waits (an extension); Ctrl-C still works. <code>PAUSE 500</code></td>
+</tr>
+<tr>
+<td><code>REM text</code> or <code>' text</code></td>
+<td>A remark.</td>
+</tr>
+</tbody>
+</table>
+<p>Several statements can share a line, separated by <code>:</code>.</p>
+<h3 id="variables-and-data">Variables and data</h3>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LET var = expr</code></td>
+<td><code>LET</code> is optional: <code>X = 5</code>.</td>
+</tr>
+<tr>
+<td><code>DIM</code>, <code>ERASE</code>, <code>OPTION BASE</code></td>
+<td>See Arrays.</td>
+</tr>
+<tr>
+<td><code>DEFINT</code>, <code>DEFSNG</code>, <code>DEFDBL</code>, <code>DEFSTR letters</code></td>
+<td><code>DEFINT A-Z</code>, <code>DEFSTR S, T</code>. RUN, NEW and CLEAR reset them.</td>
+</tr>
+<tr>
+<td><code>DATA items</code>, <code>READ var[, var...]</code>, <code>RESTORE [line]</code></td>
+<td><code>10 DATA 3, "RED", 2.5</code> / <code>20 READ N, C$, X</code></td>
+</tr>
+<tr>
+<td><code>SWAP a, b</code></td>
+<td>Exchanges two variables of the same type.</td>
+</tr>
+<tr>
+<td><code>DEF FNname[(args)] = expr</code></td>
+<td><code>DEF FNSQ(X) = X * X</code>, then <code>PRINT FNSQ(3)</code>.</td>
+</tr>
+<tr>
+<td><code>MID$(v$, start[, n]) = x$</code></td>
+<td>Replaces characters of <code>v$</code> in place (its length never changes).</td>
+</tr>
+<tr>
+<td><code>RANDOMIZE [seed]</code></td>
+<td>Without a seed it uses the clock.</td>
+</tr>
+<tr>
+<td><code>DATE$ = "mm-dd-yyyy"</code>, <code>TIME$ = "hh:mm:ss"</code></td>
+<td>Sets the clock (<code>-</code> or <code>/</code> and two-digit years are accepted).</td>
+</tr>
+<tr>
+<td><code>ENVIRON "NAME=value"</code></td>
+<td>Sets a string <code>ENVIRON$</code> returns (there's no DOS environment).</td>
+</tr>
+</tbody>
+</table>
+<p>The board has no battery-backed clock: at power-up the clock starts at
+01-01-1970 00:00:00 and counts from there, until <code>DATE$</code> and <code>TIME$</code> set it.
+Times are UTC. Files saved before it is set are dated 1 January 2026.</p>
+<h3 id="text-output-and-input">Text output and input</h3>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PRINT items</code> or <code>? items</code></td>
+<td><code>;</code> keeps the cursor on the line, <code>,</code> jumps to the next 14-column zone; <code>TAB(n)</code> and <code>SPC(n)</code>. <code>PRINT "X ="; X, "Y ="; Y</code></td>
+</tr>
+<tr>
+<td><code>PRINT USING fmt$; values</code></td>
+<td>Formatted numbers and strings (below). <code>PRINT USING "##.##"; 3.14159</code></td>
+</tr>
+<tr>
+<td><code>LPRINT</code>, <code>LPRINT USING</code></td>
+<td>Same as PRINT (there's no printer).</td>
+</tr>
+<tr>
+<td><code>WRITE items</code></td>
+<td>Items separated by commas, strings in quotes.</td>
+</tr>
+<tr>
+<td><code>INPUT ["prompt";] var[, var...]</code></td>
+<td>With <code>,</code> instead of <code>;</code> after the prompt, no <code>?</code> is shown. Asks again if the input doesn't fit.</td>
+</tr>
+<tr>
+<td><code>LINE INPUT ["prompt";] var$</code></td>
+<td>Reads a whole line, commas included.</td>
+</tr>
+<tr>
+<td><code>CLS</code></td>
+<td>Clears the screen.</td>
+</tr>
+<tr>
+<td><code>LOCATE [row][, col][, cursor]</code></td>
+<td>Rows 1-30, columns 1-80; cursor 0 hides it, 1 shows it. <code>LOCATE 10, 30: PRINT "HERE"</code></td>
+</tr>
+<tr>
+<td><code>COLOR [fg][, bg]</code></td>
+<td>PC colours 0-15 (fg 16-31 counts as 0-15), sent as ANSI colours; 7 (fg) and 0 (bg) give the terminal's own. <code>COLOR 14, 1</code></td>
+</tr>
+<tr>
+<td><code>VIEW PRINT [top TO bottom]</code></td>
+<td>Text scrolls only within rows top-bottom; <code>VIEW PRINT</code> alone undoes it.</td>
+</tr>
+<tr>
+<td><code>KEY n, x$</code>, <code>KEY LIST</code>, <code>KEY ON</code> / <code>OFF</code></td>
+<td>Sets or lists the soft keys F1-F10. <code>KEY ON</code> shows their labels on row 25, as on a PC. <code>KEY 5, "FILES" + CHR$(13)</code></td>
+</tr>
+<tr>
+<td><code>WIDTH n</code></td>
+<td>Accepted; the screen stays 80 columns.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Characters:</strong> BASIC uses the IBM PC character set (code page 437), and
+sends each character to the terminal as its Unicode equivalent in UTF-8:
+CHR$(219) is a solid block, CHR$(176)-CHR$(178) are shades, CHR$(196) and
+CHR$(179) are box lines, and control codes show their pictures (CHR$(1) is a
+smiley, CHR$(3) a heart), except 7 (beep), 8, 9, 10, 12 (clear screen), 13
+and 27. 11 moves the cursor home and 28-31 move it right, left, up and down.
+Text you type is stored as the bytes the terminal sends (UTF-8 for accented
+letters).</p>
+<h3 id="print-using">PRINT USING</h3>
+<p><code>PRINT USING fmt$; a, b, ...</code> prints the values in the fields of <code>fmt$</code>
+(used again from the start if there are more values; other characters are
+printed as they are):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#</code></td>
+<td>A digit position. <code>##.##</code> prints <code>3.5</code> as <code>3.50</code>.</td>
+</tr>
+<tr>
+<td><code>.</code></td>
+<td>The decimal point.</td>
+</tr>
+<tr>
+<td><code>,</code> before the point</td>
+<td>Commas between thousands (it also counts as a digit).</td>
+</tr>
+<tr>
+<td><code>+</code> first or last</td>
+<td>Always show the sign there.</td>
+</tr>
+<tr>
+<td><code>-</code> last</td>
+<td>A minus after negative numbers.</td>
+</tr>
+<tr>
+<td><code>**</code></td>
+<td>Fill the space before the number with <code>*</code>.</td>
+</tr>
+<tr>
+<td><code>$$</code></td>
+<td>A <code>$</code> just before the number. <code>**$</code> does both.</td>
+</tr>
+<tr>
+<td><code>^^^^</code> (or <code>^^^^^</code>)</td>
+<td>Exponent form: <code>##.##^^^^</code> prints <code>2.35E+02</code>.</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>The first character of a string.</td>
+</tr>
+<tr>
+<td><code>\  \</code></td>
+<td>The first n + 2 characters of a string (n spaces between).</td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td>The whole string.</td>
+</tr>
+<tr>
+<td><code>_</code></td>
+<td>Prints the next character as it is.</td>
+</tr>
+</tbody>
+</table>
+<p>A number too big for its field is printed in full after a <code>%</code>. Also
+<code>PRINT #n, USING</code> and after other items: <code>PRINT "X ="; USING "##.#"; X</code>.</p>
+<h3 id="functions">Functions</h3>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Functions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maths</td>
+<td><code>ABS(x)</code> <code>INT(x)</code> (rounds down) <code>FIX(x)</code> (cuts off the fraction) <code>SGN(x)</code> <code>SQR(x)</code> <code>SIN(x)</code> <code>COS(x)</code> <code>TAN(x)</code> <code>ATN(x)</code> <code>EXP(x)</code> <code>LOG(x)</code> <code>CINT(x)</code> <code>CSNG(x)</code> <code>CDBL(x)</code></td>
+</tr>
+<tr>
+<td>Random</td>
+<td><code>RND</code> or <code>RND(1)</code>: the next number (0 to 1); <code>RND(0)</code> repeats the last one; <code>RND(-n)</code> reseeds. RUN always starts the same sequence: use <code>RANDOMIZE</code> for a different one.</td>
+</tr>
+<tr>
+<td>Strings</td>
+<td><code>LEN(s$)</code> <code>LEFT$(s$,n)</code> <code>RIGHT$(s$,n)</code> <code>MID$(s$,start[,n])</code> <code>CHR$(n)</code> <code>ASC(s$)</code> <code>STR$(x)</code> <code>VAL(s$)</code> <code>INSTR([start,] s$, find$)</code> <code>STRING$(n, c or c$)</code> <code>SPACE$(n)</code> <code>HEX$(n)</code> <code>OCT$(n)</code> <code>UCASE$(s$)</code> <code>LCASE$(s$)</code></td>
+</tr>
+<tr>
+<td>Keyboard</td>
+<td><code>INKEY$</code>: the key waiting, or "". Cursor and function keys give CHR$(0) and the PC scan code: Up CHR$(0)+CHR$(72), Down 80, Left 75, Right 77, F1-F10 59-68, Home 71, End 79, PgUp 73, PgDn 81, Ins 82, Del 83. <code>INPUT$(n)</code>: reads n keys without showing them.</td>
+</tr>
+<tr>
+<td>Screen</td>
+<td><code>POS(0)</code> (cursor column), <code>CSRLIN</code> (cursor row)</td>
+</tr>
+<tr>
+<td>System</td>
+<td><code>TIMER</code> (seconds since start-up), <code>FRE(0)</code> (free memory), <code>DATE$</code>, <code>TIME$</code>, <code>ENVIRON$("name")</code> or <code>ENVIRON$(n)</code>, <code>PEEK(offset)</code></td>
+</tr>
+<tr>
+<td>Errors</td>
+<td><code>ERR</code>, <code>ERL</code> (see Error trapping), <code>ERDEV</code>, <code>ERDEV$</code>, <code>EXTERR(n)</code> (always 0 / "")</td>
+</tr>
+<tr>
+<td>Sound</td>
+<td><code>PLAY(0)</code>: notes still waiting in the background queue</td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>EOF(n)</code> <code>LOF(n)</code> <code>LOC(n)</code> <code>INPUT$(count, [#]n)</code> <code>FREEFILE</code> <code>DIR$(pattern$[, n])</code> <code>MKI$</code> <code>MKS$</code> <code>MKD$</code> <code>CVI</code> <code>CVS</code> <code>CVD</code> (section 4)</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td><code>PIN(pin)</code>, <code>ADC(pin)</code>, <code>TEMP()</code>, <code>I2CREAD(...)</code>, <code>I2CREAD$(...)</code>, <code>SPI$(...)</code> (section 6)</td>
+</tr>
+<tr>
+<td>Old or PC-only</td>
+<td><code>LPOS(0)</code>, <code>STICK(n)</code>, <code>STRIG(n)</code>, <code>PEN(n)</code> give 0; <code>INP</code>, <code>USR</code>, <code>VARPTR</code>, <code>VARPTR$</code>, <code>IOCTL$</code> are an Illegal function call</td>
+</tr>
+</tbody>
+</table>
+<p>Examples:</p>
+<pre><code>PRINT INT(-2.5), FIX(-2.5), CINT(2.5)        ' -3  -2  3
+PRINT INSTR("HELLO", "L"), MID$("HELLO", 2, 3) '  3  ELL
+PRINT HEX$(255); " "; STRING$(5, "*")        ' FF *****
+K$ = INKEY$: IF K$ = CHR$(0) + CHR$(72) THEN PRINT "UP"
+</code></pre>
+<h3 id="error-trapping">Error trapping</h3>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ON ERROR GOTO line</code></td>
+<td>Sends errors in a running program to that line; <code>ON ERROR GOTO 0</code> turns it off (inside the handler, it reports the error and stops).</td>
+</tr>
+<tr>
+<td><code>RESUME</code>, <code>RESUME NEXT</code>, <code>RESUME line</code></td>
+<td>Ends the handler: retries the statement that failed, goes on after it, or goes to the line.</td>
+</tr>
+<tr>
+<td><code>ERROR n</code></td>
+<td>Raises error <code>n</code> (1-255): a test, or a program's own error codes.</td>
+</tr>
+</tbody>
+</table>
+<pre><code>10 ON ERROR GOTO 100
+20 OPEN "DATA.TXT" FOR INPUT AS #1
+30 PRINT "opened": END
+100 IF ERR = 53 THEN PRINT "no file": RESUME 30
+110 ON ERROR GOTO 0
+</code></pre>
+<p>A program that reaches its end while handling an error stops with
+<code>No RESUME</code>. Ctrl-C can't be trapped.</p>
+<h3 id="events">Events</h3>
+<p><code>ON KEY</code>, <code>ON TIMER</code>, <code>ON PLAY</code> and <code>ON COM</code> jump to a subroutine when
+something happens; they are checked between statements. <code>ON</code>, <code>OFF</code> and
+<code>STOP</code> switch an event: one that happens while it is STOPped (or while its
+own subroutine runs) is remembered and handled once it is back ON. RETURN
+from the subroutine continues the program where it was.</p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ON KEY(n) GOSUB line</code>, <code>KEY(n) ON</code> / <code>OFF</code> / <code>STOP</code></td>
+<td>Key <code>n</code> is pressed: 1-10 are F1-F10, 11 Up, 12 Left, 13 Right, 14 Down.</td>
+</tr>
+<tr>
+<td><code>ON TIMER(s) GOSUB line</code>, <code>TIMER ON</code> / <code>OFF</code> / <code>STOP</code></td>
+<td>Every <code>s</code> seconds (1-86400).</td>
+</tr>
+<tr>
+<td><code>ON PLAY(n) GOSUB line</code>, <code>PLAY ON</code> / <code>OFF</code> / <code>STOP</code></td>
+<td>The background music queue drops below <code>n</code> notes.</td>
+</tr>
+<tr>
+<td><code>ON COM(1) GOSUB line</code>, <code>COM(1) ON</code> / <code>OFF</code> / <code>STOP</code></td>
+<td>Something arrives on the open COM1.</td>
+</tr>
+</tbody>
+</table>
+<pre><code>10 ON TIMER(1) GOSUB 100: TIMER ON
+20 ON KEY(1) GOSUB 200: KEY(1) ON
+30 GOTO 30
+100 PRINT TIME$: RETURN
+200 PRINT "F1 pressed": RETURN
+</code></pre>
+<h3 id="memory-peek-and-poke">Memory: PEEK and POKE</h3>
+<p>There's no PC memory. <code>DEF SEG = segment</code> with <code>PEEK(offset)</code>,
+<code>POKE offset, byte</code>, <code>BSAVE "file", offset, length</code> and
+<code>BLOAD "file"[, offset]</code> reach two emulated places; anything else is an
+Illegal function call:</p>
+<ul>
+<li><code>DEF SEG = &amp;HB800</code> (or <code>&amp;HB000</code>): the text screen, two bytes a character.
+  A terminal can't be read back, so PEEK gives spaces (32) and colour 7, and
+  POKE does nothing.</li>
+<li><code>DEF SEG = 0</code> (or <code>&amp;H40</code>): BIOS bytes: video mode (&amp;H449, 3), columns
+  (&amp;H44A, 80), rows - 1 (&amp;H484, 29) and the timer tick count (&amp;H46C-&amp;H46E,
+  18.2 a second, from midnight). The rest read 0, and POKEs there do nothing.</li>
+</ul>
+<p><code>SCREEN(row, col[, 1])</code> likewise gives 32 (and with 1, colour 7).</p>
+<h2 id="4-the-flash-disk-and-data-files">4. The flash disk and data files</h2>
+<h3 id="the-disk">The disk</h3>
+<p>The flash disk is a FAT file system in the board's flash, after the
+program: about 3 MB on a Pico 2 and 15 MB on a Pico Plus 2. It is formatted
+(labelled PICOBASIC) the first time the board starts, and keeps its files
+when the board is switched off or BASIC is loaded again.</p>
+<ul>
+<li><code>FILES</code> lists it and ends with the free space; <code>FRE(0)</code> is memory, not
+  disk.</li>
+<li>Names are FAT long names (case is kept, but matching ignores it). Folders
+  work: <code>MKDIR "GAMES"</code>, <code>CHDIR "GAMES"</code>, <code>CHDIR ".."</code>, <code>RMDIR "GAMES"</code>, and
+  paths such as <code>LOAD "GAMES/GUESS"</code>.</li>
+<li><strong>Writes are kept in a 4 KB cache</strong> and go to the flash when a file is
+  closed (or the cache moves on to another part of the disk). SAVE closes
+  its file at once; a program's own files are closed by CLOSE, END, RUN,
+  NEW, an error that stops it, and so on. <strong>CLOSE files before switching
+  off</strong>, or the last few KB written can be lost.</li>
+<li>The flash wears out after about 100,000 writes to the same place: plenty
+  for saving programs and logging now and then, but don't rewrite a file
+  many times a second for hours.</li>
+<li>While the flash is being written (a few tens of milliseconds for each
+  4 KB) the board does nothing else; background PLAY notes may stretch.</li>
+</ul>
+<h3 id="files-from-programs">Files from programs</h3>
+<p>Up to 4 files can be open at once, numbered #1 to #4. File names are
+relative to the current folder; no extension is added. Each open file uses
+about 0.8 KB of memory (plus its record buffer for random files).</p>
+<table>
+<thead>
+<tr>
+<th>Statement / function</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OPEN "file" FOR INPUT \| OUTPUT \| APPEND \| RANDOM AS [#]n [LEN=size]</code></td>
+<td>Opens a file. OUTPUT creates or empties it, APPEND adds to the end, RANDOM (also the default when FOR is left out) reads and writes fixed-size records (LEN 1-1024, default 128).</td>
+</tr>
+<tr>
+<td><code>OPEN "I" \| "O" \| "A" \| "R", [#]n, "file"[, size]</code></td>
+<td>The older short form.</td>
+</tr>
+<tr>
+<td><code>CLOSE [[#]n[, [#]n...]]</code>, <code>RESET</code></td>
+<td>Close the given files, or all of them.</td>
+</tr>
+<tr>
+<td><code>PRINT #n, items</code>, <code>PRINT #n, USING fmt$; items</code></td>
+<td>Like PRINT, into the file. Lines end in CR LF, with no 80-column wrap.</td>
+</tr>
+<tr>
+<td><code>WRITE #n, items</code></td>
+<td>Items separated by commas, strings in quotes, so INPUT # reads them back exactly.</td>
+</tr>
+<tr>
+<td><code>INPUT #n, var[, var...]</code></td>
+<td>Reads items: a quoted string, or text up to a comma or the end of the line (numbers also stop at a space).</td>
+</tr>
+<tr>
+<td><code>LINE INPUT #n, var$</code></td>
+<td>Reads a whole line.</td>
+</tr>
+<tr>
+<td><code>INPUT$(count, [#]n)</code></td>
+<td>Reads count characters.</td>
+</tr>
+<tr>
+<td><code>EOF(n)</code></td>
+<td>-1 when there is nothing more to read (for a random file: the last GET was past the end).</td>
+</tr>
+<tr>
+<td><code>LOF(n)</code></td>
+<td>The file's length in bytes.</td>
+</tr>
+<tr>
+<td><code>LOC(n)</code></td>
+<td>For a random file, the last record read or written; otherwise the position in 128-byte blocks.</td>
+</tr>
+<tr>
+<td><code>FREEFILE</code></td>
+<td>The lowest free file number.</td>
+</tr>
+<tr>
+<td><code>FIELD #n, width AS var$[, width AS var$...]</code></td>
+<td>Divides a random file's record buffer into string fields (at most 16, and no more than the record length).</td>
+</tr>
+<tr>
+<td><code>LSET var$ = s$</code> / <code>RSET var$ = s$</code></td>
+<td>Puts a string into a field, padded with spaces, aligned left or right. Use these, not LET, for field variables.</td>
+</tr>
+<tr>
+<td><code>PUT [#]n[, record]</code></td>
+<td>Writes the record buffer as record <code>record</code> (from 1; default: the one after the last).</td>
+</tr>
+<tr>
+<td><code>GET [#]n[, record]</code></td>
+<td>Reads a record into the buffer and its FIELD variables.</td>
+</tr>
+<tr>
+<td><code>MKI$(n)</code> / <code>CVI(s$)</code></td>
+<td>A whole number -32768 to 32767 as a 2-byte string (low byte first), and back.</td>
+</tr>
+<tr>
+<td><code>MKS$(x)</code> / <code>CVS(s$)</code></td>
+<td>A number as a 4-byte single-precision string, and back.</td>
+</tr>
+<tr>
+<td><code>MKD$(x)</code> / <code>CVD(s$)</code></td>
+<td>A number as an 8-byte double-precision string, and back.</td>
+</tr>
+<tr>
+<td><code>DIR$(pattern$[, n])</code></td>
+<td>The n-th name (1 first) matching the pattern, e.g. <code>DIR$("*.BAS", 2)</code>; "" after the last. For going through a folder's files.</td>
+</tr>
+</tbody>
+</table>
+<p>Files stay open across lines and statements until CLOSE. RUN, NEW, CLEAR,
+END, the program finishing, an error that stops the program, and SYSTEM
+close every file. Ctrl-C does not, so CONT can carry on.</p>
+<pre><code>10 OPEN "SCORES.TXT" FOR OUTPUT AS #1
+20 WRITE #1, "Ann", 120
+30 CLOSE #1
+40 OPEN "SCORES.TXT" FOR INPUT AS #1
+50 WHILE NOT EOF(1): INPUT #1, N$, S: PRINT N$, S: WEND
+60 CLOSE #1
+</code></pre>
+<p>Random access (a 22-byte record: a 20-character name and a 2-byte number):</p>
+<pre><code>10 OPEN "PEOPLE.DAT" FOR RANDOM AS #1 LEN = 22
+20 FIELD #1, 20 AS NM$, 2 AS AGE$
+30 LSET NM$ = "Grace": LSET AGE$ = MKI$(85): PUT #1, 1
+40 GET #1, 1: PRINT NM$; CVI(AGE$)
+50 CLOSE #1
+</code></pre>
+<p>MKS$ and MKD$ use GW-BASIC's own number format (Microsoft Binary Format), so
+random files written by GW-BASIC on a PC read correctly here, and the other
+way round. CVI, CVS and CVD need at least 2, 4 and 8 bytes (otherwise
+Illegal function call).</p>
+<p>Differences from GW-BASIC:</p>
+<ul>
+<li>A file can be open for INPUT under several numbers, but not written while
+  it is open elsewhere.</li>
+<li>Ctrl-Z (byte 26) ends a file for INPUT # and INPUT$, as in GW-BASIC, so
+  binary files are best read with random access (GET).</li>
+</ul>
+<h2 id="5-moving-files-to-and-from-the-pc">5. Moving files to and from the PC</h2>
+<h3 id="pasting-and-listing">Pasting and listing</h3>
+<p>The simplest way to bring a program over: type <code>NEW</code>, paste its listing
+into the terminal at the <code>Ok</code> prompt (the numbered lines go into the
+program), then <code>SAVE "NAME"</code>. To take one back: <code>LOAD</code> it, <code>LIST</code> it, and
+copy the text from the terminal window. Many terminals can also log what is
+shown to a file.</p>
+<p>If pasted lines get lost, slow the terminal's paste down (a few
+milliseconds per line): BASIC reads keys between lines, and the USB port
+holds only a few hundred characters meanwhile.</p>
+<h3 id="xmodem-xrecv-and-xsend">XMODEM: XRECV and XSEND</h3>
+<p>These copy any file, text or binary, between the flash disk and the PC over
+the terminal line:</p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>XRECV "file"</code></td>
+<td>Receives a file from the terminal's XMODEM send and saves it as <code>file</code>, replacing a file of that name. It asks for CRC-16, falling back to checksums for an old sender, and takes 128- or 1K-byte blocks. XMODEM pads the last block with ^Z (byte 26) characters; they are taken off the end. If the transfer fails, the partial file is deleted (a file that was already there is kept if nothing arrived).</td>
+</tr>
+<tr>
+<td><code>XSEND "file"</code></td>
+<td>Sends the file to the terminal's XMODEM receive, in 1K blocks with CRC-16, or 128-byte blocks with a checksum if the receiver asks for those.</td>
+</tr>
+</tbody>
+</table>
+<p>Type the command; BASIC says <code>Start the XMODEM send on the terminal now.</code>
+(or receive), and you then have a minute to start the transfer on the PC.
+XMODEM doesn't send the file's name, so give it on both ends. Pressing
+Ctrl-X a few times in the terminal cancels a transfer; a failed one gives
+<code>Device I/O error</code> after a line saying why. When it ends, BASIC prints e.g.
+<code>Received 1 file, 329 bytes.</code></p>
+<pre><code>XRECV "GAME.BAS"
+(send GAME.BAS from the terminal)
+LOAD "GAME"
+RUN
+</code></pre>
+<p>Starting the PC's side:</p>
+<ul>
+<li><strong>minicom:</strong> Ctrl-A S, choose <code>xmodem</code>, then the file, to send it to
+  XRECV. Ctrl-A R, <code>xmodem</code> and a name receives from XSEND. (minicom uses
+  lrzsz's <code>sx</code> and <code>rx</code>: <code>sudo apt install lrzsz</code>.)</li>
+<li><strong>picocom:</strong> start it with
+  <code>picocom --send-cmd "sx -vv" --receive-cmd "rx -vv" /dev/ttyACM1</code>,
+  then Ctrl-A Ctrl-S sends a file and Ctrl-A Ctrl-R receives one (type the
+  name to save it as).</li>
+<li><strong>Tera Term:</strong> File &gt; Transfer &gt; XMODEM &gt; Send... or Receive... (pick
+  CRC or 1K).</li>
+<li><strong>From a shell</strong>, with the terminal program closed (or disconnected) so
+  it doesn't take the bytes:<pre><code>stty -F /dev/ttyACM1 raw -echo
+sx GAME.BAS &lt; /dev/ttyACM1 &gt; /dev/ttyACM1      # to XRECV
+rx GAME.BAS &lt; /dev/ttyACM1 &gt; /dev/ttyACM1      # from XSEND
+</code></pre>
+</li>
+</ul>
+<p>(with the board's port in place of <code>/dev/ttyACM1</code>).</p>
+<p>The PC's receiver may keep XMODEM's ^Z padding (up to 1 KB of byte 26 at
+the end). lrzsz's <code>rx</code> does, unless run as <code>rx -a</code> for a text file (which
+also converts line ends). Because BASIC removes it, a binary file that
+really ends in ^Z bytes loses them on the way in.</p>
+<h2 id="6-sound">6. Sound</h2>
+<p>A square wave on <strong>GP15</strong> (another pin if BASIC was built with a different
+<code>SOUND_PIN</code>), for a piezo buzzer or a small speaker through a resistor.</p>
+<table>
+<thead>
+<tr>
+<th>Statement</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BEEP</code></td>
+<td>A short beep (800 Hz for a quarter of a second).</td>
+</tr>
+<tr>
+<td><code>SOUND freq, ticks</code></td>
+<td>A tone of freq Hz (37-32767; 32767 is silence) for <code>ticks</code> (18.2 make a second). After <code>PLAY "MB"</code> it goes to the background queue; ticks 0 stops the sound playing. <code>SOUND 440, 18</code></td>
+</tr>
+<tr>
+<td><code>PLAY "string"</code></td>
+<td>Music in GW-BASIC's music language (below). <code>PLAY "T160 O3 L8 CDEFGAB &gt; C"</code></td>
+</tr>
+<tr>
+<td><code>PLAY(0)</code></td>
+<td>Notes still waiting in the background queue.</td>
+</tr>
+</tbody>
+</table>
+<p>PLAY's commands:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>A</code>-<code>G</code> [<code>#</code>, <code>+</code> or <code>-</code>] [length] [<code>.</code>]</td>
+<td>A note (sharp or flat), optionally with its own length; each dot adds half again.</td>
+</tr>
+<tr>
+<td><code>N n</code></td>
+<td>Note number n (1-84; 0 is a rest).</td>
+</tr>
+<tr>
+<td><code>O n</code>, <code>&gt;</code>, <code>&lt;</code></td>
+<td>Octave 0-6 (default 4; octave 3 starts at middle C), up one, down one.</td>
+</tr>
+<tr>
+<td><code>L n</code></td>
+<td>Length for following notes: 1 whole, 4 quarter (default), up to 64.</td>
+</tr>
+<tr>
+<td><code>P n</code></td>
+<td>A pause, length as for L.</td>
+</tr>
+<tr>
+<td><code>T n</code></td>
+<td>Tempo, 32-255 quarter notes a minute (default 120).</td>
+</tr>
+<tr>
+<td><code>MN</code> <code>ML</code> <code>MS</code></td>
+<td>Normal (7/8 of each note sounds), legato (all), staccato (3/4).</td>
+</tr>
+<tr>
+<td><code>MF</code> <code>MB</code></td>
+<td>Foreground (PLAY waits until the music ends; the default) or background (up to 32 notes queue up and the program goes on).</td>
+</tr>
+<tr>
+<td><code>=variable;</code></td>
+<td>A number from a variable: <code>PLAY "O=OC;C"</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The settings last from one PLAY to the next; RUN resets them. <code>X</code>
+(substrings through VARPTR$) isn't supported. The tones are plain square
+waves of one voice, so a note waits for the one before it.</p>
+<h2 id="7-hardware-gpio-pwm-adc-i2c-spi-com1">7. Hardware: GPIO, PWM, ADC, I2C, SPI, COM1</h2>
+<h3 id="pins">Pins</h3>
+<p>Pins are given by their GP number; <code>LED</code> means the board's LED (GP25). The
+Pico 2 has GP0-29 (GP23-25 and GP29 aren't on its header: power control,
+VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
+<p>Pins BASIC itself uses are refused, e.g. <code>GP15 is used by the speaker
+(BEEP, SOUND, PLAY)</code> followed by <code>Illegal function call</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Pins</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP15</td>
+<td>the speaker</td>
+</tr>
+<tr>
+<td>GP47 (Pico Plus 2)</td>
+<td>the PSRAM</td>
+</tr>
+<tr>
+<td>COM1's, I2C's and SPI's pins</td>
+<td>while they are open</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Statement / function</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PINMODE pin, INPUT \| OUTPUT \| PULLUP \| PULLDOWN</code></td>
+<td>Sets a pin up (or modes 0-3). <code>PINMODE 16, PULLUP</code></td>
+</tr>
+<tr>
+<td><code>PIN pin, level</code></td>
+<td>Drives a pin 0 or 1, making it an output first if needed. <code>PIN LED, 1</code></td>
+</tr>
+<tr>
+<td><code>PIN(pin)</code></td>
+<td>Reads a pin, making an unused pin an input. <code>IF PIN(16) = 0 THEN PRINT "PRESSED"</code></td>
+</tr>
+<tr>
+<td><code>PWM pin, freq[, duty]</code></td>
+<td>PWM at 8 Hz-10 MHz with a duty of 0-100 % (default 50). <code>PWM pin, 0</code> stops it. <code>PWM 16, 1000, 25</code></td>
+</tr>
+<tr>
+<td><code>SERVO pin, angle</code></td>
+<td>A hobby servo, 0-180 degrees (0.5-2.5 ms pulses at 50 Hz). <code>SERVO 16, 90</code></td>
+</tr>
+<tr>
+<td><code>ADC(pin)</code></td>
+<td>An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico 2, GP40-46 on the Pico Plus 2. <code>V = ADC(26) * 3.3 / 4095</code></td>
+</tr>
+<tr>
+<td><code>TEMP()</code></td>
+<td>The chip's temperature in °C (uncalibrated: within a few degrees).</td>
+</tr>
+<tr>
+<td><code>PINS</code></td>
+<td>Lists every pin and what it is doing.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>PWM pins come in pairs that share one frequency (GP0/1, GP2/3 and so on);
+  changing one's frequency prints a warning naming its partner. The chip has
+  only 8 slices for GP0-31, so GP16-31 use the same ones as GP0-15: GP2 and
+  GP18 (and GP3 and GP19) give the very same signal, with no warning. The
+  speaker's slice (GP15) is shared with GP14, GP30 and GP31: PWM there and
+  sound interfere.</li>
+<li><code>RUN</code>, <code>NEW</code> and <code>SYSTEM</code> set every pin BASIC used back to an input and
+  stop PWM. <code>END</code>, errors and Ctrl-C leave pins as they are, so they can be
+  checked in direct mode.</li>
+<li><code>PIN</code>, <code>ADC</code> and <code>TEMP</code> followed by <code>(</code> are functions, so arrays can't use
+  those names.</li>
+</ul>
+<h3 id="i2c-and-spi">I2C and SPI</h3>
+<p>The chip's own I2C and SPI controllers, for sensors, displays, memory chips
+and the like. The pins choose the controller: I2C wants SDA on an even pin
+and SCL on the next one (I2C0 or I2C1 by the pin numbers); SPI wants SCK,
+MOSI and MISO from one group of four (MISO, CS, SCK, MOSI: GP8-11 is SPI1,
+GP16-19 SPI0 ...). RUN, NEW and SYSTEM close them.</p>
+<table>
+<thead>
+<tr>
+<th>Statement / function</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>I2C OPEN [sda, scl[, khz]]</code></td>
+<td>Starts I2C, by default on <strong>GP2 (SDA) and GP3 (SCL)</strong>, I2C1, at 100 kHz (10-1000). Turns on the pins' weak pull-ups; devices should have their own.</td>
+</tr>
+<tr>
+<td><code>I2C WRITE addr, item[, item...][, NOSTOP]</code></td>
+<td>Sends bytes to the device at <code>addr</code> (0-127): numbers 0-255 and strings (their bytes). With <code>NOSTOP</code> the bus is kept for a read that follows.</td>
+</tr>
+<tr>
+<td><code>I2CREAD$(addr, n[, reg])</code></td>
+<td>Reads <code>n</code> bytes (1-255); with <code>reg</code>, first writes that register number (without a stop).</td>
+</tr>
+<tr>
+<td><code>I2CREAD(addr[, reg])</code></td>
+<td>Reads one byte.</td>
+</tr>
+<tr>
+<td><code>I2C SCAN</code></td>
+<td>Prints the addresses that answer (8-119).</td>
+</tr>
+<tr>
+<td><code>I2C CLOSE</code></td>
+<td>Stops it and frees the pins.</td>
+</tr>
+<tr>
+<td><code>SPI OPEN [sck, mosi, miso[, khz[, mode]]]</code></td>
+<td>Starts SPI, by default on <strong>GP10 (SCK), GP11 (MOSI), GP8 (MISO)</strong>, SPI1, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with <code>PIN</code> (<strong>GP9</strong> is free for it).</td>
+</tr>
+<tr>
+<td><code>SPI WRITE item[, item...]</code></td>
+<td>Sends bytes (numbers 0-255 and strings), ignoring what comes back.</td>
+</tr>
+<tr>
+<td><code>SPI$(out$)</code></td>
+<td>Sends <code>out$</code> and returns the bytes that came back meanwhile: <code>SPI$(STRING$(4, 0))</code> reads 4.</td>
+</tr>
+<tr>
+<td><code>SPI CLOSE</code></td>
+<td>Stops it and frees the pins.</td>
+</tr>
+</tbody>
+</table>
+<p>A device that doesn't answer gives <code>Device I/O error</code> (57); using I2C or SPI
+before OPEN gives <code>Device unavailable</code> (68). Both can be caught with
+ON ERROR.</p>
+<pre><code>10 I2C OPEN: I2C SCAN
+20 T = I2CREAD(&amp;H48, 0): PRINT "LM75 at &amp;H48:"; T
+30 PIN 9, 1: SPI OPEN: PIN 9, 0: SPI WRITE &amp;H9F
+40 ID$ = SPI$(STRING$(3, 0)): PIN 9, 1: PRINT LEN(ID$); "bytes"
+</code></pre>
+<h3 id="serial-port-com1">Serial port (COM1)</h3>
+<p>A serial port on the chip's UART1 (the console is on USB). It works
+like a file: open it with a "COM1:" name, then use PRINT #, WRITE #, INPUT #,
+LINE INPUT # and INPUT$ on it.</p>
+<pre><code>OPEN "COM1:[speed][,parity][,data][,stop][,options]" AS #n
+</code></pre>
+<ul>
+<li><strong>Settings:</strong> speed 75-921600 baud; parity N, E or O; data bits 5-8; stop
+  bits 1 or 2. As in GW-BASIC, anything left out defaults to 300 baud, even
+  parity, 7 data bits and 1 stop bit, so usually you give them all:
+  <code>OPEN "COM1:9600,N,8,1" AS #1</code>.</li>
+<li><strong>Pins:</strong> GP4 (TX) and GP5 (RX) unless <code>TXn</code> / <code>RXn</code> options choose
+  others: TX on GP4, 8 or 20 and RX on GP5, 9 or 21 (<code>OPEN
+  "COM1:9600,N,8,1,TX8,RX9" AS #1</code>). While it is open, those pins are
+  refused to PIN and PWM.</li>
+<li><strong>Options:</strong> <code>LF</code> sends an LF after each CR. <code>RS</code>, <code>CS</code>, <code>DS</code>, <code>CD</code>,
+  <code>PE</code>, <code>BIN</code> and <code>ASC</code> are accepted and do nothing (there are no handshake
+  lines).</li>
+<li><strong>Sending:</strong> PRINT # ends lines with CR (CR LF with LF). It waits while
+  the UART is busy.</li>
+<li><strong>Receiving:</strong> bytes go into a 4 KB buffer in the background, so none are
+  lost while the program is busy. <code>LOC(n)</code> is how many are waiting, <code>EOF(n)</code>
+  is -1 when none are, and <code>LOF(n)</code> is the room left. INPUT #, LINE INPUT #
+  and INPUT$ wait for data (Ctrl-C stops the wait). A line ends at CR (an LF
+  after it is skipped). <code>ON COM(1) GOSUB</code> runs when bytes arrive.</li>
+<li><strong>Levels:</strong> 3.3 V logic. Use a level shifter or an RS-232 adapter for
+  RS-232 or 5 V devices, and connect GND too.</li>
+<li>Only one COM port can be open, and GET/PUT/FIELD don't apply to it.</li>
+</ul>
+<p><code>examples/SERIAL.BAS</code> is a small terminal: wire GP4 to GP5 and what you type
+comes straight back.</p>
+<h2 id="8-memory">8. Memory</h2>
+<ul>
+<li><strong>Pico Plus 2:</strong> the PSRAM is found at start-up (the banner shows it).
+  Blocks of 512 bytes or more (arrays, mostly) go in the 8 MB PSRAM, and
+  small ones (strings, program lines, variables) in the faster SRAM until it
+  runs low, so programs get about 8.4 MB.</li>
+<li><strong>Pico 2:</strong> everything is in SRAM, about 450 KB.</li>
+<li><code>FRE(0)</code> (and the banner) give the memory free. A program line is refused
+  if it would leave less than 16 KB for data, and any allocation if it would
+  leave less than 4 KB.</li>
+<li>BASIC runs on a 32 KB stack: very deeply nested expressions give
+  <code>Out of memory</code> rather than crashing.</li>
+</ul>
+<h2 id="9-errors">9. Errors</h2>
+<p>Errors print as <code>&lt;message&gt; in &lt;line&gt;</code> (or just the message in direct mode),
+and <code>ERR</code> gives the code:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Message</th>
+<th>Code</th>
+<th>Message</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>NEXT without FOR</td>
+<td>26</td>
+<td>FOR without NEXT</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Syntax error</td>
+<td>27</td>
+<td>Out of paper</td>
+</tr>
+<tr>
+<td>3</td>
+<td>RETURN without GOSUB</td>
+<td>29</td>
+<td>WHILE without WEND</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Out of DATA</td>
+<td>30</td>
+<td>WEND without WHILE</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Illegal function call</td>
+<td>50</td>
+<td>FIELD overflow</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Overflow</td>
+<td>51</td>
+<td>Internal error</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Out of memory</td>
+<td>52</td>
+<td>Bad file number</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Undefined line number</td>
+<td>53</td>
+<td>File not found</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Subscript out of range</td>
+<td>54</td>
+<td>Bad file mode</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Duplicate Definition</td>
+<td>55</td>
+<td>File already open</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Division by zero</td>
+<td>57</td>
+<td>Device I/O error</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Illegal direct</td>
+<td>58</td>
+<td>File already exists</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Type mismatch</td>
+<td>61</td>
+<td>Disk full</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Out of string space</td>
+<td>62</td>
+<td>Input past end</td>
+</tr>
+<tr>
+<td>15</td>
+<td>String too long</td>
+<td>63</td>
+<td>Bad record number</td>
+</tr>
+<tr>
+<td>16</td>
+<td>String formula too complex</td>
+<td>64</td>
+<td>Bad file name</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Can't continue</td>
+<td>66</td>
+<td>Direct statement in file</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Undefined user function</td>
+<td>67</td>
+<td>Too many files</td>
+</tr>
+<tr>
+<td>19</td>
+<td>No RESUME</td>
+<td>68</td>
+<td>Device unavailable</td>
+</tr>
+<tr>
+<td>20</td>
+<td>RESUME without error</td>
+<td>69</td>
+<td>Communication buffer overflow</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Missing operand</td>
+<td>70</td>
+<td>Permission denied</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Line buffer overflow</td>
+<td>71</td>
+<td>Disk not ready</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Device Timeout</td>
+<td>72</td>
+<td>Disk Media Error</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Device Fault</td>
+<td>73</td>
+<td><strong>Feature not available</strong> (section 10)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>74</td>
+<td>Rename across disks</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>75</td>
+<td>Path/File Access Error</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>76</td>
+<td>Path not found</td>
+</tr>
+</tbody>
+</table>
+<p>Codes BASIC itself never raises can still be raised with <code>ERROR n</code>; unknown
+codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;line&gt;</code>.</p>
+<h2 id="10-not-in-this-build">10. Not in this build</h2>
+<p>A terminal has no pixels, so these give <strong>Feature not available</strong> (error
+73):</p>
+<ul>
+<li><strong>Graphics:</strong> <code>SCREEN</code> 1 and up (<code>SCREEN 0</code> is fine), <code>PSET</code>, <code>PRESET</code>,
+  <code>LINE (x,y)-(x,y)</code>, <code>CIRCLE</code>, <code>PAINT</code>, <code>DRAW</code>, <code>PALETTE</code>, <code>VIEW (...)</code>,
+  <code>WINDOW</code>, graphics <code>GET (x,y)-(x,y)</code> / <code>PUT (x,y)</code>, <code>PCOPY</code>, and the
+  functions <code>POINT</code> and <code>PMAP</code>.</li>
+<li><strong>Sprites, fonts and pictures:</strong> <code>SPRITE</code>, <code>SPRITEHIT</code>, <code>SPRITEX</code>,
+  <code>SPRITEY</code>, <code>SPRITEON</code>, <code>FONT</code>, <code>GPRINT</code>, <code>GWIDTH</code>, <code>FONTW</code>, <code>FONTH</code>,
+  <code>IMAGE</code>, <code>SAVEIMAGE</code>.</li>
+<li><strong>MOD/XM music and the mouse:</strong> <code>MUSIC</code> (the functions <code>MUSIC(n)</code>,
+  <code>MOUSEX</code>, <code>MOUSEY</code>, <code>MOUSEB</code> and <code>MOUSEW</code> just give 0), <code>MOUSE ON/OFF</code>.</li>
+<li><strong>The full-screen editor</strong> (<code>EDIT</code> with no line number) and <code>SHELL</code>: there
+  is no editor or shell; <code>EDIT n</code> works.</li>
+</ul>
+<p>Also:</p>
+<ul>
+<li><code>KEYDOWN(n)</code> is always 0: a terminal sends key presses, not whether a key
+  is held.</li>
+<li><code>SCREEN(row, col)</code> and PEEK of the text screen give spaces (section 3,
+  Memory).</li>
+<li>Machine code and PC hardware: <code>CALL</code>, <code>USR</code>, <code>DEF USR</code>, <code>VARPTR</code>,
+  <code>VARPTR$</code>, <code>INP</code>, <code>OUT</code>, <code>WAIT</code>, <code>IOCTL</code> are an Illegal function call.</li>
+<li>Joystick and light pen (<code>STICK</code>, <code>STRIG</code>, <code>PEN</code> give 0), the printer
+  (LPRINT and LLIST go to the screen), COM ports other than COM1, 40-column
+  text, and <code>LOCK</code>, <code>UNLOCK</code> and <code>MOTOR</code> (accepted, they do nothing).</li>
+<li>GW-BASIC's full-screen editing of any line on the screen: lines are
+  edited on the input line instead (<code>EDIT n</code>).</li>
+</ul>
+<h2 id="11-limits">11. Limits</h2>
+<ul>
+<li><strong>Lines and strings:</strong> program lines and strings are up to 255
+  characters.</li>
+<li><strong>Nesting:</strong> FOR, GOSUB and WHILE can each be nested up to 32 deep.</li>
+<li><strong>Files:</strong> 4 open at once; random records up to 1024 bytes; 16 FIELD
+  variables per file.</li>
+<li><strong>CHAIN:</strong> up to 64 COMMON variables.</li>
+<li><strong>History:</strong> the last 8 lines typed.</li>
+<li><strong>The screen:</strong> 80 x 30 as far as BASIC knows (LOCATE, CSRLIN, the KEY
+  line); a bigger terminal window is fine.</li>
+</ul>
+<h2 id="12-example-programs">12. Example programs</h2>
+<p>The source's <code>examples</code> folder has these; send them over with <code>XRECV</code>
+(section 5) or paste them in.</p>
+<table>
+<thead>
+<tr>
+<th>Program</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PRIMES.BAS</td>
+<td>prints the primes below 1000</td>
+</tr>
+<tr>
+<td>GUESS.BAS</td>
+<td>a guess-the-number game</td>
+</tr>
+<tr>
+<td>BOXES.BAS</td>
+<td>coloured boxes drawn with the PC line-drawing characters</td>
+</tr>
+<tr>
+<td>FILES.BAS</td>
+<td>writes, appends and reads back a text file, and stores and reads records (MKI$/CVI) in a random-access file</td>
+</tr>
+<tr>
+<td>BLINK.BAS</td>
+<td>flashes the LED</td>
+</tr>
+<tr>
+<td>FADE.BAS</td>
+<td>fades the LED with PWM</td>
+</tr>
+<tr>
+<td>ANALOG.BAS</td>
+<td>shows the ADC inputs and the chip temperature (GP26-29; change line 16 to <code>FIRST = 40: LAST = 46</code> on a Pico Plus 2)</td>
+</tr>
+<tr>
+<td>SERIAL.BAS</td>
+<td>a small terminal on COM1 (GP4 TX, GP5 RX)</td>
+</tr>
+<tr>
+<td>I2CSCAN.BAS</td>
+<td>lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7</td>
+</tr>
+<tr>
+<td>SPIFLASH.BAS</td>
+<td>reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI1 on GP8-11)</td>
+</tr>
+</tbody>
+</table>
+<p>For example, from a shell (terminal closed) and then the terminal:</p>
+<pre><code>XRECV "PRIMES.BAS"                         (in BASIC)
+sx examples/PRIMES.BAS &lt; /dev/ttyACM1 &gt; /dev/ttyACM1
+RUN "PRIMES"                               (in BASIC)
+</code></pre>
+</body></html>

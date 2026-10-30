@@ -63,8 +63,10 @@ if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
     target_compile_definitions(pico_basic PRIVATE PICO_AUTO_DETECT_PSRAM_SIZE=1)
 endif()
 
-# The console: a terminal on UART0, GP0 (TX) and GP1 (RX), 115200 baud.
-pico_enable_stdio_uart(pico_basic 1)
-pico_enable_stdio_usb(pico_basic 0)
+# The console: the board's own USB port, as a USB serial (CDC) device
+# (/dev/ttyACM* on Linux, a COM port on Windows). The UART is left free.
+# picotool can still reboot it into BOOTSEL through the USB reset interface.
+pico_enable_stdio_uart(pico_basic 0)
+pico_enable_stdio_usb(pico_basic 1)
 
 pico_add_extra_outputs(pico_basic)

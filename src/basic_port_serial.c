@@ -2,7 +2,8 @@
  * @file basic_port_serial.c
  * @brief basic_port.h for a bare RP2350 board with a serial terminal.
  *
- * Text goes to and from a terminal (ANSI/VT100) on UART0 through stdio. There
+ * Text goes to and from a terminal (ANSI/VT100) on the board's USB port (a
+ * USB serial device) through stdio. There
  * is no screen of its own: graphics, pictures, fonts, the mouse, MUSIC, the
  * editor and SHELL give "Feature not available" (basic.c checks that before
  * it gets here, built with BASIC_NO_SCREEN). BEEP, SOUND and PLAY are square
@@ -25,10 +26,13 @@
 #include <string.h>
 
 #include "image.h"
+#include "pico/stdio/driver.h"
+#include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
 #include "psram_heap.h"
 #include "spr.h"
 #include "stack_switch.h"
+#include "usb_console.h"
 
 #ifndef SOUND_PIN
 #define SOUND_PIN 15  ///< BEEP, SOUND and PLAY: a piezo or speaker (through a resistor) to ground
@@ -37,14 +41,28 @@
 /// What the screen-only features say if asked anyway.
 #define NO_SCREEN "not available on a serial terminal"
 
+/// A terminal was connected when last looked (main.c has just shown the
+/// banner if one was).
+static bool was_connected = true;
+
 int port_key(uint32_t timeout_us) {
-    // A running program asks every statement: look at the UART at most every
+    // A running program asks every statement: look at the USB at most every
     // 200 us (a key waits that long at worst).
     static uint32_t last_poll;
     uint32_t now = time_us_32();
     if (!timeout_us && now - last_poll < 200)
         return -1;
     last_poll = now;
+    // A terminal that connects after start-up (or again, after closing)
+    // missed the banner: show it, and a prompt.
+    bool connected = stdio_usb_connected();
+    if (connected && !was_connected) {
+        sleep_ms(50);  // some terminals miss what comes right after they connect
+        printf("\n");
+        board_banner();
+        printf("Ok\n");
+    }
+    was_connected = connected;
     int c = getchar_timeout_us(timeout_us);
     return c == PICO_ERROR_TIMEOUT ? -1 : c;
 }
@@ -56,10 +74,23 @@ static const uint16_t cp437_low[32] = {
     0x25AC, 0x21A8, 0x2191, 0x2193, 0x2192, 0x2190, 0x221F, 0x2194, 0x25B2, 0x25BC,
 };
 
+/// The IBM PC's characters 127-255, as Unicode.
+static const uint16_t cp437_high[129] = {
+    0x2302,
+    0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7, 0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
+    0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9, 0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192,
+    0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA, 0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
+    0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556, 0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510,
+    0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F, 0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567,
+    0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B, 0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580,
+    0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4, 0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229,
+    0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248, 0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0,
+};
+
 void port_put_glyph(int c) {
-    // The terminal can't show a control code's picture itself: send it as
-    // UTF-8 (most terminals are), so CHR$(1) is still a smiley.
-    unsigned u = c >= 0 && c < 32 ? cp437_low[c] : '?';
+    // The terminal has no PC character set: send the character's picture as
+    // UTF-8 (most terminals are), so CHR$(1) is a smiley and CHR$(219) a block.
+    unsigned u = c >= 0 && c < 32 ? cp437_low[c] : c >= 127 && c < 256 ? cp437_high[c - 127] : '?';
     if (u < 0x800)
         printf("%c%c", 0xC0 | u >> 6, 0x80 | (u & 0x3F));
     else
@@ -465,8 +496,6 @@ const char *port_pin_reserved(int pin) {
         return "I2C (I2C CLOSE first)";
     if (pin >= 0 && (pin == spi_pins[0] || pin == spi_pins[1] || pin == spi_pins[2]))
         return "SPI (SPI CLOSE first)";
-    if (pin == PICO_DEFAULT_UART_TX_PIN || pin == PICO_DEFAULT_UART_RX_PIN)
-        return "the console";
     if (pin == SOUND_PIN)
         return "the speaker (BEEP, SOUND, PLAY)";
 #ifdef PICO_PSRAM_CS_PIN
@@ -597,8 +626,7 @@ void port_pins_list(void) {
                 snprintf(what, sizeof what, "COM1 %s", pin == serial_tx ? "TX" : pin == serial_rx ? "RX"
                                                        : pin == serial_cts ? "CTS" : "RTS");
             else if (why)
-                snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker"
-                                                  : pin <= 1 ? "console" : "PSRAM");
+                snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker" : "PSRAM");
             else if (pin_use[pin] == UNUSED)
                 snprintf(what, sizeof what, "free%s", pin == LED_PIN ? " (LED)" : "");
             else if (pin_use[pin] == PWM) {
@@ -673,7 +701,7 @@ static void serial_irq(void) {
 /// @return it can
 static bool uart1_pin(int pin, bool tx) {
     // UART1's TX/RX pins below GP30, as on every RP2 chip (24 and 25 aren't
-    // on the Pico 2's header: VBUS sense and the LED). The console has UART0.
+    // on the Pico 2's header: VBUS sense and the LED).
     static const int8_t txs[] = {4, 8, 20, 24}, rxs[] = {5, 9, 21, 25};
     for (int i = 0; i < 4; ++i)
         if (pin == (tx ? txs[i] : rxs[i]))
@@ -924,15 +952,11 @@ bool port_spi_transfer(const uint8_t *out, uint8_t *in, int n) {
 }
 
 // ---- XMODEM over the console: XSEND and XRECV ---------------------------------------
-// xfer.c (from pico-os) does the protocol; this gives it the console's UART
-// (raw: stdio would turn LF into CR LF) and files on the flash disk.
+// xfer.c (from pico-os) does the protocol; this gives it the USB console
+// (raw: stdio's printf would turn LF into CR LF) and files on the flash disk.
 
 #include "ff.h"
-#include "hardware/uart.h"
 #include "xfer.h"
-
-/// The console's UART.
-#define CONSOLE_UART ((uart_inst_t *)PICO_DEFAULT_UART_INSTANCE())
 
 /// A file being sent or received.
 typedef struct {
@@ -950,9 +974,8 @@ static bool xrecv_created;
 /// @return the byte, or XFER_TIMEOUT
 static int x_getc(void *ctx, unsigned timeout_ms) {
     (void)ctx;
-    if (!uart_is_readable_within_us(CONSOLE_UART, timeout_ms * 1000u))
-        return XFER_TIMEOUT;
-    return uart_getc(CONSOLE_UART);
+    int c = getchar_timeout_us(timeout_ms * 1000u);  // input is never translated
+    return c == PICO_ERROR_TIMEOUT ? XFER_TIMEOUT : c;
 }
 
 /// Sends bytes to the console.
@@ -961,7 +984,7 @@ static int x_getc(void *ctx, unsigned timeout_ms) {
 /// @param len their count
 static void x_write(void *ctx, const uint8_t *data, int len) {
     (void)ctx;
-    uart_write_blocking(CONSOLE_UART, data, len);
+    stdio_usb.out_chars((const char *)data, len);  // the driver itself: no CR LF
 }
 
 /// Opens the file to send.
@@ -1082,8 +1105,7 @@ static const xfer_io_t xmodem_io = {NULL,   x_getc, x_write,      x_open_read, x
                                     x_read, x_seek, x_write_file, x_close,     NULL};
 
 bool port_xsend(const char *path, char *msg, int size) {
-    fflush(stdout);
-    uart_tx_wait_blocking(CONSOLE_UART);
+    stdio_flush();
     xfer_result_t res;
     const char *paths[1] = {path};
     xfer_send(&xmodem_io, XFER_XMODEM_1K, paths, 1, &res);
@@ -1092,8 +1114,7 @@ bool port_xsend(const char *path, char *msg, int size) {
 }
 
 bool port_xrecv(const char *path, char *msg, int size) {
-    fflush(stdout);
-    uart_tx_wait_blocking(CONSOLE_UART);
+    stdio_flush();
     xfer_result_t res;
     xrecv_created = false;
     xfer_receive(&xmodem_io, XFER_XMODEM, path, &res);
