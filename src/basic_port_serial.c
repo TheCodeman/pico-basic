@@ -1,0 +1,924 @@
+/**
+ * @file basic_port_serial.c
+ * @brief basic_port.h for a bare RP2350 board with a serial terminal.
+ *
+ * Text goes to and from a terminal (ANSI/VT100) on UART0 through stdio. There
+ * is no screen of its own: graphics, pictures, fonts, the mouse, MUSIC, the
+ * editor and SHELL give "Feature not available" (basic.c checks that before
+ * it gets here, built with BASIC_NO_SCREEN). BEEP, SOUND and PLAY are square
+ * waves on SOUND_PIN for a piezo or small speaker. Files are on the flash
+ * disk (flash_disk.c).
+ *
+ * @author Ken Segler
+ * @copyright Copyright (c) 2026 Ken Segler
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "basic_port.h"
+
+#include <malloc.h>
+#include <unistd.h>
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "image.h"
+#include "pico/stdlib.h"
+#include "psram_heap.h"
+#include "spr.h"
+#include "stack_switch.h"
+
+#ifndef SOUND_PIN
+#define SOUND_PIN 15  ///< BEEP, SOUND and PLAY: a piezo or speaker (through a resistor) to ground
+#endif
+
+/// What the screen-only features say if asked anyway.
+#define NO_SCREEN "not available on a serial terminal"
+
+int port_key(uint32_t timeout_us) {
+    // A running program asks every statement: look at the UART at most every
+    // 200 us (a key waits that long at worst).
+    static uint32_t last_poll;
+    uint32_t now = time_us_32();
+    if (!timeout_us && now - last_poll < 200)
+        return -1;
+    last_poll = now;
+    int c = getchar_timeout_us(timeout_us);
+    return c == PICO_ERROR_TIMEOUT ? -1 : c;
+}
+
+/// The IBM PC's pictures for control codes 1-31, as Unicode.
+static const uint16_t cp437_low[32] = {
+    0x0020, 0x263A, 0x263B, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022, 0x25D8, 0x25CB, 0x25D9,
+    0x2642, 0x2640, 0x266A, 0x266B, 0x263C, 0x25BA, 0x25C4, 0x2195, 0x203C, 0x00B6, 0x00A7,
+    0x25AC, 0x21A8, 0x2191, 0x2193, 0x2192, 0x2190, 0x221F, 0x2194, 0x25B2, 0x25BC,
+};
+
+void port_put_glyph(int c) {
+    // The terminal can't show a control code's picture itself: send it as
+    // UTF-8 (most terminals are), so CHR$(1) is still a smiley.
+    unsigned u = c >= 0 && c < 32 ? cp437_low[c] : '?';
+    if (u < 0x800)
+        printf("%c%c", 0xC0 | u >> 6, 0x80 | (u & 0x3F));
+    else
+        printf("%c%c%c", 0xE0 | u >> 12, 0x80 | (u >> 6 & 0x3F), 0x80 | (u & 0x3F));
+}
+
+// ---- Sound: a square wave on SOUND_PIN ------------------------------------------
+// PLAY's notes queue up and play in the background, one alarm per note.
+
+#include "hardware/clocks.h"
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
+#include "hardware/sync.h"
+
+/// PLAY's queue.
+#define NOTES 64
+static struct {
+    uint16_t freq, ms;  ///< the note (freq 0: a rest)
+} notes[NOTES];
+/// The queue's ends; a note is playing while note_alarm is set.
+///@{
+static volatile int note_head, note_tail;
+static volatile alarm_id_t note_alarm;
+///@}
+
+/// Starts or stops the tone (0 Hz: silence).
+/// @param freq_hz the frequency
+static void tone(unsigned freq_hz) {
+    uint slice = pwm_gpio_to_slice_num(SOUND_PIN);
+    if (!freq_hz || freq_hz < 20 || freq_hz > 20000) {
+        pwm_set_gpio_level(SOUND_PIN, 0);
+        return;
+    }
+    float clk = (float)clock_get_hz(clk_sys);
+    float div = clk / ((float)freq_hz * 65536.0f);
+    if (div < 1.0f)
+        div = 1.0f;
+    uint32_t top = (uint32_t)(clk / (div * (float)freq_hz)) - 1;
+    if (top > 65535)
+        top = 65535;
+    pwm_set_clkdiv(slice, div);
+    pwm_set_wrap(slice, top);
+    pwm_set_gpio_level(SOUND_PIN, (top + 1) / 2);
+    gpio_set_function(SOUND_PIN, GPIO_FUNC_PWM);
+    pwm_set_enabled(slice, true);
+}
+
+/// The alarm at the end of a note: the next one, or silence.
+/// @param id the alarm
+/// @param data unused
+/// @return 0 (one-shot; the next note sets its own)
+static int64_t note_done(alarm_id_t id, void *data) {
+    (void)id;
+    (void)data;
+    if (note_tail == note_head) {
+        tone(0);
+        note_alarm = 0;
+        return 0;
+    }
+    int t = note_tail;
+    tone(notes[t].freq);
+    note_tail = (t + 1) % NOTES;
+    return (int64_t)(notes[t].ms ? notes[t].ms : 1) * 1000;  // the alarm comes back after it
+}
+
+bool port_play(unsigned freq_hz, unsigned ms) {
+    int next = (note_head + 1) % NOTES;
+    if (next == note_tail)
+        return false;
+    notes[note_head].freq = freq_hz;
+    notes[note_head].ms = ms > 65535 ? 65535 : ms;
+    note_head = next;
+    if (!note_alarm) {
+        uint32_t irq = save_and_disable_interrupts();
+        if (!note_alarm)
+            note_alarm = add_alarm_in_us(1, note_done, NULL, true);
+        restore_interrupts(irq);
+    }
+    return true;
+}
+
+int port_play_pending(void) {
+    return (note_head - note_tail + NOTES) % NOTES + (note_alarm ? 1 : 0);
+}
+
+void port_play_stop(void) {
+    if (note_alarm)
+        cancel_alarm(note_alarm);
+    note_alarm = 0;
+    note_head = note_tail = 0;
+    tone(0);
+}
+
+void port_beep(unsigned freq_hz, unsigned ms) {
+    port_play_stop();
+    tone(freq_hz);
+    sleep_ms(ms);
+    tone(0);
+}
+
+// ---- What a screen would do -----------------------------------------------------
+
+void port_get_cell(int row, int col, uint8_t *ch, uint8_t *attr) {
+    (void)row;
+    (void)col;
+    *ch = ' ';  // the terminal can't be read back
+    *attr = 7;
+}
+
+void port_set_cell(int row, int col, uint8_t ch, uint8_t attr) {
+    (void)row;
+    (void)col;
+    (void)ch;
+    (void)attr;
+}
+
+bool port_shell(const char *command) {
+    (void)command;
+    return false;
+}
+
+void port_edit(const char *path) {
+    (void)path;
+}
+
+const char *port_set_pages(int active, int visual) {
+    return active || visual ? NO_SCREEN : NULL;
+}
+
+void port_reset_pages(void) {
+}
+
+const char *port_copy_page(int from, int to) {
+    (void)from;
+    (void)to;
+    return NO_SCREEN;
+}
+
+void port_fill_rect(int x, int y, int w, int h, uint8_t rgb332) {
+    (void)x;
+    (void)y;
+    (void)w;
+    (void)h;
+    (void)rgb332;
+}
+
+uint8_t port_get_pixel(int x, int y) {
+    (void)x;
+    (void)y;
+    return 0;
+}
+
+const char *port_image(const char *path, int x, int y, int w, int h, int sx, int sy, bool fit,
+                       int cx0, int cy0, int cx1, int cy1) {
+    (void)path, (void)x, (void)y, (void)w, (void)h, (void)sx, (void)sy, (void)fit;
+    (void)cx0, (void)cy0, (void)cx1, (void)cy1;
+    return NO_SCREEN;
+}
+
+const char *port_save_image(const char *path) {
+    (void)path;
+    return NO_SCREEN;
+}
+
+bool image_load(const char *path, int want_w, int want_h, image_t *img, const char **err) {
+    (void)path, (void)want_w, (void)want_h;
+    memset(img, 0, sizeof *img);
+    *err = NO_SCREEN;
+    return false;
+}
+
+void image_free(image_t *img) {
+    (void)img;
+}
+
+bool spr_load(const char *path, spr_info_t *info, spr_put_fn put, void *ctx, const char **err) {
+    (void)path, (void)info, (void)put, (void)ctx;
+    *err = NO_SCREEN;
+    return false;
+}
+
+bool port_mouse(int *x, int *y, int *buttons) {
+    *x = *y = *buttons = 0;
+    return false;  // no mouse: MOUSEX, MOUSEY and MOUSEB are 0
+}
+
+int port_mouse_wheel(void) {
+    return 0;
+}
+
+void port_mouse_pointer(bool on) {
+    (void)on;
+}
+
+bool port_key_down(int scan) {
+    (void)scan;
+    return false;  // a terminal sends keys, not whether they're held
+}
+
+const char *port_music_play(const char *path, bool loop) {
+    (void)path;
+    (void)loop;
+    return NO_SCREEN;
+}
+
+void port_music_stop(void) {
+}
+
+void port_music_pause(bool paused) {
+    (void)paused;
+}
+
+void port_music_volume(int percent) {
+    (void)percent;
+}
+
+void port_music_pos(int order, int row) {
+    (void)order;
+    (void)row;
+}
+
+int port_music_state(int what) {
+    (void)what;
+    return 0;
+}
+
+// ---- Time ------------------------------------------------------------------------
+
+void port_sleep_ms(unsigned ms) {
+    sleep_ms(ms);
+}
+
+double port_seconds(void) {
+    return to_us_since_boot(get_absolute_time()) / 1e6;
+}
+
+// ---- Memory: big blocks in PSRAM (if there is any), small ones in SRAM ------------
+// The PSRAM allocator walks its block list on every call, so the many small,
+// short-lived blocks (strings, temporaries, program lines) stay in SRAM, which
+// is faster too; arrays and other big blocks go to PSRAM. When SRAM runs low,
+// small blocks go to PSRAM as well. With no PSRAM it is all SRAM.
+
+/// Allocations from this size up go to PSRAM.
+#define BIG_BLOCK  512
+#define SRAM_KEEP  (16 * 1024)  ///< left for the system and the flash disk
+
+/// The SRAM heap's free bytes (above it and freed inside).
+/// @return them
+static size_t sram_free(void) {
+    extern char __StackLimit;  // top of the heap, from the SDK's linker script
+    struct mallinfo mi = mallinfo();
+    return (size_t)(&__StackLimit - (char *)sbrk(0)) + mi.fordblks;
+}
+
+/// Whether memory is in PSRAM.
+/// @param p the memory
+/// @return it is
+static bool is_psram(const void *p) {
+    return (uintptr_t)p >= 0x11000000u && (uintptr_t)p < 0x12000000u;
+}
+
+/// True if SRAM has room for n more bytes. Cheap in the usual case: the
+/// untouched space above the heap (mallinfo walks the whole heap, so it's only
+/// asked when that space is short).
+/// @param n the bytes
+/// @return there is room
+static bool sram_room(size_t n) {
+    extern char __StackLimit;
+    if ((size_t)(&__StackLimit - (char *)sbrk(0)) >= n + SRAM_KEEP)
+        return true;
+    return sram_free() >= n + SRAM_KEEP;
+}
+
+void *port_alloc(size_t n) {
+    if (!n)
+        n = 1;
+    if (n < BIG_BLOCK && sram_room(n))  // the usual case
+        return malloc(n);
+    void *p = psram_malloc(n);  // NULL without PSRAM
+    if (p)
+        return p;
+    // PSRAM full or missing: SRAM, while there's still a safe margin.
+    return sram_free() >= n + SRAM_KEEP / 2 ? malloc(n) : NULL;
+}
+
+void *port_calloc(size_t count, size_t size) {
+    if (size && count > SIZE_MAX / size)
+        return NULL;
+    void *p = port_alloc(count * size);
+    if (p)
+        memset(p, 0, count * size);
+    return p;
+}
+
+void port_release(void *p) {
+    if (is_psram(p))
+        psram_free(p);
+    else
+        free(p);
+}
+
+void *port_realloc(void *p, size_t n) {
+    if (!p)
+        return port_alloc(n);
+    if (!n) {
+        port_release(p);
+        return NULL;
+    }
+    size_t old = is_psram(p) ? psram_block_size(p) : malloc_usable_size(p);
+    if (is_psram(p)) {
+        void *q = psram_realloc(p, n);
+        if (q)
+            return q;
+    } else if ((n < BIG_BLOCK || !psram_present()) && sram_room(n)) {
+        return realloc(p, n);
+    }
+    // Move it (SRAM to PSRAM as it grows, or PSRAM full: try SRAM).
+    void *q = port_alloc(n);
+    if (!q)
+        return NULL;
+    memcpy(q, p, old < n ? old : n);
+    port_release(p);
+    return q;
+}
+
+size_t port_free_mem(void) {
+    size_t s = sram_free();
+    return (s > SRAM_KEEP ? s - SRAM_KEEP : 0) + psram_free_total();
+}
+
+/// BASIC's expression evaluator recurses; it runs on a stack of its own (see
+/// main.c) and checks it has this much left, for interrupts and the deepest
+/// leaf calls.
+#define STACK_MARGIN 2048
+
+bool port_stack_low(void) {
+    char here;
+    return &here < stack_bottom() + STACK_MARGIN;
+}
+
+// ---- GPIO -------------------------------------------------------------------
+// The RP2350A (Pico 2) has GPIO 0-29 with ADC on GP26-29; the RP2350B (Pico
+// Plus 2) has GPIO 0-47 with ADC on GP40-47.
+
+#include "hardware/adc.h"
+#include "hardware/clocks.h"
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
+
+/// GPIO pins.
+#define PIN_COUNT NUM_BANK0_GPIOS
+/// The LED's pin.
+#define LED_PIN   PICO_DEFAULT_LED_PIN
+/// The first ADC pin.
+#define ADC_FIRST ADC_BASE_PIN
+/// The ADC pins (the last channel is the temperature sensor).
+#define ADC_PINS  (NUM_ADC_CHANNELS - 1)
+
+/// What a pin is being used for.
+enum { UNUSED, INPUT, OUTPUT, PULLUP, PULLDOWN, PWM, ADC };
+static uint8_t pin_use[PIN_COUNT];      ///< what BASIC has set each pin to
+/// Each PWM slice's frequency.
+static float slice_freq[NUM_PWM_SLICES];
+
+/// "1000" or "8.5": the SDK's printf has no %g.
+/// @param f the frequency
+/// @param buf the text
+/// @param size room in buf
+/// @return buf
+static const char *freq_text(double f, char *buf, size_t size) {
+    long whole = (long)(f + 0.05);
+    int tenth = (int)((f + 0.05 - whole) * 10);
+    if (tenth)
+        snprintf(buf, size, "%ld.%d", whole, tenth);
+    else
+        snprintf(buf, size, "%ld", whole);
+    return buf;
+}
+
+int port_pin_count(void) {
+    return PIN_COUNT;
+}
+
+int port_led_pin(void) {
+    return LED_PIN;
+}
+
+/// COM1's TX and RX pins while it is open (-1: closed).
+///@{
+static int serial_tx = -1, serial_rx = -1;
+///@}
+static int i2c_pins[2] = {-1, -1};          ///< SDA, SCL while I2C is open
+static int spi_pins[3] = {-1, -1, -1};      ///< SCK, MOSI, MISO while SPI is open
+/// Its flow control pins (CTS, RTS) while that is on.
+///@{
+static int serial_cts = -1, serial_rts = -1;
+///@}
+
+const char *port_pin_reserved(int pin) {
+    if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
+        return "the COM1 serial port (CLOSE it first)";
+    if (pin >= 0 && (pin == i2c_pins[0] || pin == i2c_pins[1]))
+        return "I2C (I2C CLOSE first)";
+    if (pin >= 0 && (pin == spi_pins[0] || pin == spi_pins[1] || pin == spi_pins[2]))
+        return "SPI (SPI CLOSE first)";
+    if (pin == PICO_DEFAULT_UART_TX_PIN || pin == PICO_DEFAULT_UART_RX_PIN)
+        return "the console";
+    if (pin == SOUND_PIN)
+        return "the speaker (BEEP, SOUND, PLAY)";
+#ifdef PICO_PSRAM_CS_PIN
+    if (pin == PICO_PSRAM_CS_PIN)
+        return "PSRAM";
+#endif
+    return NULL;
+}
+
+void port_pin_mode(int pin, int mode) {
+    if (pin_use[pin] == PWM)
+        port_pwm(pin, 0, 0);
+    gpio_init(pin);
+    gpio_set_dir(pin, mode == PORT_PIN_OUTPUT);
+    gpio_set_pulls(pin, mode == PORT_PIN_PULLUP, mode == PORT_PIN_PULLDOWN);
+    pin_use[pin] = mode == PORT_PIN_OUTPUT   ? OUTPUT
+                   : mode == PORT_PIN_PULLUP ? PULLUP
+                   : mode == PORT_PIN_PULLDOWN ? PULLDOWN
+                                               : INPUT;
+}
+
+void port_pin_write(int pin, int level) {
+    if (pin_use[pin] != OUTPUT)
+        port_pin_mode(pin, PORT_PIN_OUTPUT);
+    gpio_put(pin, level != 0);
+}
+
+int port_pin_read(int pin) {
+    if (pin_use[pin] == UNUSED || pin_use[pin] == PWM || pin_use[pin] == ADC)
+        port_pin_mode(pin, PORT_PIN_INPUT);
+    return gpio_get(pin);
+}
+
+void port_pwm(int pin, double freq, double duty) {
+    uint slice = pwm_gpio_to_slice_num(pin);
+    uint partner = pin ^ 1;
+    if (freq <= 0) {
+        if (pin_use[pin] == PWM) {
+            pwm_set_gpio_level(pin, 0);
+            if (partner >= PIN_COUNT || pin_use[partner] != PWM)
+                pwm_set_enabled(slice, false);
+        }
+        gpio_init(pin);  // back to a plain input
+        pin_use[pin] = INPUT;
+        return;
+    }
+    // Pick the smallest divider that lets the counter's top fit 16 bits,
+    // for the finest duty steps.
+    float clk = (float)clock_get_hz(clk_sys);
+    float div = clk / ((float)freq * 65536.0f);
+    if (div < 1.0f)
+        div = 1.0f;
+    if (div > 255.9f)
+        div = 255.9f;
+    uint32_t top = (uint32_t)(clk / (div * (float)freq)) - 1;
+    if (top > 65535)
+        top = 65535;
+    if (partner < PIN_COUNT && pin_use[partner] == PWM && slice_freq[slice] != (float)freq) {
+        char text[16];
+        printf("Warning: GP%u shares a PWM slice with GP%d; both now run at %s Hz\n", partner,
+               pin, freq_text(freq, text, sizeof text));
+    }
+    pwm_set_clkdiv(slice, div);
+    pwm_set_wrap(slice, top);
+    if (duty < 0)
+        duty = 0;
+    if (duty > 100)
+        duty = 100;
+    pwm_set_gpio_level(pin, (uint32_t)((top + 1) * duty / 100.0 + 0.5));
+    gpio_set_function(pin, GPIO_FUNC_PWM);
+    pwm_set_enabled(slice, true);
+    slice_freq[slice] = (float)freq;
+    pin_use[pin] = PWM;
+}
+
+/// Starts the ADC, once.
+static void adc_start(void) {
+    static bool started;
+    if (!started) {
+        adc_init();
+        started = true;
+    }
+}
+
+int port_adc(int pin) {
+    if (pin < ADC_FIRST || pin >= ADC_FIRST + ADC_PINS)
+        return -1;
+    adc_start();
+    if (pin_use[pin] != ADC) {
+        if (pin_use[pin] == PWM)
+            port_pwm(pin, 0, 0);
+        adc_gpio_init(pin);
+        pin_use[pin] = ADC;
+    }
+    adc_select_input(pin - ADC_FIRST);
+    return adc_read();
+}
+
+double port_temperature(void) {
+    adc_start();
+    adc_set_temp_sensor_enabled(true);
+    adc_select_input(ADC_TEMPERATURE_CHANNEL_NUM);
+    uint32_t sum = 0;
+    for (int i = 0; i < 16; ++i)  // the sensor is noisy
+        sum += adc_read();
+    double volts = sum / 16.0 * 3.3 / 4096;
+    return 27 - (volts - 0.706) / 0.001721;  // RP2350 datasheet formula
+}
+
+void port_pins_list(void) {
+    static const char *const names[] = {"", "in", "out", "in up", "in down", "PWM", "ADC"};
+    int rows = (PIN_COUNT + 3) / 4;
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < 4; ++col) {
+            int pin = col * rows + row;
+            if (pin >= PIN_COUNT) {
+                printf("\n");
+                break;
+            }
+            const char *why = port_pin_reserved(pin);
+            char what[24];
+            if (pin == i2c_pins[0] || pin == i2c_pins[1])
+                snprintf(what, sizeof what, "I2C%d %s", (pin / 2) & 1, pin == i2c_pins[0] ? "SDA" : "SCL");
+            else if (pin == spi_pins[0] || pin == spi_pins[1] || pin == spi_pins[2])
+                snprintf(what, sizeof what, "SPI%d %s", (pin / 8) & 1,
+                         pin == spi_pins[0] ? "SCK" : pin == spi_pins[1] ? "MOSI" : "MISO");
+            else if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
+                snprintf(what, sizeof what, "COM1 %s", pin == serial_tx ? "TX" : pin == serial_rx ? "RX"
+                                                       : pin == serial_cts ? "CTS" : "RTS");
+            else if (why)
+                snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker"
+                                                  : pin <= 1 ? "console" : "PSRAM");
+            else if (pin_use[pin] == UNUSED)
+                snprintf(what, sizeof what, "free%s", pin == LED_PIN ? " (LED)" : "");
+            else if (pin_use[pin] == PWM) {
+                char text[16];
+                snprintf(what, sizeof what, "PWM %sHz",
+                         freq_text(slice_freq[pwm_gpio_to_slice_num(pin)], text, sizeof text));
+            }
+            else if (pin_use[pin] == ADC)
+                snprintf(what, sizeof what, "ADC");
+            else
+                snprintf(what, sizeof what, "%s %d", names[pin_use[pin]], gpio_get(pin));
+            printf("GP%-2d %-14s%s", pin, what, col < 3 ? " " : "\n");
+        }
+    }
+}
+
+void port_i2c_close(void);
+void port_spi_close(void);
+
+void port_pins_reset(void) {
+    port_i2c_close();
+    port_spi_close();
+    for (int pin = 0; pin < PIN_COUNT; ++pin) {
+        if (pin_use[pin] == UNUSED)
+            continue;
+        if (pin_use[pin] == PWM)
+            port_pwm(pin, 0, 0);
+        gpio_init(pin);
+        gpio_set_pulls(pin, false, false);
+        pin_use[pin] = UNUSED;
+    }
+}
+
+// ---- Serial port: COM1 is UART1 -----------------------------------------------
+// Received bytes go into a ring buffer from the UART's interrupt, so none are
+// lost while BASIC is busy.
+
+#include "hardware/irq.h"
+#include "hardware/uart.h"
+
+/// The receive ring's size.
+#define RX_SIZE 4096
+static uint8_t *rx_buf;  ///< RX_SIZE, while COM1 is open (SRAM is short)
+/// The ring's ends: the interrupt writes head, BASIC reads tail.
+///@{
+static volatile uint16_t rx_head, rx_tail;
+///@}
+
+/// UART1's interrupt: received bytes into the ring.
+static void serial_irq(void) {
+    while (uart_is_readable(uart1)) {
+        uint16_t next = (rx_head + 1) % RX_SIZE;
+        if (next == rx_tail) {
+            // Full. With flow control, leave the rest in the UART so its
+            // FIFO fills and RTS tells the sender to wait; reading resumes
+            // when there's room. Without, the byte is lost either way.
+            if (serial_rts >= 0) {
+                uart_set_irq_enables(uart1, false, false);
+                return;
+            }
+            uart_getc(uart1);
+            continue;
+        }
+        rx_buf[rx_head] = uart_getc(uart1);
+        rx_head = next;
+    }
+}
+
+/// Whether a pin can be UART1's TX (or RX).
+/// @param pin the pin
+/// @param tx TX (else RX)
+/// @return it can
+static bool uart1_pin(int pin, bool tx) {
+    // UART1's TX/RX pins below GP30, as on every RP2 chip (24 and 25 aren't
+    // on the Pico 2's header: VBUS sense and the LED). The console has UART0.
+    static const int8_t txs[] = {4, 8, 20, 24}, rxs[] = {5, 9, 21, 25};
+    for (int i = 0; i < 4; ++i)
+        if (pin == (tx ? txs[i] : rxs[i]))
+            return true;
+    return false;
+}
+
+const char *port_serial_open(unsigned baud, int data_bits, char parity, int stop_bits, int tx,
+                             int rx) {
+    if (!uart1_pin(tx, true) || !uart1_pin(rx, false))
+        return "COM1 can use TX on GP4, 8, 20 or 24 and RX on GP5, 9, 21 or 25";
+    const char *why = port_pin_reserved(tx);
+    if (!why)
+        why = port_pin_reserved(rx);
+    if (why)
+        return why;
+    if (pin_use[tx] != UNUSED || pin_use[rx] != UNUSED)
+        return "a pin is in use by PINMODE/PIN/PWM";
+    if (!rx_buf && !(rx_buf = malloc(RX_SIZE)))
+        return "not enough memory for COM1's buffer";
+    uart_init(uart1, baud);
+    uart_set_format(uart1, data_bits, stop_bits,
+                    parity == 'E' ? UART_PARITY_EVEN : parity == 'O' ? UART_PARITY_ODD
+                                                     : UART_PARITY_NONE);
+    uart_set_hw_flow(uart1, false, false);
+    uart_set_fifo_enabled(uart1, true);
+    gpio_set_function(tx, GPIO_FUNC_UART);
+    gpio_set_function(rx, GPIO_FUNC_UART);
+    gpio_pull_up(rx);  // an unconnected input reads as idle, not as noise
+    rx_head = rx_tail = 0;
+    irq_set_exclusive_handler(UART1_IRQ, serial_irq);
+    irq_set_enabled(UART1_IRQ, true);
+    uart_set_irq_enables(uart1, true, false);
+    serial_tx = tx;
+    serial_rx = rx;
+    return NULL;
+}
+
+// RTS/CTS flow control on the two pins after TX (TX+2 CTS in, TX+3 RTS out:
+// GP6/7 for GP4/5, and so on). NULL if done, else why not.
+const char *port_serial_flow(bool on) {
+    if (serial_tx < 0)
+        return "COM1 isn't open";
+    if (on && serial_cts < 0) {
+        int cts = serial_tx + 2, rts = serial_tx + 3;
+        const char *why = port_pin_reserved(cts);
+        if (!why)
+            why = port_pin_reserved(rts);
+        if (why)
+            return why;
+        if (pin_use[cts] != UNUSED || pin_use[rts] != UNUSED)
+            return "a flow control pin is in use by PINMODE/PIN/PWM";
+        gpio_set_function(cts, GPIO_FUNC_UART);
+        gpio_set_function(rts, GPIO_FUNC_UART);
+        gpio_pull_down(cts);  // nothing connected: never clear to send
+        serial_cts = cts;
+        serial_rts = rts;
+        uart_set_hw_flow(uart1, true, true);
+    } else if (!on && serial_cts >= 0) {
+        uart_set_hw_flow(uart1, false, false);
+        gpio_init(serial_cts);
+        gpio_init(serial_rts);
+        gpio_set_pulls(serial_cts, false, false);
+        serial_cts = serial_rts = -1;
+        uart_set_irq_enables(uart1, true, false);
+    }
+    return NULL;
+}
+
+// Holds TX low (a BREAK) for `ms` milliseconds.
+void port_serial_break(unsigned ms) {
+    if (serial_tx < 0)
+        return;
+    uart_tx_wait_blocking(uart1);
+    uart_set_break(uart1, true);
+    sleep_ms(ms);
+    uart_set_break(uart1, false);
+}
+
+void port_serial_close(void) {
+    if (serial_tx < 0)
+        return;
+    port_serial_flow(false);
+    uart_set_irq_enables(uart1, false, false);
+    irq_set_enabled(UART1_IRQ, false);
+    irq_remove_handler(UART1_IRQ, serial_irq);
+    uart_tx_wait_blocking(uart1);  // let the last bytes go out
+    uart_deinit(uart1);
+    gpio_init(serial_tx);
+    gpio_init(serial_rx);
+    gpio_set_pulls(serial_rx, false, false);
+    serial_tx = serial_rx = -1;
+    free(rx_buf);
+    rx_buf = NULL;
+    rx_head = rx_tail = 0;
+}
+
+void port_serial_write(const char *data, int n) {
+    uart_write_blocking(uart1, (const uint8_t *)data, n);
+}
+
+int port_serial_getc(void) {
+    if (rx_tail == rx_head)
+        return -1;
+    int c = rx_buf[rx_tail];
+    rx_tail = (rx_tail + 1) % RX_SIZE;
+    if (serial_rts >= 0)
+        uart_set_irq_enables(uart1, true, false);  // in case it stopped when full
+    return c;
+}
+
+int port_serial_waiting(void) {
+    return (rx_head - rx_tail + RX_SIZE) % RX_SIZE;
+}
+
+int port_serial_room(void) {
+    return RX_SIZE - 1 - port_serial_waiting();
+}
+
+// ---- I2C and SPI ------------------------------------------------------------------
+// The RP2350's own controllers. Which one a pin belongs to follows from its
+// number: I2C SDA on even pins and SCL on odd ones, I2C0 or I2C1 by (pin / 2)
+// mod 2; SPI in groups of four (MISO, CS, SCK, MOSI), SPI0 or SPI1 by
+// (pin / 8) mod 2.
+
+#include "hardware/i2c.h"
+#include "hardware/spi.h"
+
+/// The I2C controller open, or NULL.
+static i2c_inst_t *i2c_bus;
+/// The SPI controller open, or NULL.
+static spi_inst_t *spi_bus;
+
+/// Why a pin can't be used, or NULL.
+/// @param pin the pin
+/// @return the reason, or NULL
+static const char *pin_free(int pin) {
+    if (pin < 0 || pin >= PIN_COUNT)
+        return "no such pin";
+    const char *why = port_pin_reserved(pin);
+    if (why)
+        return why;
+    if (pin_use[pin] != UNUSED)
+        return "a pin is in use by PINMODE/PIN/PWM";
+    return NULL;
+}
+
+const char *port_i2c_open(int sda, int scl, int khz) {
+    port_i2c_close();
+    if (sda < 0 || scl < 0 || sda >= PIN_COUNT || scl >= PIN_COUNT || (sda & 1) || scl != sda + 1)
+        return "I2C needs SDA on an even pin and SCL on the next one (e.g. GP2, GP3)";
+    const char *why = pin_free(sda);
+    if (!why)
+        why = pin_free(scl);
+    if (why)
+        return why;
+    if (khz < 10 || khz > 1000)
+        return "the speed must be 10-1000 kHz";
+    i2c_bus = (sda / 2) & 1 ? i2c1 : i2c0;
+    i2c_init(i2c_bus, khz * 1000);
+    gpio_set_function(sda, GPIO_FUNC_I2C);
+    gpio_set_function(scl, GPIO_FUNC_I2C);
+    gpio_pull_up(sda);  // weak: devices should bring their own pull-ups
+    gpio_pull_up(scl);
+    i2c_pins[0] = sda;
+    i2c_pins[1] = scl;
+    return NULL;
+}
+
+void port_i2c_close(void) {
+    if (!i2c_bus)
+        return;
+    i2c_deinit(i2c_bus);
+    for (int i = 0; i < 2; ++i) {
+        gpio_init(i2c_pins[i]);
+        gpio_set_pulls(i2c_pins[i], false, false);
+        i2c_pins[i] = -1;
+    }
+    i2c_bus = NULL;
+}
+
+// Bytes written, or -1 if no device answered (or it stopped answering), -2
+// if I2C isn't open.
+int port_i2c_write(int addr, const uint8_t *data, int n, bool nostop) {
+    if (!i2c_bus)
+        return -2;
+    int r = i2c_write_timeout_us(i2c_bus, (uint8_t)addr, data, n, nostop, 2000 + n * 200);
+    return r < 0 ? -1 : r;
+}
+
+int port_i2c_read(int addr, uint8_t *data, int n) {
+    if (!i2c_bus)
+        return -2;
+    int r = i2c_read_timeout_us(i2c_bus, (uint8_t)addr, data, n, false, 2000 + n * 200);
+    return r < 0 ? -1 : r;
+}
+
+const char *port_spi_open(int sck, int mosi, int miso, int khz, int mode) {
+    port_spi_close();
+    if (sck < 0 || mosi < 0 || miso < 0 || sck >= PIN_COUNT || mosi >= PIN_COUNT || miso >= PIN_COUNT ||
+        sck % 4 != 2 || mosi % 4 != 3 || miso % 4 != 0 || ((sck / 8) & 1) != ((mosi / 8) & 1) ||
+        ((sck / 8) & 1) != ((miso / 8) & 1))
+        return "SPI needs SCK, MOSI and MISO of one SPI (e.g. GP10, GP11, GP8)";
+    const char *why = pin_free(sck);
+    if (!why)
+        why = pin_free(mosi);
+    if (!why)
+        why = pin_free(miso);
+    if (why)
+        return why;
+    if (khz < 1 || khz > 50000 || mode < 0 || mode > 3)
+        return "the speed must be 1-50000 kHz and the mode 0-3";
+    spi_bus = (sck / 8) & 1 ? spi1 : spi0;
+    spi_init(spi_bus, khz * 1000);
+    spi_set_format(spi_bus, 8, (mode & 2) ? SPI_CPOL_1 : SPI_CPOL_0, (mode & 1) ? SPI_CPHA_1 : SPI_CPHA_0,
+                   SPI_MSB_FIRST);
+    gpio_set_function(sck, GPIO_FUNC_SPI);
+    gpio_set_function(mosi, GPIO_FUNC_SPI);
+    gpio_set_function(miso, GPIO_FUNC_SPI);
+    spi_pins[0] = sck;
+    spi_pins[1] = mosi;
+    spi_pins[2] = miso;
+    return NULL;
+}
+
+void port_spi_close(void) {
+    if (!spi_bus)
+        return;
+    spi_deinit(spi_bus);
+    for (int i = 0; i < 3; ++i) {
+        gpio_init(spi_pins[i]);
+        gpio_set_pulls(spi_pins[i], false, false);
+        spi_pins[i] = -1;
+    }
+    spi_bus = NULL;
+}
+
+// Sends n bytes and keeps the n that came back (in may be NULL). False if
+// SPI isn't open.
+bool port_spi_transfer(const uint8_t *out, uint8_t *in, int n) {
+    if (!spi_bus)
+        return false;
+    if (in)
+        spi_write_read_blocking(spi_bus, out, in, n);
+    else
+        spi_write_blocking(spi_bus, out, n);
+    return true;
+}
