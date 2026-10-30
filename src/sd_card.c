@@ -9,6 +9,7 @@
 
 #include "sd_card.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "hardware/gpio.h"
@@ -49,8 +50,12 @@ static enum { NONE, READY } state;
 static bool block_addr;
 /// The pins are set up for the card.
 static bool pins_on;
+/// The clock in use once the card is set up; halved when a transfer fails.
+static uint32_t speed_khz = SD_SPI_KHZ;
 
 static FATFS fs;  ///< the mounted card
+/// Why the last transfer failed, for sd_card_mount's message.
+static char last_error[64];
 
 // ---- SPI bytes ------------------------------------------------------------------
 
@@ -126,8 +131,11 @@ static bool read_data(uint8_t *buf, unsigned len) {
     do
         token = xfer(0xff);
     while (token == 0xff && !time_reached(until));
-    if (token != 0xfe)
+    if (token != 0xfe) {
+        snprintf(last_error, sizeof last_error, "data token %02x at %lu kHz", token,
+                 (unsigned long)speed_khz);
         return false;
+    }
     spi_read_blocking(SPI, 0xff, buf, len);
     xfer(0xff);  // the CRC, not checked
     xfer(0xff);
@@ -159,7 +167,10 @@ static void pins(bool on) {
         return;
     if (on) {
         spi_init(SPI, 400 * 1000);
-        spi_set_format(SPI, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+        // Mode 3 (clock idle high, sampled on the rising edge): cards take
+        // modes 0 and 3, and on the Maker Pi Pico (an indicator LED on each
+        // line) only mode 3 reads cleanly.
+        spi_set_format(SPI, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
         gpio_set_function(SD_SCK, GPIO_FUNC_SPI);
         gpio_set_function(SD_MOSI, GPIO_FUNC_SPI);
         gpio_set_function(SD_MISO, GPIO_FUNC_SPI);
@@ -201,9 +212,18 @@ static bool card_init(void) {
     gpio_put(SD_CS, 1);
     for (int i = 0; i < 10; ++i)  // 80 clocks with CS high: into SPI mode
         xfer(0xff);
+    // GO_IDLE_STATE, until it answers: a card still busy with something it
+    // was doing (a transfer cut short by a reset) takes a while to listen.
     uint8_t r = 0xff;
-    for (int i = 0; i < 5 && r != 0x01; ++i)
-        r = command(0, 0);  // GO_IDLE_STATE
+    absolute_time_t give_up = make_timeout_time_ms(1000);
+    for (;;) {
+        r = command(0, 0);
+        if (r == 0x01 || time_reached(give_up))
+            break;
+        deselect();
+        for (int i = 0; i < 10; ++i)  // more clocks with CS high
+            xfer(0xff);
+    }
     if (r != 0x01) {
         deselect();
         pins(false);  // no card: the pins are BASIC's again
@@ -235,7 +255,7 @@ static bool card_init(void) {
         pins(false);
         return false;
     }
-    spi_set_baudrate(SPI, SD_SPI_KHZ * 1000);
+    spi_set_baudrate(SPI, speed_khz * 1000);  // the fastest that has worked
     state = READY;
     return true;
 }
@@ -261,13 +281,32 @@ DSTATUS sd_initialize(void) {
     return card_init() ? 0 : STA_NOINIT;
 }
 
-DRESULT sd_read(BYTE *buff, LBA_t sector, UINT count) {
-    if (state != READY)
-        return RES_NOTRDY;
+/// After a failed transfer: halve the clock (the lines may be too slow for
+/// it: long wires, or the Maker Pi Pico's indicator LEDs) and set the card up
+/// afresh, as garbled commands can leave it confused. False at 400 kHz, or
+/// if the card is gone.
+/// @return slowed down, so try again
+static bool slow_down(void) {
+    if (speed_khz <= 400)
+        return false;
+    speed_khz = speed_khz / 2 < 400 ? 400 : speed_khz / 2;
+    return card_init();
+}
+
+/// Reads sectors once at the current speed.
+/// @param buff where
+/// @param sector the first
+/// @param count how many
+/// @return they came
+static bool read_once(BYTE *buff, LBA_t sector, UINT count) {
     uint32_t addr = block_addr ? sector : sector * 512;
     bool ok;
     if (count == 1) {
-        ok = command(17, addr) == 0 && read_data(buff, 512);
+        uint8_t r = command(17, addr);
+        if (r)
+            snprintf(last_error, sizeof last_error, "CMD17 gave %02x at %lu kHz", r,
+                     (unsigned long)speed_khz);
+        ok = r == 0 && read_data(buff, 512);
     } else {
         ok = command(18, addr) == 0;
         for (UINT i = 0; ok && i < count; ++i)
@@ -275,12 +314,24 @@ DRESULT sd_read(BYTE *buff, LBA_t sector, UINT count) {
         command(12, 0);  // STOP_TRANSMISSION
     }
     deselect();
-    return ok ? RES_OK : RES_ERROR;
+    return ok;
 }
 
-DRESULT sd_write(const BYTE *buff, LBA_t sector, UINT count) {
+DRESULT sd_read(BYTE *buff, LBA_t sector, UINT count) {
     if (state != READY)
         return RES_NOTRDY;
+    while (!read_once(buff, sector, count))
+        if (!slow_down())
+            return RES_ERROR;
+    return RES_OK;
+}
+
+/// Writes sectors once at the current speed.
+/// @param buff the data
+/// @param sector the first
+/// @param count how many
+/// @return the card took them
+static bool write_once(const BYTE *buff, LBA_t sector, UINT count) {
     uint32_t addr = block_addr ? sector : sector * 512;
     bool ok;
     if (count == 1) {
@@ -293,7 +344,16 @@ DRESULT sd_write(const BYTE *buff, LBA_t sector, UINT count) {
     }
     ok = wait_ready(500) && ok;  // the card programs the last block
     deselect();
-    return ok ? RES_OK : RES_ERROR;
+    return ok;
+}
+
+DRESULT sd_write(const BYTE *buff, LBA_t sector, UINT count) {
+    if (state != READY)
+        return RES_NOTRDY;
+    while (!write_once(buff, sector, count))
+        if (!slow_down())
+            return RES_ERROR;
+    return RES_OK;
 }
 
 DRESULT sd_ioctl(BYTE cmd, void *buff) {
@@ -357,8 +417,10 @@ const char *sd_card_mount(void) {
         return NULL;
     // Mounted later, when the drive is first used (a card put in then).
     f_mount(&fs, "1:", 0);
+    static char msg[100];
+    snprintf(msg, sizeof msg, "can't be read (FatFs %d: %s)", r, last_error);
     return r == FR_NOT_READY ? "none" : r == FR_NO_FILESYSTEM ? "no FAT or exFAT file system on it"
-                                                              : "can't be read";
+                                                              : msg;
 }
 
 void sd_card_space(uint32_t *total, uint32_t *free_kb) {

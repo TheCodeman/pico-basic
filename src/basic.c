@@ -7501,8 +7501,8 @@ static void do_files(void) {
     DWORD clusters;
     if (f_getfree(folder, &clusters, &fs) == FR_OK) {
         char buf[40];
-        snprintf(buf, sizeof buf, "%lu Bytes free",
-                 (unsigned long)((uint64_t)clusters * fs->csize * FF_MAX_SS));
+        snprintf(buf, sizeof buf, "%llu Bytes free",  // an SD card has more than 4 GB
+                 (unsigned long long)clusters * fs->csize * FF_MAX_SS);
         out_str(buf);
         out_newline();
     }
