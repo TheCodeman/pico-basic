@@ -6186,6 +6186,9 @@ static void do_pwm(void) {
 // ---- I2C and SPI (Pico extensions) ------------------------------------------
 
 #define I2C_SDA_DEFAULT 2   ///< GP2/GP3: I2C1, clear of COM1 (GP4/5), HDMI and the WiFi pins
+#ifndef COM1_TX_DEFAULT
+#define COM1_TX_DEFAULT 4  ///< COM1: TX GP4, RX GP5
+#endif
 #ifndef SPI_SCK_DEFAULT
 #define SPI_SCK_DEFAULT 10  ///< GP10 SCK, GP11 MOSI, GP8 MISO: SPI1 (GP9 is free for CS)
 #endif
@@ -7586,7 +7589,7 @@ static void open_com(int n, const char *spec) {
         if (files[i] && files[i]->mode == FM_COM)
             error(E_FILE_ALREADY_OPEN);
     unsigned baud = 300;
-    int data = 7, stop = 1, tx = 4, rx = 5;
+    int data = 7, stop = 1, tx = COM1_TX_DEFAULT, rx = COM1_TX_DEFAULT + 1;
     char parity = 'E';
     bool lf = false;
     const char *q = spec + 5;

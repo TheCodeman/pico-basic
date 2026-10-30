@@ -30,6 +30,12 @@
 #ifndef SD_MOSI
 #define SD_MOSI 11  ///< card SDI / DI (data in)
 #endif
+#ifndef SD_DAT1
+#define SD_DAT1 13  ///< card DAT1: unused in SPI mode, held up (-1: not wired)
+#endif
+#ifndef SD_DAT2
+#define SD_DAT2 14  ///< card DAT2: likewise
+#endif
 #ifndef SD_SPI_KHZ
 #define SD_SPI_KHZ 25000  ///< the clock once the card is set up
 #endif
@@ -161,6 +167,16 @@ static void pins(bool on) {
         gpio_init(SD_CS);
         gpio_put(SD_CS, 1);
         gpio_set_dir(SD_CS, GPIO_OUT);
+        // The card's other data lines aren't used in SPI mode, but left
+        // floating some cards won't answer: hold them up.
+        if (SD_DAT1 >= 0) {
+            gpio_init(SD_DAT1);
+            gpio_pull_up(SD_DAT1);
+        }
+        if (SD_DAT2 >= 0) {
+            gpio_init(SD_DAT2);
+            gpio_pull_up(SD_DAT2);
+        }
     } else {
         spi_deinit(SPI);
         gpio_init(SD_SCK);
@@ -168,6 +184,10 @@ static void pins(bool on) {
         gpio_init(SD_MISO);
         gpio_init(SD_CS);
         gpio_set_pulls(SD_MISO, false, false);
+        if (SD_DAT1 >= 0)
+            gpio_set_pulls(SD_DAT1, false, false);
+        if (SD_DAT2 >= 0)
+            gpio_set_pulls(SD_DAT2, false, false);
     }
     pins_on = on;
 }
@@ -323,7 +343,8 @@ bool sd_card_in_use(void) {
 }
 
 bool sd_card_pin(int pin) {
-    return pin == SD_SCK || pin == SD_MOSI || pin == SD_MISO || pin == SD_CS;
+    return pin == SD_SCK || pin == SD_MOSI || pin == SD_MISO || pin == SD_CS || pin == SD_DAT1 ||
+           pin == SD_DAT2;
 }
 
 int sd_card_spi(void) {

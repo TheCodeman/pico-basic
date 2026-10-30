@@ -70,6 +70,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#pins">Pins</a></li>
 <li><a href="#i2c-and-spi">I2C and SPI</a></li>
 <li><a href="#serial-port-com1">Serial port (COM1)</a></li>
+<li><a href="#the-cytron-maker-pi-pico">The Cytron Maker Pi Pico</a></li>
 </ul>
 </li>
 <li><a href="#8-memory">8. Memory</a></li>
@@ -162,12 +163,12 @@ it as <code>usb-Raspberry_Pi_Pico_...</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td>GP22 (pin 29)</td>
-<td>a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY</td>
+<td>GP18 (pin 24)</td>
+<td>a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY (the Maker Pi Pico's own buzzer)</td>
 </tr>
 <tr>
-<td>GP10, 11, 12, 15, 3V3, GND</td>
-<td>a microSD card module, as drive <code>SD:</code> (section 4)</td>
+<td>GP10-15, 3V3, GND</td>
+<td>a microSD card slot, as drive <code>SD:</code> (section 4; the Maker Pi Pico has one)</td>
 </tr>
 <tr>
 <td>SWD (the debug pins)</td>
@@ -884,7 +885,11 @@ level shifter is fine too, powered from 3V3 or VSYS as it says):</p>
 <td>GP12 (pin 16)</td>
 </tr>
 <tr>
-<td>CS</td>
+<td>DAT1, DAT2 (if the slot has them)</td>
+<td>GP13, GP14 (held up: unused in SPI mode)</td>
+</tr>
+<tr>
+<td>CS (DAT3)</td>
 <td>GP15 (pin 20)</td>
 </tr>
 <tr>
@@ -897,8 +902,9 @@ level shifter is fine too, powered from 3V3 or VSYS as it says):</p>
 </tr>
 </tbody>
 </table>
-<p>(These are SPI1's pins; GP13 is left free. Others can be chosen when BASIC
-is built: see the README.) The banner shows the card: <code>SD card (SD:): 7580 MB, 7571 MB free</code>,
+<p>These are SPI1's pins, and the Cytron Maker Pi Pico's microSD slot is wired
+just so: it works as it is. Others can be chosen when BASIC is built (see the
+README). The banner shows the card: <code>SD card (SD:): 7580 MB, 7571 MB free</code>,
 or <code>SD card (SD:): none</code>.</p>
 <ul>
 <li>Use it with a drive in front of a name: <code>SAVE "SD:GAME"</code>,
@@ -912,7 +918,7 @@ or <code>SD card (SD:): none</code>.</p>
 <li>A card can be put in or taken out while BASIC runs: the next use of <code>SD:</code>
   finds the new one. Close files on it first (CLOSE) and don't pull it out
   while it is being written.</li>
-<li>While a card is in, its four pins and SPI1 are BASIC's: <code>PIN</code>, <code>PWM</code> and
+<li>While a card is in, its pins (GP10-15) and SPI1 are BASIC's: <code>PIN</code>, <code>PWM</code> and
   <code>SPI OPEN</code> on SPI1 refuse them (<code>SPI OPEN</code> on SPI0, its default, is fine).
   Without a card they are free.</li>
 </ul>
@@ -1104,7 +1110,7 @@ the end). lrzsz's <code>rx</code> does, unless run as <code>rx -a</code> for a t
 also converts line ends). Because BASIC removes it, a binary file that
 really ends in ^Z bytes loses them on the way in.</p>
 <h2 id="6-sound">6. Sound</h2>
-<p>A square wave on <strong>GP22</strong> (another pin if BASIC was built with a different
+<p>A square wave on <strong>GP18</strong> (another pin if BASIC was built with a different
 <code>SOUND_PIN</code>), for a piezo buzzer or a small speaker through a resistor.</p>
 <table>
 <thead>
@@ -1187,7 +1193,7 @@ waves of one voice, so a note waits for the one before it.</p>
 <p>Pins are given by their GP number; <code>LED</code> means the board's LED (GP25). The
 Pico and Pico 2 have GP0-29 (GP23-25 and GP29 aren't on the header: power
 control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
-<p>Pins BASIC itself uses are refused, e.g. <code>GP22 is used by the speaker
+<p>Pins BASIC itself uses are refused, e.g. <code>GP18 is used by the speaker
 (BEEP, SOUND, PLAY)</code> followed by <code>Illegal function call</code>:</p>
 <table>
 <thead>
@@ -1198,11 +1204,11 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 </thead>
 <tbody>
 <tr>
-<td>GP22</td>
+<td>GP18</td>
 <td>the speaker</td>
 </tr>
 <tr>
-<td>GP10, 11, 12, 15</td>
+<td>GP10-15</td>
 <td>the SD card, while one is in</td>
 </tr>
 <tr>
@@ -1262,7 +1268,7 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
   changing one's frequency prints a warning naming its partner. The chip has
   only 8 slices for GP0-31, so GP16-31 use the same ones as GP0-15: GP2 and
   GP18 (and GP3 and GP19) give the very same signal, with no warning. The
-  speaker's slice (GP22) is shared with GP6, GP7 and GP23: PWM there and
+  speaker's slice (GP18) is shared with GP2, GP3 and GP19: PWM there and
   sound interfere.</li>
 <li><code>RUN</code>, <code>NEW</code> and <code>SYSTEM</code> set every pin BASIC used back to an input and
   stop PWM. <code>END</code>, errors and Ctrl-C leave pins as they are, so they can be
@@ -1310,7 +1316,7 @@ GP16-19 SPI0 ...). RUN, NEW and SYSTEM close them.</p>
 </tr>
 <tr>
 <td><code>SPI OPEN [sck, mosi, miso[, khz[, mode]]]</code></td>
-<td>Starts SPI, by default on <strong>GP18 (SCK), GP19 (MOSI), GP16 (MISO)</strong>, SPI0, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with <code>PIN</code> (<strong>GP17</strong> is free for it). (SPI1 is the SD card's.)</td>
+<td>Starts SPI, by default on <strong>GP6 (SCK), GP7 (MOSI), GP4 (MISO)</strong>, SPI0, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with <code>PIN</code> (<strong>GP5</strong> is free for it). (SPI1 is the SD card's.)</td>
 </tr>
 <tr>
 <td><code>SPI WRITE item[, item...]</code></td>
@@ -1331,8 +1337,8 @@ before OPEN gives <code>Device unavailable</code> (68). Both can be caught with
 ON ERROR.</p>
 <pre><code>10 I2C OPEN: I2C SCAN
 20 T = I2CREAD(&amp;H48, 0): PRINT "LM75 at &amp;H48:"; T
-30 PIN 17, 1: SPI OPEN: PIN 17, 0: SPI WRITE &amp;H9F
-40 ID$ = SPI$(STRING$(3, 0)): PIN 17, 1: PRINT LEN(ID$); "bytes"
+30 PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &amp;H9F
+40 ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
 </code></pre>
 <h3 id="serial-port-com1">Serial port (COM1)</h3>
 <p>A serial port on the chip's UART1 (the console is on USB). It works
@@ -1345,7 +1351,7 @@ LINE INPUT # and INPUT$ on it.</p>
   bits 1 or 2. As in GW-BASIC, anything left out defaults to 300 baud, even
   parity, 7 data bits and 1 stop bit, so usually you give them all:
   <code>OPEN "COM1:9600,N,8,1" AS #1</code>.</li>
-<li><strong>Pins:</strong> GP4 (TX) and GP5 (RX) unless <code>TXn</code> / <code>RXn</code> options choose
+<li><strong>Pins:</strong> GP8 (TX) and GP9 (RX) unless <code>TXn</code> / <code>RXn</code> options choose
   others: TX on GP4, 8 or 20 and RX on GP5, 9 or 21 (<code>OPEN
   "COM1:9600,N,8,1,TX8,RX9" AS #1</code>). While it is open, those pins are
   refused to PIN and PWM.</li>
@@ -1363,8 +1369,22 @@ LINE INPUT # and INPUT$ on it.</p>
   RS-232 or 5 V devices, and connect GND too.</li>
 <li>Only one COM port can be open, and GET/PUT/FIELD don't apply to it.</li>
 </ul>
-<p><code>examples/SERIAL.BAS</code> is a small terminal: wire GP4 to GP5 and what you type
+<p><code>examples/SERIAL.BAS</code> is a small terminal: wire GP8 to GP9 and what you type
 comes straight back.</p>
+<h3 id="the-cytron-maker-pi-pico">The Cytron Maker Pi Pico</h3>
+<p>BASIC's defaults fit this carrier board:</p>
+<ul>
+<li><strong>microSD slot:</strong> drive <code>SD:</code> as it is (SPI1, GP10-15).</li>
+<li><strong>Buzzer:</strong> GP18, for BEEP, SOUND and PLAY (its mute switch turns it
+  off); the 3.5 mm audio jack is on GP18 (left) and GP19 (right).</li>
+<li><strong>Buttons:</strong> GP20, GP21 and GP22, with their own pull-ups: <code>PIN(20)</code> is 0
+  while the button is pressed.</li>
+<li><strong>RGB LED:</strong> a WS2812 on GP28 (it needs a timed serial signal BASIC
+  doesn't make).</li>
+<li><strong>LEDs:</strong> every GPIO has one, so they show what the pins are doing.</li>
+<li><strong>Free for your own use:</strong> COM1 (GP8/GP9), <code>SPI OPEN</code> (GP4-7), I2C
+  (GP2/GP3) and the Grove connectors on those pins.</li>
+</ul>
 <h2 id="8-memory">8. Memory</h2>
 <ul>
 <li><strong>Pico Plus 2:</strong> the PSRAM is found at start-up (the banner shows it).
@@ -1643,7 +1663,7 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 </tr>
 <tr>
 <td>SERIAL.BAS</td>
-<td>a small terminal on COM1 (GP4 TX, GP5 RX)</td>
+<td>a small terminal on COM1 (GP8 TX, GP9 RX)</td>
 </tr>
 <tr>
 <td>I2CSCAN.BAS</td>
@@ -1651,7 +1671,7 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 </tr>
 <tr>
 <td>SPIFLASH.BAS</td>
-<td>reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP16-19)</td>
+<td>reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP4-7)</td>
 </tr>
 </tbody>
 </table>

@@ -51,7 +51,7 @@ endif()
 # the flash (3 MB on a Pico 2, 15 MB on a Pico Plus 2).
 set(FLASH_DISK_OFFSET 0x100000 CACHE STRING "Flash disk start, bytes from the start of the flash (a multiple of 4096)")
 # BEEP, SOUND and PLAY: a piezo or small speaker (through a resistor) on this pin.
-set(SOUND_PIN 22 CACHE STRING "GPIO for the speaker")
+set(SOUND_PIN 18 CACHE STRING "GPIO for the speaker")
 
 target_compile_definitions(pico_basic PRIVATE
     BASIC_NO_SCREEN=1
@@ -73,23 +73,31 @@ if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
 endif()
 
 # A microSD card over SPI as a second drive ("1:" or "SD:"). Default pins:
-# SPI1 with SCK GP10, MOSI GP11 (card SDI), MISO GP12 (card SDO), CS GP15.
-# BASIC's own SPI OPEN then defaults to SPI0 (SCK GP18, MOSI GP19, MISO
-# GP16, GP17 free for CS), so the two don't meet.
+# the Cytron Maker Pi Pico's slot, SPI1 with SCK GP10, MOSI GP11 (card CMD /
+# SDI), MISO GP12 (card DAT0 / SDO), CS GP15, and DAT1 GP13, DAT2 GP14 held
+# up (unused in SPI mode). BASIC's own SPI OPEN then defaults to SPI0 on
+# GP4-7 (MISO GP4, CS GP5, SCK GP6, MOSI GP7), and COM1 to TX GP8, RX GP9,
+# clear of the card and the board's buzzer (GP18), buttons (GP20-22) and
+# RGB LED (GP28).
 option(PICO_BASIC_SD "An SD card over SPI as drive 1: (SD:)" ON)
 set(SD_SPI 1 CACHE STRING "SD card: SPI controller (0 or 1)")
 set(SD_MISO 12 CACHE STRING "SD card: MISO pin (card SDO / DO)")
 set(SD_CS 15 CACHE STRING "SD card: CS pin")
 set(SD_SCK 10 CACHE STRING "SD card: SCK pin (card CLK)")
 set(SD_MOSI 11 CACHE STRING "SD card: MOSI pin (card SDI / DI)")
+set(SD_DAT1 13 CACHE STRING "SD card: DAT1 pin, held up (-1: not wired)")
+set(SD_DAT2 14 CACHE STRING "SD card: DAT2 pin, held up (-1: not wired)")
 if(PICO_BASIC_SD)
     if(SD_SPI EQUAL 1)
-        set(SPI_SCK_DEFAULT 18)  # SPI OPEN on SPI0
+        set(SPI_SCK_DEFAULT 6)  # SPI OPEN on SPI0, GP4-7
+        set(COM1_TX_DEFAULT 8)  # COM1 off GP4-5
     else()
         set(SPI_SCK_DEFAULT 10)  # SPI OPEN on SPI1
+        set(COM1_TX_DEFAULT 4)
     endif()
     target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=1 SD_SPI=${SD_SPI} SD_MISO=${SD_MISO}
-        SD_CS=${SD_CS} SD_SCK=${SD_SCK} SD_MOSI=${SD_MOSI} SPI_SCK_DEFAULT=${SPI_SCK_DEFAULT})
+        SD_CS=${SD_CS} SD_SCK=${SD_SCK} SD_MOSI=${SD_MOSI} SD_DAT1=${SD_DAT1} SD_DAT2=${SD_DAT2}
+        SPI_SCK_DEFAULT=${SPI_SCK_DEFAULT} COM1_TX_DEFAULT=${COM1_TX_DEFAULT})
 else()
     target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=0)
 endif()

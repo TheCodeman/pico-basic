@@ -60,8 +60,8 @@ The only other wiring is optional:
 
 | Board pin | Connect to |
 |---|---|
-| GP22 (pin 29) | a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY |
-| GP10, 11, 12, 15, 3V3, GND | a microSD card module, as drive `SD:` (section 4) |
+| GP18 (pin 24) | a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY (the Maker Pi Pico's own buzzer) |
+| GP10-15, 3V3, GND | a microSD card slot, as drive `SD:` (section 4; the Maker Pi Pico has one) |
 | SWD (the debug pins) | a Raspberry Pi Debug Probe, for loading programs with OpenOCD (its UART isn't used) |
 
 **3.3 V levels only** on every pin: never connect RS-232 or 5 V signals
@@ -415,12 +415,14 @@ level shifter is fine too, powered from 3V3 or VSYS as it says):
 | CLK (SCK) | GP10 (pin 14) |
 | SDI / DI (MOSI) | GP11 (pin 15) |
 | SDO / DO (MISO) | GP12 (pin 16) |
-| CS | GP15 (pin 20) |
+| DAT1, DAT2 (if the slot has them) | GP13, GP14 (held up: unused in SPI mode) |
+| CS (DAT3) | GP15 (pin 20) |
 | 3V3 (VCC) | 3V3(OUT) (pin 36) |
 | GND | GND (pin 18) |
 
-(These are SPI1's pins; GP13 is left free. Others can be chosen when BASIC
-is built: see the README.) The banner shows the card: `SD card (SD:): 7580 MB, 7571 MB free`,
+These are SPI1's pins, and the Cytron Maker Pi Pico's microSD slot is wired
+just so: it works as it is. Others can be chosen when BASIC is built (see the
+README). The banner shows the card: `SD card (SD:): 7580 MB, 7571 MB free`,
 or `SD card (SD:): none`.
 
 - Use it with a drive in front of a name: `SAVE "SD:GAME"`,
@@ -434,7 +436,7 @@ or `SD card (SD:): none`.
 - A card can be put in or taken out while BASIC runs: the next use of `SD:`
   finds the new one. Close files on it first (CLOSE) and don't pull it out
   while it is being written.
-- While a card is in, its four pins and SPI1 are BASIC's: `PIN`, `PWM` and
+- While a card is in, its pins (GP10-15) and SPI1 are BASIC's: `PIN`, `PWM` and
   `SPI OPEN` on SPI1 refuse them (`SPI OPEN` on SPI0, its default, is fine).
   Without a card they are free.
 
@@ -561,7 +563,7 @@ really ends in ^Z bytes loses them on the way in.
 
 ## 6. Sound
 
-A square wave on **GP22** (another pin if BASIC was built with a different
+A square wave on **GP18** (another pin if BASIC was built with a different
 `SOUND_PIN`), for a piezo buzzer or a small speaker through a resistor.
 
 | Statement | What it does |
@@ -597,13 +599,13 @@ Pins are given by their GP number; `LED` means the board's LED (GP25). The
 Pico and Pico 2 have GP0-29 (GP23-25 and GP29 aren't on the header: power
 control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.
 
-Pins BASIC itself uses are refused, e.g. `GP22 is used by the speaker
+Pins BASIC itself uses are refused, e.g. `GP18 is used by the speaker
 (BEEP, SOUND, PLAY)` followed by `Illegal function call`:
 
 | Pins | Used by |
 |---|---|
-| GP22 | the speaker |
-| GP10, 11, 12, 15 | the SD card, while one is in |
+| GP18 | the speaker |
+| GP10-15 | the SD card, while one is in |
 | GP47 (Pico Plus 2) | the PSRAM |
 | COM1's, I2C's and SPI's pins | while they are open |
 
@@ -622,7 +624,7 @@ Pins BASIC itself uses are refused, e.g. `GP22 is used by the speaker
   changing one's frequency prints a warning naming its partner. The chip has
   only 8 slices for GP0-31, so GP16-31 use the same ones as GP0-15: GP2 and
   GP18 (and GP3 and GP19) give the very same signal, with no warning. The
-  speaker's slice (GP22) is shared with GP6, GP7 and GP23: PWM there and
+  speaker's slice (GP18) is shared with GP2, GP3 and GP19: PWM there and
   sound interfere.
 - `RUN`, `NEW` and `SYSTEM` set every pin BASIC used back to an input and
   stop PWM. `END`, errors and Ctrl-C leave pins as they are, so they can be
@@ -646,7 +648,7 @@ GP16-19 SPI0 ...). RUN, NEW and SYSTEM close them.
 | `I2CREAD(addr[, reg])` | Reads one byte. |
 | `I2C SCAN` | Prints the addresses that answer (8-119). |
 | `I2C CLOSE` | Stops it and frees the pins. |
-| `SPI OPEN [sck, mosi, miso[, khz[, mode]]]` | Starts SPI, by default on **GP18 (SCK), GP19 (MOSI), GP16 (MISO)**, SPI0, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with `PIN` (**GP17** is free for it). (SPI1 is the SD card's.) |
+| `SPI OPEN [sck, mosi, miso[, khz[, mode]]]` | Starts SPI, by default on **GP6 (SCK), GP7 (MOSI), GP4 (MISO)**, SPI0, at 1000 kHz (1-50000), mode 0 (0-3); 8-bit words, most significant bit first. Chip select is any pin you drive with `PIN` (**GP5** is free for it). (SPI1 is the SD card's.) |
 | `SPI WRITE item[, item...]` | Sends bytes (numbers 0-255 and strings), ignoring what comes back. |
 | `SPI$(out$)` | Sends `out$` and returns the bytes that came back meanwhile: `SPI$(STRING$(4, 0))` reads 4. |
 | `SPI CLOSE` | Stops it and frees the pins. |
@@ -657,8 +659,8 @@ ON ERROR.
 
     10 I2C OPEN: I2C SCAN
     20 T = I2CREAD(&H48, 0): PRINT "LM75 at &H48:"; T
-    30 PIN 17, 1: SPI OPEN: PIN 17, 0: SPI WRITE &H9F
-    40 ID$ = SPI$(STRING$(3, 0)): PIN 17, 1: PRINT LEN(ID$); "bytes"
+    30 PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &H9F
+    40 ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
 
 ### Serial port (COM1)
 
@@ -672,7 +674,7 @@ LINE INPUT # and INPUT$ on it.
   bits 1 or 2. As in GW-BASIC, anything left out defaults to 300 baud, even
   parity, 7 data bits and 1 stop bit, so usually you give them all:
   `OPEN "COM1:9600,N,8,1" AS #1`.
-- **Pins:** GP4 (TX) and GP5 (RX) unless `TXn` / `RXn` options choose
+- **Pins:** GP8 (TX) and GP9 (RX) unless `TXn` / `RXn` options choose
   others: TX on GP4, 8 or 20 and RX on GP5, 9 or 21 (`OPEN
   "COM1:9600,N,8,1,TX8,RX9" AS #1`). While it is open, those pins are
   refused to PIN and PWM.
@@ -690,8 +692,23 @@ LINE INPUT # and INPUT$ on it.
   RS-232 or 5 V devices, and connect GND too.
 - Only one COM port can be open, and GET/PUT/FIELD don't apply to it.
 
-`examples/SERIAL.BAS` is a small terminal: wire GP4 to GP5 and what you type
+`examples/SERIAL.BAS` is a small terminal: wire GP8 to GP9 and what you type
 comes straight back.
+
+### The Cytron Maker Pi Pico
+
+BASIC's defaults fit this carrier board:
+
+- **microSD slot:** drive `SD:` as it is (SPI1, GP10-15).
+- **Buzzer:** GP18, for BEEP, SOUND and PLAY (its mute switch turns it
+  off); the 3.5 mm audio jack is on GP18 (left) and GP19 (right).
+- **Buttons:** GP20, GP21 and GP22, with their own pull-ups: `PIN(20)` is 0
+  while the button is pressed.
+- **RGB LED:** a WS2812 on GP28 (it needs a timed serial signal BASIC
+  doesn't make).
+- **LEDs:** every GPIO has one, so they show what the pins are doing.
+- **Free for your own use:** COM1 (GP8/GP9), `SPI OPEN` (GP4-7), I2C
+  (GP2/GP3) and the Grove connectors on those pins.
 
 ## 8. Memory
 
@@ -804,9 +821,9 @@ The source's `examples` folder has these; send them over with `XRECV`
 | BLINK.BAS | flashes the LED |
 | FADE.BAS | fades the LED with PWM |
 | ANALOG.BAS | shows the ADC inputs and the chip temperature (GP26-29; change line 16 to `FIRST = 40: LAST = 46` on a Pico Plus 2) |
-| SERIAL.BAS | a small terminal on COM1 (GP4 TX, GP5 RX) |
+| SERIAL.BAS | a small terminal on COM1 (GP8 TX, GP9 RX) |
 | I2CSCAN.BAS | lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7 |
-| SPIFLASH.BAS | reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP16-19) |
+| SPIFLASH.BAS | reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP4-7) |
 
 For example, from a shell (terminal closed) and then the terminal:
 
