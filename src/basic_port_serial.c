@@ -33,6 +33,9 @@
 #include "spr.h"
 #include "stack_switch.h"
 #include "usb_console.h"
+#if PICO_BASIC_SD
+#include "sd_card.h"
+#endif
 
 #ifndef SOUND_PIN
 #define SOUND_PIN 15  ///< BEEP, SOUND and PLAY: a piezo or speaker (through a resistor) to ground
@@ -507,6 +510,10 @@ const char *port_pin_reserved(int pin) {
     if (pin == PICO_PSRAM_CS_PIN)
         return "PSRAM";
 #endif
+#if PICO_BASIC_SD
+    if (sd_card_in_use() && sd_card_pin(pin))
+        return "the SD card";
+#endif
     return NULL;
 }
 
@@ -631,7 +638,11 @@ void port_pins_list(void) {
                 snprintf(what, sizeof what, "COM1 %s", pin == serial_tx ? "TX" : pin == serial_rx ? "RX"
                                                        : pin == serial_cts ? "CTS" : "RTS");
             else if (why)
-                snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker" : "PSRAM");
+                snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker"
+#if PICO_BASIC_SD
+                                                  : sd_card_pin(pin) ? "SD card"
+#endif
+                                                  : "PSRAM");
             else if (pin_use[pin] == UNUSED)
                 snprintf(what, sizeof what, "free%s", pin == LED_PIN ? " (LED)" : "");
             else if (pin_use[pin] == PWM) {
@@ -919,6 +930,10 @@ const char *port_spi_open(int sck, int mosi, int miso, int khz, int mode) {
         return why;
     if (khz < 1 || khz > 50000 || mode < 0 || mode > 3)
         return "the speed must be 1-50000 kHz and the mode 0-3";
+#if PICO_BASIC_SD
+    if (sd_card_in_use() && ((sck / 8) & 1) == sd_card_spi())
+        return sd_card_spi() ? "SPI1 is used by the SD card" : "SPI0 is used by the SD card";
+#endif
     spi_bus = (sck / 8) & 1 ? spi1 : spi0;
     spi_init(spi_bus, khz * 1000);
     spi_set_format(spi_bus, 8, (mode & 2) ? SPI_CPOL_1 : SPI_CPOL_0, (mode & 1) ? SPI_CPHA_1 : SPI_CPHA_0,

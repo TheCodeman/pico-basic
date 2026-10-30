@@ -61,6 +61,7 @@ The only other wiring is optional:
 | Board pin | Connect to |
 |---|---|
 | GP15 (pin 20) | a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY |
+| GP16-19, 3V3, GND | a microSD card breakout, as drive `SD:` (section 4) |
 | SWD (the debug pins) | a Raspberry Pi Debug Probe, for loading programs with OpenOCD (its UART isn't used) |
 
 **3.3 V levels only** on every pin: never connect RS-232 or 5 V signals
@@ -399,6 +400,44 @@ when the board is switched off or BASIC is loaded again.
 - While the flash is being written (a few tens of milliseconds for each
   4 KB) the board does nothing else; background PLAY notes may stretch.
 
+### The SD card (drive SD:)
+
+A microSD card on SPI is a second drive, `SD:` (or `1:`); the flash disk is
+`FLASH:` (or `0:`) and stays the current drive at start-up. Cards formatted
+FAT16, FAT32 (SDHC, up to 32 GB) or exFAT (SDXC) work, as a PC formats them;
+BASIC doesn't format cards.
+
+Wiring, for the usual microSD breakout (one with its own 3.3 V regulator and
+level shifter is fine too, powered from 3V3 or VSYS as it says):
+
+| Card / breakout | Pico pin |
+|---|---|
+| DO (MISO) | GP16 (pin 21) |
+| CS | GP17 (pin 22) |
+| CLK (SCK) | GP18 (pin 24) |
+| DI (MOSI) | GP19 (pin 25) |
+| 3V3 (VCC) | 3V3(OUT) (pin 36) |
+| GND | GND (pin 23) |
+
+(These are SPI0's pins. Others can be chosen when BASIC is built: see the
+README.) The banner shows the card: `SD card (SD:): 7580 MB, 7571 MB free`,
+or `SD card (SD:): none`.
+
+- Use it with a drive in front of a name: `SAVE "SD:GAME"`,
+  `LOAD "SD:/GAMES/GUESS"`, `OPEN "SD:LOG.TXT" FOR APPEND AS #1`,
+  `FILES "SD:"`, `FILES "SD:/GAMES/*.BAS"`, `XRECV "SD:PIC.BMP"`.
+- `CHDIR "SD:"` makes the card the current drive (then names without a
+  drive are on the card), `CHDIR "SD:/GAMES"` its folder too, and
+  `CHDIR "FLASH:"` goes back.
+- Copying between drives: `LOAD "SD:GAME"` then `SAVE "FLASH:GAME"`; for
+  any file, a program that reads one with GET and writes the other with PUT.
+- A card can be put in or taken out while BASIC runs: the next use of `SD:`
+  finds the new one. Close files on it first (CLOSE) and don't pull it out
+  while it is being written.
+- While a card is in, its four pins and SPI0 are BASIC's: `PIN`, `PWM` and
+  `SPI OPEN` on SPI0 refuse them (`SPI OPEN` on SPI1, its default, is fine).
+  Without a card they are free.
+
 ### Files from programs
 
 Up to 4 files can be open at once, numbered #1 to #4. File names are
@@ -564,6 +603,7 @@ Pins BASIC itself uses are refused, e.g. `GP15 is used by the speaker
 | Pins | Used by |
 |---|---|
 | GP15 | the speaker |
+| GP16-19 | the SD card, while one is in |
 | GP47 (Pico Plus 2) | the PSRAM |
 | COM1's, I2C's and SPI's pins | while they are open |
 

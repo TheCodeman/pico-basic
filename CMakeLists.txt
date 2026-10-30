@@ -18,6 +18,8 @@ add_executable(pico_basic
     src/basic.c
     src/basic_port_serial.c
     src/flash_disk.c
+    src/diskio.c
+    src/sd_card.c
     src/stack_switch.c
     src/xfer.c
     src/fatfs/ff.c
@@ -68,6 +70,22 @@ target_compile_definitions(pico_basic PRIVATE
 # instead of assuming it is fitted; others have none.
 if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
     target_compile_definitions(pico_basic PRIVATE PICO_AUTO_DETECT_PSRAM_SIZE=1)
+endif()
+
+# A microSD card over SPI as a second drive ("1:" or "SD:"). Default pins:
+# SPI0 with MISO GP16, CS GP17, SCK GP18, MOSI GP19 (the usual Pico SD
+# wiring; SPI1, BASIC's own SPI OPEN default, stays free).
+option(PICO_BASIC_SD "An SD card over SPI as drive 1: (SD:)" ON)
+set(SD_SPI 0 CACHE STRING "SD card: SPI controller (0 or 1)")
+set(SD_MISO 16 CACHE STRING "SD card: MISO pin (card DO)")
+set(SD_CS 17 CACHE STRING "SD card: CS pin")
+set(SD_SCK 18 CACHE STRING "SD card: SCK pin (card CLK)")
+set(SD_MOSI 19 CACHE STRING "SD card: MOSI pin (card DI)")
+if(PICO_BASIC_SD)
+    target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=1 SD_SPI=${SD_SPI} SD_MISO=${SD_MISO}
+        SD_CS=${SD_CS} SD_SCK=${SD_SCK} SD_MOSI=${SD_MOSI})
+else()
+    target_compile_definitions(pico_basic PRIVATE PICO_BASIC_SD=0)
 endif()
 
 # -DDISK_TRACE=ON: a build that starts USB first, waits for a terminal, and

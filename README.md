@@ -84,6 +84,29 @@ editing has history, and `EDIT n` puts a line on the input line.
 and `PEEK` of the text screen give spaces, because a terminal can't be read
 back.
 
+## The SD card
+
+A microSD card over SPI is a second drive, `SD:` (or `1:`), next to the
+flash disk (`FLASH:` or `0:`, the current drive at start-up): FAT16, FAT32
+or exFAT, formatted on a PC. `SAVE "SD:GAME"`, `FILES "SD:"`,
+`CHDIR "SD:"` (the card becomes the current drive), `XRECV "SD:FILE"`. A
+card can be swapped while BASIC runs. The banner shows it, or
+`SD card (SD:): none`.
+
+| microSD breakout | Pico pin |
+|---|---|
+| DO (MISO) | GP16 (pin 21) |
+| CS | GP17 (pin 22) |
+| CLK (SCK) | GP18 (pin 24) |
+| DI (MOSI) | GP19 (pin 25) |
+| VCC | 3V3(OUT) (pin 36), 3.3 V only |
+| GND | GND (pin 23) |
+
+Build options: `-DPICO_BASIC_SD=OFF` leaves it out; `-DSD_SPI=1
+-DSD_MISO=12 -DSD_CS=13 -DSD_SCK=10 -DSD_MOSI=11` (for example) choose other
+pins (one SPI's MISO, SCK and MOSI pins; CS any). While a card is in, its
+pins and that SPI are refused to `PIN`, `PWM` and `SPI OPEN`.
+
 ## The flash disk
 
 On the first start-up the disk is formatted as FAT (labelled PICOBASIC).

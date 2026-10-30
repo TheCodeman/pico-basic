@@ -56,6 +56,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 </li>
 <li><a href="#4-the-flash-disk-and-data-files">4. The flash disk and data files</a><ul>
 <li><a href="#the-disk">The disk</a></li>
+<li><a href="#the-sd-card-drive-sd">The SD card (drive SD:)</a></li>
 <li><a href="#files-from-programs">Files from programs</a></li>
 </ul>
 </li>
@@ -163,6 +164,10 @@ it as <code>usb-Raspberry_Pi_Pico_...</code>.</p>
 <tr>
 <td>GP15 (pin 20)</td>
 <td>a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY</td>
+</tr>
+<tr>
+<td>GP16-19, 3V3, GND</td>
+<td>a microSD card breakout, as drive <code>SD:</code> (section 4)</td>
 </tr>
 <tr>
 <td>SWD (the debug pins)</td>
@@ -851,6 +856,66 @@ when the board is switched off or BASIC is loaded again.</p>
 <li>While the flash is being written (a few tens of milliseconds for each
   4 KB) the board does nothing else; background PLAY notes may stretch.</li>
 </ul>
+<h3 id="the-sd-card-drive-sd">The SD card (drive SD:)</h3>
+<p>A microSD card on SPI is a second drive, <code>SD:</code> (or <code>1:</code>); the flash disk is
+<code>FLASH:</code> (or <code>0:</code>) and stays the current drive at start-up. Cards formatted
+FAT16, FAT32 (SDHC, up to 32 GB) or exFAT (SDXC) work, as a PC formats them;
+BASIC doesn't format cards.</p>
+<p>Wiring, for the usual microSD breakout (one with its own 3.3 V regulator and
+level shifter is fine too, powered from 3V3 or VSYS as it says):</p>
+<table>
+<thead>
+<tr>
+<th>Card / breakout</th>
+<th>Pico pin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DO (MISO)</td>
+<td>GP16 (pin 21)</td>
+</tr>
+<tr>
+<td>CS</td>
+<td>GP17 (pin 22)</td>
+</tr>
+<tr>
+<td>CLK (SCK)</td>
+<td>GP18 (pin 24)</td>
+</tr>
+<tr>
+<td>DI (MOSI)</td>
+<td>GP19 (pin 25)</td>
+</tr>
+<tr>
+<td>3V3 (VCC)</td>
+<td>3V3(OUT) (pin 36)</td>
+</tr>
+<tr>
+<td>GND</td>
+<td>GND (pin 23)</td>
+</tr>
+</tbody>
+</table>
+<p>(These are SPI0's pins. Others can be chosen when BASIC is built: see the
+README.) The banner shows the card: <code>SD card (SD:): 7580 MB, 7571 MB free</code>,
+or <code>SD card (SD:): none</code>.</p>
+<ul>
+<li>Use it with a drive in front of a name: <code>SAVE "SD:GAME"</code>,
+  <code>LOAD "SD:/GAMES/GUESS"</code>, <code>OPEN "SD:LOG.TXT" FOR APPEND AS #1</code>,
+  <code>FILES "SD:"</code>, <code>FILES "SD:/GAMES/*.BAS"</code>, <code>XRECV "SD:PIC.BMP"</code>.</li>
+<li><code>CHDIR "SD:"</code> makes the card the current drive (then names without a
+  drive are on the card), <code>CHDIR "SD:/GAMES"</code> its folder too, and
+  <code>CHDIR "FLASH:"</code> goes back.</li>
+<li>Copying between drives: <code>LOAD "SD:GAME"</code> then <code>SAVE "FLASH:GAME"</code>; for
+  any file, a program that reads one with GET and writes the other with PUT.</li>
+<li>A card can be put in or taken out while BASIC runs: the next use of <code>SD:</code>
+  finds the new one. Close files on it first (CLOSE) and don't pull it out
+  while it is being written.</li>
+<li>While a card is in, its four pins and SPI0 are BASIC's: <code>PIN</code>, <code>PWM</code> and
+  <code>SPI OPEN</code> on SPI0 refuse them (<code>SPI OPEN</code> on SPI1, its default, is fine).
+  Without a card they are free.</li>
+</ul>
 <h3 id="files-from-programs">Files from programs</h3>
 <p>Up to 4 files can be open at once, numbered #1 to #4. File names are
 relative to the current folder; no extension is added. Each open file uses
@@ -1135,6 +1200,10 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 <tr>
 <td>GP15</td>
 <td>the speaker</td>
+</tr>
+<tr>
+<td>GP16-19</td>
+<td>the SD card, while one is in</td>
 </tr>
 <tr>
 <td>GP47 (Pico Plus 2)</td>

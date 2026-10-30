@@ -13,6 +13,9 @@
 
 #include "basic.h"
 #include "flash_disk.h"
+#if PICO_BASIC_SD
+#include "sd_card.h"
+#endif
 #include "hardware/clocks.h"
 #include "hardware/flash.h"
 #include "hardware/sync.h"
@@ -70,6 +73,10 @@ void __attribute__((naked)) isr_hardfault(void) {
 
 /// Free space on the flash disk, or why it isn't there.
 static const char *disk_error;
+#if PICO_BASIC_SD
+/// Why the SD card isn't mounted ("none": no card), or NULL.
+static const char *sd_error;
+#endif
 
 void board_banner(void) {
 #if PICO_RP2040
@@ -86,6 +93,15 @@ void board_banner(void) {
         flash_disk_space(&total, &free_bytes);
         printf("Flash disk: %u KB, %u KB free\n", (unsigned)(total >> 10), (unsigned)(free_bytes >> 10));
     }
+#if PICO_BASIC_SD
+    uint32_t sd_total, sd_free;
+    sd_card_space(&sd_total, &sd_free);
+    if (sd_total)
+        printf("SD card (SD:): %lu MB, %lu MB free\n", (unsigned long)(sd_total >> 10),
+               (unsigned long)(sd_free >> 10));
+    else
+        printf("SD card (SD:): %s\n", sd_error ? sd_error : "none");
+#endif
 }
 
 /// Runs BASIC (on its own stack); SYSTEM comes back here.
@@ -158,6 +174,9 @@ int main(void) {
 #else
     disk_error = flash_disk_mount();
     stdio_init_all();
+#endif
+#if PICO_BASIC_SD
+    sd_error = sd_card_mount();
 #endif
     // A terminal already open on the USB port connects within a second or
     // so of the board appearing; without one, BASIC starts anyway.

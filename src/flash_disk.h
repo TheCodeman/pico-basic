@@ -14,6 +14,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "ff.h"
+#include "diskio.h"
+
+/// FatFs's disk functions for the flash disk (diskio.c passes drive 0 here).
+///@{
+DSTATUS flash_disk_status(BYTE pdrv);
+DSTATUS flash_disk_initialize(BYTE pdrv);
+DRESULT flash_disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count);
+DRESULT flash_disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count);
+DRESULT flash_disk_ioctl(BYTE pdrv, BYTE cmd, void *buff);
+///@}
+
 /// Mounts the disk, formatting it first if it has no FAT file system (the
 /// first start-up). NULL if it is ready, else what went wrong.
 /// @return NULL, or why not

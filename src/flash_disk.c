@@ -170,15 +170,15 @@ static bool cache_flush(void) {
     return true;
 }
 
-DSTATUS disk_status(BYTE pdrv) {
+DSTATUS flash_disk_status(BYTE pdrv) {
     return pdrv ? STA_NOINIT : 0;
 }
 
-DSTATUS disk_initialize(BYTE pdrv) {
-    return disk_status(pdrv);
+DSTATUS flash_disk_initialize(BYTE pdrv) {
+    return flash_disk_status(pdrv);
 }
 
-DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
+DRESULT flash_disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     MARK(0x20000000u | (uint32_t)sector << 8 | count);
     if (pdrv || sector + count > DISK_SECTORS)
         return RES_PARERR;
@@ -192,7 +192,7 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     return RES_OK;
 }
 
-DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
+DRESULT flash_disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
     MARK(0x10000000u | (uint32_t)sector << 8 | count);
     if (pdrv || sector + count > DISK_SECTORS) {
         snprintf(disk_error, sizeof disk_error, "write of %u at %lu, past %u", (unsigned)count,
@@ -218,7 +218,7 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
     return RES_OK;
 }
 
-DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff) {
+DRESULT flash_disk_ioctl(BYTE pdrv, BYTE cmd, void *buff) {
     MARK(0x30000000u | cmd);
     if (pdrv)
         return RES_PARERR;
@@ -319,7 +319,7 @@ const char *flash_disk_mount(void) {
         TRACE("test whole block uncached: %d bad\n", bad);
     }
 #endif
-    FRESULT r = f_mount(&fs, "", 1);
+    FRESULT r = f_mount(&fs, "0:", 1);
     TRACE("f_mount %d\n", r);
     if (r == FR_NO_FILESYSTEM) {
         // The first start-up: FAT with 4 KB clusters, one to an erase block.
@@ -338,7 +338,7 @@ const char *flash_disk_mount(void) {
         MARK(0x65000000u);
 #endif
         MARK(0x60000000u);
-        r = f_mkfs("", &opt, work, BLOCK);
+        r = f_mkfs("0:", &opt, work, BLOCK);
         MARK(0x70000000u);
         TRACE("f_mkfs %d\n", r);
         free(work);
@@ -348,9 +348,9 @@ const char *flash_disk_mount(void) {
                      disk_error[0] ? ": " : "", disk_error);
             return msg;
         }
-        r = f_mount(&fs, "", 1);
+        r = f_mount(&fs, "0:", 1);
         if (r == FR_OK)
-            f_setlabel("PICOBASIC");
+            f_setlabel("0:PICOBASIC");
     }
     if (r != FR_OK) {
         static char msg[100];
@@ -368,7 +368,7 @@ void flash_disk_space(uint32_t *total, uint32_t *free_bytes) {
         return;
     FATFS *f;
     DWORD clusters;
-    if (f_getfree("", &clusters, &f) != FR_OK)
+    if (f_getfree("0:", &clusters, &f) != FR_OK)
         return;
     *total = (f->n_fatent - 2) * f->csize * SECTOR;
     *free_bytes = clusters * f->csize * SECTOR;

@@ -7442,15 +7442,23 @@ static value_t dir_function(void) {
 
 /// FILES [pattern].
 static void do_files(void) {
-    char pattern[64] = "*";
+    char arg[128] = "*";
     skip_spaces();
     if (!at_end_of_statement())
-        snprintf(pattern, sizeof pattern, "%s", str_expr());
+        snprintf(arg, sizeof arg, "%s", str_expr());
+    // A drive and folder may come first: "SD:", "SD:/GAMES/*.BAS".
+    char folder[128] = "", pattern[64];
+    const char *name = arg;
+    for (const char *c = arg; *c; ++c)
+        if (*c == '/' || *c == ':')
+            name = c + 1;
+    snprintf(folder, sizeof folder, "%.*s", (int)(name - arg), arg);
+    snprintf(pattern, sizeof pattern, "%s", *name ? name : "*");
     for (char *c = pattern; *c; ++c)
         *c = toupper((unsigned char)*c);
     DIR dir;
     FILINFO info;
-    FRESULT r = f_opendir(&dir, "");
+    FRESULT r = f_opendir(&dir, folder);
     if (r != FR_OK)
         error(fresult_error(r));
     int col = 0, shown = 0;
@@ -7486,7 +7494,7 @@ static void do_files(void) {
     // As GW-BASIC: the disk's free space after the list.
     FATFS *fs;
     DWORD clusters;
-    if (f_getfree("", &clusters, &fs) == FR_OK) {
+    if (f_getfree(folder, &clusters, &fs) == FR_OK) {
         char buf[40];
         snprintf(buf, sizeof buf, "%lu Bytes free",
                  (unsigned long)((uint64_t)clusters * fs->csize * FF_MAX_SS));
@@ -8583,7 +8591,17 @@ static int statement(void) {
         char path[128];
         const char *ps = str_expr();
         snprintf(path, sizeof path, "%.*s", (int)slen(ps), ps);
-        FRESULT r = which == 'C' ? f_chdir(path) : which == 'M' ? f_mkdir(path) : f_unlink(path);
+        FRESULT r;
+        if (which == 'C') {
+            // A drive ("SD:", "1:", "FLASH:") becomes the current drive, then
+            // any folder after it the current folder there.
+            const char *colon = strchr(path, ':');
+            r = colon ? f_chdrive(path) : FR_OK;
+            if (r == FR_OK && (!colon || colon[1]))
+                r = f_chdir(path);
+        } else {
+            r = which == 'M' ? f_mkdir(path) : f_unlink(path);
+        }
         if (r != FR_OK)
             error(r == FR_EXIST ? E_PATH_ACCESS : r == FR_DENIED ? E_PATH_ACCESS : r == FR_NO_PATH || r == FR_NO_FILE ? E_PATH_NOT_FOUND : fresult_error(r));
     } else if (accept_word("ENVIRON")) {
