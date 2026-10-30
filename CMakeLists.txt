@@ -30,6 +30,7 @@ target_link_libraries(pico_basic
     pico_stdlib
     hardware_adc
     hardware_flash
+    pico_flash
     hardware_i2c
     hardware_irq
     hardware_pwm
@@ -67,6 +68,13 @@ target_compile_definitions(pico_basic PRIVATE
 # instead of assuming it is fitted; others have none.
 if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
     target_compile_definitions(pico_basic PRIVATE PICO_AUTO_DETECT_PSRAM_SIZE=1)
+endif()
+
+# -DDISK_TRACE=ON: a build that starts USB first, waits for a terminal, and
+# prints each step of mounting (and formatting) the flash disk.
+option(DISK_TRACE "Trace the flash disk's mount and format on the console" OFF)
+if(DISK_TRACE)
+    target_compile_definitions(pico_basic PRIVATE DISK_TRACE=1)
 endif()
 
 # The console: the board's own USB port, as a USB serial (CDC) device
