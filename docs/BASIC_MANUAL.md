@@ -149,9 +149,42 @@ At the `Ok` prompt and in `INPUT`:
 | Ctrl-C | abandons the line |
 
 `EDIT n` (or `EDIT .`, the last line typed or the one that failed) puts a
-program line on the input line to change; Enter stores it. A long line runs
+program line on the input line to change; Enter stores it. `EDIT` alone
+opens the whole program in the full-screen editor (below). A long line runs
 on over several rows. Pasting a whole listing into the terminal at the `Ok`
 prompt enters it line by line.
+
+### Full-screen editor
+
+`EDIT` shows the program one line per row, to move around and change
+freely; `EDIT "file"` edits any text file (on `FLASH:` or `SD:`) the same
+way. It asks the terminal its size (80 x 24 if it doesn't say), and the
+bottom line shows where you are: `Program *  Ln 3/12 Col 5  INS`.
+
+| Key | Does |
+|---|---|
+| Arrows, Home, End, PgUp, PgDn | move |
+| Ctrl-Home, Ctrl-End | the top, the bottom |
+| Backspace, Delete | delete (at a line's ends they join lines) |
+| Enter | split the line |
+| Insert | insert or overwrite |
+| Tab | spaces to the next column of 4 |
+| Ctrl-Y or Ctrl-K | cut the line (pressed again, the next one is added) |
+| Ctrl-U | paste the cut lines above the cursor |
+| Ctrl-F, F3 | find, find the next (any case) |
+| Ctrl-G | go to a line (in a program: a BASIC line number) |
+| Ctrl-S | save |
+| Esc or Ctrl-Q | leave (asks whether to save the changes) |
+| Ctrl-L | draw the screen again |
+| F1 | the keys |
+
+When a program is saved, every line that isn't blank must start with a
+line number (0-65529, 255 characters at most); otherwise nothing is saved,
+the cursor goes to the line, and the bottom line says why. The lines are
+then taken as if typed: in any order, blank ones left out. Leaving without
+saving keeps the program as it was. Ctrl-S needs the terminal's flow
+control off (XON/XOFF would swallow it): gtkterm, minicom and picocom have
+it off unless set.
 
 ## 2. Program and direct commands
 

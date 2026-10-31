@@ -28,7 +28,7 @@ figure { margin: .8em 0; text-align: center; page-break-inside: avoid; }
 figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333; }
 </style></head><body>
 <div class="cover"><h1 class="title">Pico BASIC User&#x27;s Manual</h1>
-<div class="sub">Pico BASIC for the RP2350 &middot; October 30, 2026</div>
+<div class="sub">Pico BASIC for the RP2350 &middot; October 31, 2026</div>
 </div>
 <div class="contents"><div class="tochead">Contents</div><div class="toc">
 <ul>
@@ -40,6 +40,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#first-program">First program</a></li>
 <li><a href="#autorunbas">AUTORUN.BAS</a></li>
 <li><a href="#editing-a-line">Editing a line</a></li>
+<li><a href="#full-screen-editor">Full-screen editor</a></li>
 </ul>
 </li>
 <li><a href="#2-program-and-direct-commands">2. Program and direct commands</a></li>
@@ -471,9 +472,88 @@ it. <code>RUN "NEODEMO"</code> saved as AUTORUN (<code>LOAD "NEODEMO"</code> the
 </tbody>
 </table>
 <p><code>EDIT n</code> (or <code>EDIT .</code>, the last line typed or the one that failed) puts a
-program line on the input line to change; Enter stores it. A long line runs
+program line on the input line to change; Enter stores it. <code>EDIT</code> alone
+opens the whole program in the full-screen editor (below). A long line runs
 on over several rows. Pasting a whole listing into the terminal at the <code>Ok</code>
 prompt enters it line by line.</p>
+<h3 id="full-screen-editor">Full-screen editor</h3>
+<p><code>EDIT</code> shows the program one line per row, to move around and change
+freely; <code>EDIT "file"</code> edits any text file (on <code>FLASH:</code> or <code>SD:</code>) the same
+way. It asks the terminal its size (80 x 24 if it doesn't say), and the
+bottom line shows where you are: <code>Program *  Ln 3/12 Col 5  INS</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arrows, Home, End, PgUp, PgDn</td>
+<td>move</td>
+</tr>
+<tr>
+<td>Ctrl-Home, Ctrl-End</td>
+<td>the top, the bottom</td>
+</tr>
+<tr>
+<td>Backspace, Delete</td>
+<td>delete (at a line's ends they join lines)</td>
+</tr>
+<tr>
+<td>Enter</td>
+<td>split the line</td>
+</tr>
+<tr>
+<td>Insert</td>
+<td>insert or overwrite</td>
+</tr>
+<tr>
+<td>Tab</td>
+<td>spaces to the next column of 4</td>
+</tr>
+<tr>
+<td>Ctrl-Y or Ctrl-K</td>
+<td>cut the line (pressed again, the next one is added)</td>
+</tr>
+<tr>
+<td>Ctrl-U</td>
+<td>paste the cut lines above the cursor</td>
+</tr>
+<tr>
+<td>Ctrl-F, F3</td>
+<td>find, find the next (any case)</td>
+</tr>
+<tr>
+<td>Ctrl-G</td>
+<td>go to a line (in a program: a BASIC line number)</td>
+</tr>
+<tr>
+<td>Ctrl-S</td>
+<td>save</td>
+</tr>
+<tr>
+<td>Esc or Ctrl-Q</td>
+<td>leave (asks whether to save the changes)</td>
+</tr>
+<tr>
+<td>Ctrl-L</td>
+<td>draw the screen again</td>
+</tr>
+<tr>
+<td>F1</td>
+<td>the keys</td>
+</tr>
+</tbody>
+</table>
+<p>When a program is saved, every line that isn't blank must start with a
+line number (0-65529, 255 characters at most); otherwise nothing is saved,
+the cursor goes to the line, and the bottom line says why. The lines are
+then taken as if typed: in any order, blank ones left out. Leaving without
+saving keeps the program as it was. Ctrl-S needs the terminal's flow
+control off (XON/XOFF would swallow it): gtkterm, minicom and picocom have
+it off unless set.</p>
 <h2 id="2-program-and-direct-commands">2. Program and direct commands</h2>
 <table>
 <thead>
@@ -2372,8 +2452,12 @@ NEODEMO.BAS
 </code></pre>
 <p>See also: <a href="#ref-files">FILES</a></p>
 <h3 id="ref-edit">EDIT</h3>
-<p><em>Command</em> · <code>EDIT n | EDIT .</code></p>
-<p>Puts program line <code>n</code> (or <code>.</code>, the last line typed or the one that failed) on the input line to change; Enter stores it.</p>
+<p><em>Command</em> · <code>EDIT | EDIT file$ | EDIT n | EDIT .</code></p>
+<p><code>EDIT</code> opens the program in the full-screen editor (see the manual's Full-screen editor section); <code>EDIT file$</code> edits any text file there. <code>EDIT n</code> (or <code>.</code>, the last line typed or the one that failed) puts program line <code>n</code> on the input line to change; Enter stores it.</p>
+<ul>
+<li>In the full-screen editor Ctrl-S saves and Esc leaves. A program is only taken if every non-blank line starts with a line number (0-65529, 255 characters at most): otherwise nothing is saved and the cursor goes to the bad line.</li>
+<li>Leaving without saving keeps the program as it was. Blank lines are left out.</li>
+</ul>
 <p>Example:</p>
 <pre><code>EDIT 20
 </code></pre>

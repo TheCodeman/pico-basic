@@ -76,7 +76,9 @@ as ANSI codes, and `INKEY$` with cursor and function keys. Then `BEEP`,
 `SOUND` and `PLAY` on the speaker pin; `NEOPIXEL` for WS2812B LEDs (the
 Maker Pi Pico's RGB LED on GP28, or strips on any pin); `PIN`, `PWM`, `SERVO`, `ADC` and
 `TEMP()`; `I2C` and `SPI`; COM1; and `TIMER`, `DATE$` and `TIME$`. Line
-editing has history, and `EDIT n` puts a line on the input line.
+editing has history, `EDIT n` puts a line on the input line, and `EDIT`
+opens the program (or `EDIT "file"` any text file) in a full-screen editor
+on the terminal (`src/term_editor.c`).
 
 ## AUTORUN.BAS
 
