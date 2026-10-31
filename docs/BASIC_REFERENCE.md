@@ -2899,6 +2899,9 @@ See also: [NEW](#ref-new)
 
 In PRINT, moves to column `n` (1-80); to the next line first if the cursor is already past it.
 
+- As in GW-BASIC: at column `n` already, it does nothing; past it, it goes to column `n` of the next line. So `PRINT T; TAB(4); "hello"` stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).
+- Give TAB room for the widest number (`TAB(6)` for up to 999), or a fixed width: `PRINT USING "### "; T;: PRINT "hello"`.
+
 Example:
 
 ```

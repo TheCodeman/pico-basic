@@ -216,7 +216,9 @@ e('PRINT USING', 'Statement', 'PRINT USING fmt$; items[;]', 'Prints numbers and 
   ['Also `PRINT #n, USING`, and after other items: `PRINT "X ="; USING "##.#"; X`.', 'A number too big for its field is printed in full after a `%`.'],
   'PRINT USING "###.##"; 3.14159; -2', '  3.14 -2.00', ['PRINT'], T)
 e('SPC', 'Function', 'SPC(n)', 'In PRINT, prints `n` spaces.', [], 'PRINT "A"; SPC(3); "B"', 'A   B', ['TAB', 'SPACE$'], T)
-e('TAB', 'Function', 'TAB(n)', 'In PRINT, moves to column `n` (1-80); to the next line first if the cursor is already past it.', [], 'PRINT "A"; TAB(10); "B"', 'A        B', ['SPC', 'LOCATE'], T)
+e('TAB', 'Function', 'TAB(n)', 'In PRINT, moves to column `n` (1-80); to the next line first if the cursor is already past it.',
+  ['As in GW-BASIC: at column `n` already, it does nothing; past it, it goes to column `n` of the next line. So `PRINT T; TAB(4); "hello"` stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).',
+   'Give TAB room for the widest number (`TAB(6)` for up to 999), or a fixed width: `PRINT USING "### "; T;: PRINT "hello"`.'], 'PRINT "A"; TAB(10); "B"', 'A        B', ['SPC', 'LOCATE'], T)
 e('VIEW PRINT', 'Statement', 'VIEW PRINT [top TO bottom]', 'Makes only rows `top` to `bottom` scroll (an ANSI scroll region); `VIEW PRINT` alone undoes it.', [], 'VIEW PRINT 5 TO 20', '', ['LOCATE', 'CLS'], T)
 e('WIDTH', 'Statement', 'WIDTH n', 'Accepted for old programs; the screen stays 80 columns.', [], '', '', [], T)
 e('WRITE', 'Statement', 'WRITE [items]', 'Prints the items separated by commas, strings in quotes, numbers without spaces: what INPUT # reads back exactly.', [], 'WRITE "Ann", 120', '"Ann",120', ['WRITE #', 'PRINT'], T)
