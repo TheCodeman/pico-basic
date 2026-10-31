@@ -38,6 +38,8 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#connecting">Connecting</a></li>
 <li><a href="#the-terminal">The terminal</a></li>
 <li><a href="#first-program">First program</a></li>
+<li><a href="#programs-without-line-numbers">Programs without line numbers</a></li>
+<li><a href="#formatted-listings">Formatted listings</a></li>
 <li><a href="#autorunbas">AUTORUN.BAS</a></li>
 <li><a href="#editing-a-line">Editing a line</a></li>
 <li><a href="#full-screen-editor">Full-screen editor</a></li>
@@ -144,6 +146,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-files">FILES</a></li>
 <li><a href="#ref-fix">FIX</a></li>
 <li><a href="#ref-for">FOR</a></li>
+<li><a href="#ref-format">FORMAT</a></li>
 <li><a href="#ref-fre">FRE</a></li>
 <li><a href="#ref-freefile">FREEFILE</a></li>
 <li><a href="#ref-get">GET</a></li>
@@ -191,6 +194,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-new">NEW</a></li>
 <li><a href="#ref-next">NEXT</a></li>
 <li><a href="#ref-not">NOT</a></li>
+<li><a href="#ref-numbers">NUMBERS</a></li>
 <li><a href="#ref-oct">OCT$</a></li>
 <li><a href="#ref-on-com">ON COM</a></li>
 <li><a href="#ref-on-error-goto">ON ERROR GOTO</a></li>
@@ -410,6 +414,84 @@ SAVE "HELLO"
 <li><code>SYSTEM</code> (or <code>BYE</code>) clears everything and starts BASIC afresh, as after a
   reset (files on the disk stay).</li>
 </ul>
+<h3 id="programs-without-line-numbers">Programs without line numbers</h3>
+<p>Line numbers are optional. A program written in the full-screen editor
+(<code>EDIT</code>, below), or in a text file on the PC, can leave them out and use
+<strong>labels</strong> instead: a name and a colon starting a line. GOTO, GOSUB, ON ...
+GOTO/GOSUB, IF ... THEN/ELSE, RESTORE, RESUME, ON ERROR GOTO, ON KEY(n) GOSUB
+and RUN take a label wherever they take a line number:</p>
+<pre><code>' Count to 3, then stop
+I = 0
+again:
+  I = I + 1
+  PRINT "HELLO"; I
+  IF I &lt; 3 THEN again
+GOSUB done
+END
+
+done: PRINT "Done"
+RETURN
+</code></pre>
+<ul>
+<li>A label is letters, digits, <code>.</code> and <code>_</code>, starting with a letter, up to 40
+  characters; any case (BASIC shows it in capitals, as it does names). It can
+  have statements after it on its line (<code>done: PRINT "Done"</code>). Two of the
+  same name stop RUN with <code>Duplicate label</code>; a jump to one that isn't there
+  is <code>Undefined label</code>.</li>
+<li>A statement keyword alone or with a number after it is a statement, not a
+  label: <code>CLS:</code> and <code>SCREEN0:</code> are statements, <code>ENDGAME:</code> is a label.</li>
+<li>After THEN or ELSE a label jumps when nothing else follows it (<code>THEN
+  again</code>); <code>THEN GOTO again</code> always works.</li>
+<li>A file's lines all have numbers or none do (LOAD says <code>Bad file mode</code>
+  if it mixes them). Without numbers, each line's number is its line in the
+  file, blank lines too: errors say <code>Syntax error in line 12</code> (Ctrl-G 12 in
+  the editor goes there), and ERL and TRON give these numbers. LIST, SAVE and
+  EDIT show the program without them.</li>
+<li>Labels work in numbered programs too.</li>
+<li>Typing a numbered line, AUTO, <code>EDIT n</code>, RENUM and MERGE need line numbers;
+  with a program without them, use <code>EDIT</code>.</li>
+<li><code>NUMBERS OFF</code> takes the numbers off a program: each line something jumps
+  to gets a label <code>L</code> and its old number (<code>L100:</code>), and the jumps use it.
+  <code>NUMBERS ON</code> numbers the lines 10, 20, 30... (labels stay). Numbers in
+  <code>ERL</code> comparisons (<code>IF ERL = 100</code>) aren't changed.</li>
+<li><code>examples/LABELS.BAS</code> is a menu program with labels.</li>
+</ul>
+<h3 id="formatted-listings">Formatted listings</h3>
+<p>LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
+and WHILE ... WEND loops go in two spaces a level, and in a program without
+line numbers so do the subroutines. Labels stay at the left; blank lines are
+kept:</p>
+<pre><code>' Count to 3, then stop
+I = 0
+again:
+I = I + 1
+FOR J = 1 TO I
+  PRINT J;
+NEXT
+IF I &lt; 3 THEN again
+GOSUB done
+END
+
+done:
+  PRINT "Done"
+  RETURN
+</code></pre>
+<ul>
+<li>
+<p>A subroutine is a label that GOSUB, ON ... GOSUB or ON KEY(n) GOSUB calls,
+  or ON ERROR GOTO goes to. Its lines are indented up to the next
+  subroutine, or the next label after the RETURN or RESUME that ends it.
+  Other labels (GOTO's, RESTORE's) don't change the indent.</p>
+</li>
+<li>
+<p>Only the look changes: loading a program (and leaving EDIT) takes the
+  indents off again, so you can indent as you like or not at all.</p>
+</li>
+<li>In a numbered program the indent goes after the number (<code>20   PRINT J;</code>).</li>
+<li><code>FORMAT OFF</code> shows the lines as stored, <code>FORMAT ON</code> indents again, and
+  <code>FORMAT n</code> sets the spaces a level (1-8).</li>
+<li>NEXT and WEND that close more blocks than are open just stop at the left.</li>
+</ul>
 <h3 id="autorunbas">AUTORUN.BAS</h3>
 <p>At power-up (and after a reset, but not after <code>SYSTEM</code>) BASIC runs
 <code>AUTORUN.BAS</code> if there is one: on the SD card first, so a card can override,
@@ -583,7 +665,7 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 </tr>
 <tr>
 <td><code>RUN line</code></td>
-<td>Runs from that line.</td>
+<td>Runs from that line (or label).</td>
 </tr>
 <tr>
 <td><code>RUN "file"</code></td>
@@ -643,7 +725,15 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 </tr>
 <tr>
 <td><code>RENUM [new][,[old][,step]]</code></td>
-<td>Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RUN targets with them.</td>
+<td>Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RESUME/RUN targets with them.</td>
+</tr>
+<tr>
+<td><code>FORMAT ON</code> / <code>FORMAT OFF</code> / <code>FORMAT n</code></td>
+<td>LIST, EDIT and SAVE indent loop bodies and the lines under labels (on at start-up; <code>n</code>: spaces a level, 1-8).</td>
+</tr>
+<tr>
+<td><code>NUMBERS OFF</code> / <code>NUMBERS ON</code></td>
+<td>Takes a program's line numbers off (the lines jumped to get labels such as <code>L100:</code>), or numbers it 10, 20, 30... (section 1).</td>
 </tr>
 <tr>
 <td><code>AUTO [start][,step]</code></td>
@@ -768,7 +858,7 @@ SAVE "PRIMES2"
 <tbody>
 <tr>
 <td><code>GOTO line</code></td>
-<td><code>GOTO 100</code></td>
+<td><code>GOTO 100</code>, or a label: <code>GOTO again</code> (section 1)</td>
 </tr>
 <tr>
 <td><code>GOSUB line</code> ... <code>RETURN</code></td>
@@ -1769,8 +1859,8 @@ comes straight back.</p>
   <code>Out of memory</code> rather than crashing.</li>
 </ul>
 <h2 id="9-errors">9. Errors</h2>
-<p>Errors print as <code>&lt;message&gt; in &lt;line&gt;</code> (or just the message in direct mode),
-and <code>ERR</code> gives the code:</p>
+<p>Errors print as <code>&lt;message&gt; in &lt;line&gt;</code> (<code>in line &lt;n&gt;</code> for a program without
+line numbers; just the message in direct mode), and <code>ERR</code> gives the code:</p>
 <table>
 <thead>
 <tr>
@@ -1943,6 +2033,18 @@ and <code>ERR</code> gives the code:</p>
 <td>76</td>
 <td>Path not found</td>
 </tr>
+<tr>
+<td></td>
+<td></td>
+<td>80</td>
+<td>Undefined label</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>81</td>
+<td>Duplicate label</td>
+</tr>
 </tbody>
 </table>
 <p>Codes BASIC itself never raises can still be raised with <code>ERROR n</code>; unknown
@@ -1973,6 +2075,10 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 <tr>
 <td>PRIMES.BAS</td>
 <td>prints the primes below 1000</td>
+</tr>
+<tr>
+<td>LABELS.BAS</td>
+<td>a menu program without line numbers: GOSUB, ON GOSUB, RESTORE, ON ERROR GOTO and RESUME with labels</td>
 </tr>
 <tr>
 <td>GUESS.BAS</td>
@@ -2028,7 +2134,7 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
 <p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
@@ -2648,6 +2754,25 @@ RUN
 <pre><code> 10  7  4  1
 </code></pre>
 <p>See also: <a href="#ref-next">NEXT</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-while">WHILE</a></p>
+<h3 id="ref-format">FORMAT</h3>
+<p><em>Command</em> · <code>FORMAT ON | FORMAT OFF | FORMAT n</code></p>
+<p>Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by <code>n</code> spaces a level (2 to start with, 1-8), and in a program without line numbers the subroutines (the lines under a label GOSUB calls or ON ERROR GOTO goes to; labels stay at the left).</p>
+<ul>
+<li>Only the look changes: loading a program takes the indent off again.</li>
+<li>On at start-up.</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 FOR I = 1 TO 2
+20 PRINT I
+30 NEXT
+LIST
+</code></pre>
+<p>Shows:</p>
+<pre><code>10 FOR I = 1 TO 2
+20   PRINT I
+30 NEXT
+</code></pre>
+<p>See also: <a href="#ref-list">LIST</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-save">SAVE</a></p>
 <h3 id="ref-fre">FRE</h3>
 <p><em>Function</em> · <code>FRE(x)</code></p>
 <p>The memory free for programs and data, in bytes (<code>x</code> is ignored).</p>
@@ -2675,11 +2800,11 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-put">PUT</a>, <a href="#ref-field">FIELD</a></p>
 <h3 id="ref-gosub">GOSUB</h3>
-<p><em>Statement</em> · <code>GOSUB line</code></p>
-<p>Calls the subroutine at <code>line</code>; RETURN comes back to the statement after the GOSUB.</p>
+<p><em>Statement</em> · <code>GOSUB line | GOSUB label</code></p>
+<p>Calls the subroutine at <code>line</code> (or <code>label</code>); RETURN comes back to the statement after the GOSUB.</p>
 <ul>
 <li>Up to 32 deep.</li>
-<li>Errors: <code>Undefined line number</code> (8).</li>
+<li>Errors: <code>Undefined line number</code> (8), <code>Undefined label</code> (80).</li>
 </ul>
 <p>Example:</p>
 <pre><code>10 GOSUB 100: END
@@ -2691,10 +2816,11 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-return">RETURN</a>, <a href="#ref-ongosub">ON...GOSUB</a></p>
 <h3 id="ref-goto">GOTO</h3>
-<p><em>Statement</em> · <code>GOTO line</code></p>
-<p>Goes on at <code>line</code>.</p>
+<p><em>Statement</em> · <code>GOTO line | GOTO label</code></p>
+<p>Goes on at <code>line</code>, or at the line that starts with <code>label:</code> (a name and a colon).</p>
 <ul>
-<li>Errors: <code>Undefined line number</code> (8).</li>
+<li>Labels: letters, digits, <code>.</code> and <code>_</code>, up to 40, any case; a program can have them with line numbers or without.</li>
+<li>Errors: <code>Undefined line number</code> (8), <code>Undefined label</code> (80), <code>Duplicate label</code> (81, at RUN).</li>
 </ul>
 <p>Example:</p>
 <pre><code>10 PRINT &quot;HI&quot;: GOTO 10
@@ -2749,7 +2875,7 @@ HI
 <p>See also: <a href="#ref-i2cread">I2CREAD</a></p>
 <h3 id="ref-if">IF</h3>
 <p><em>Statement</em> · <code>IF cond THEN statements [ELSE statements] | IF cond THEN line | IF cond GOTO line</code></p>
-<p>Runs the statements after THEN when <code>cond</code> is not 0 (true), else those after ELSE. A line number after THEN or ELSE jumps there.</p>
+<p>Runs the statements after THEN when <code>cond</code> is not 0 (true), else those after ELSE. A line number or label after THEN or ELSE jumps there (a label when nothing else follows it).</p>
 <ul>
 <li>Comparisons give -1 (true) or 0 (false); any number not 0 counts as true.</li>
 <li>Everything to the end of the line belongs to THEN or ELSE.</li>
@@ -3104,6 +3230,22 @@ HI
 <pre><code>-1 -6
 </code></pre>
 <p>See also: <a href="#ref-and">AND</a></p>
+<h3 id="ref-numbers">NUMBERS</h3>
+<p><em>Command</em> · <code>NUMBERS OFF | NUMBERS ON</code></p>
+<p><code>NUMBERS OFF</code> takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (<code>L100:</code>), and those use the label. <code>NUMBERS ON</code> numbers the lines 10, 20, 30... again, keeping the labels.</p>
+<ul>
+<li>A program without numbers is listed, saved and edited without them; its lines' numbers (in errors, ERL, TRON) are their lines in the file.</li>
+<li>Numbers compared with ERL (<code>IF ERL = 100</code>) aren't changed.</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 PRINT &quot;HI&quot;: GOTO 10
+NUMBERS OFF
+LIST
+</code></pre>
+<p>Shows:</p>
+<pre><code>L10: PRINT &quot;HI&quot;: GOTO L10
+</code></pre>
+<p>See also: <a href="#ref-renum">RENUM</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-edit">EDIT</a></p>
 <h3 id="ref-oct">OCT$</h3>
 <p><em>Function</em> · <code>OCT$(n)</code></p>
 <p><code>n</code> (-32768 to 65535) in octal.</p>
@@ -3119,7 +3261,7 @@ HI
 <p>Calls the subroutine when bytes arrive on the open COM1 (with COM(1) ON).</p>
 <p>See also: <a href="#ref-com1">COM(1)</a>, <a href="#ref-open">OPEN</a></p>
 <h3 id="ref-on-error-goto">ON ERROR GOTO</h3>
-<p><em>Statement</em> · <code>ON ERROR GOTO line | ON ERROR GOTO 0</code></p>
+<p><em>Statement</em> · <code>ON ERROR GOTO line | ON ERROR GOTO label | ON ERROR GOTO 0</code></p>
 <p>Sends errors in a running program to an error handler at <code>line</code>. <code>ON ERROR GOTO 0</code> turns that off; inside a handler it reports the error and stops.</p>
 <ul>
 <li>ERR and ERL say what and where; RESUME ends the handler.</li>
@@ -3172,7 +3314,7 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-timer-on">TIMER ON</a></p>
 <h3 id="ref-ongosub">ON...GOSUB</h3>
-<p><em>Statement</em> · <code>ON n GOSUB line1[, line2...]</code></p>
+<p><em>Statement</em> · <code>ON n GOSUB line1[, line2...] (lines or labels)</code></p>
 <p>Calls the n-th subroutine in the list. If <code>n</code> is 0 or past the list, it goes on with the next statement.</p>
 <p>Example:</p>
 <pre><code>10 ON 2 GOSUB 100, 200: END
@@ -3185,7 +3327,7 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-gosub">GOSUB</a></p>
 <h3 id="ref-ongoto">ON...GOTO</h3>
-<p><em>Statement</em> · <code>ON n GOTO line1[, line2...]</code></p>
+<p><em>Statement</em> · <code>ON n GOTO line1[, line2...] (lines or labels)</code></p>
 <p>Goes to the n-th line in the list; with <code>n</code> 0 or past the list, goes on.</p>
 <p>Example:</p>
 <pre><code>ON 1 GOTO 100, 200
@@ -3403,7 +3545,10 @@ RUN
 </code></pre>
 <h3 id="ref-renum">RENUM</h3>
 <p><em>Command</em> · <code>RENUM [new][, [old][, step]]</code></p>
-<p>Renumbers program lines from line <code>old</code> (default the first) as <code>new</code>, <code>new+step</code>... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE and RUN to match.</p>
+<p>Renumbers program lines from line <code>old</code> (default the first) as <code>new</code>, <code>new+step</code>... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME and RUN to match.</p>
+<ul>
+<li>Not for a program without line numbers (NUMBERS ON first).</li>
+</ul>
 <p>Example:</p>
 <pre><code>RENUM 100, , 10
 </code></pre>
@@ -3413,14 +3558,14 @@ RUN
 <p>Closes every open file.</p>
 <p>See also: <a href="#ref-close">CLOSE</a></p>
 <h3 id="ref-restore">RESTORE</h3>
-<p><em>Statement</em> · <code>RESTORE [line]</code></p>
-<p>Makes READ start again from the first DATA (or from <code>line</code>).</p>
+<p><em>Statement</em> · <code>RESTORE [line | label]</code></p>
+<p>Makes READ start again from the first DATA (or from <code>line</code> or <code>label</code>).</p>
 <p>Example:</p>
 <pre><code>RESTORE 500
 </code></pre>
 <p>See also: <a href="#ref-read">READ</a>, <a href="#ref-data">DATA</a></p>
 <h3 id="ref-resume">RESUME</h3>
-<p><em>Statement</em> · <code>RESUME | RESUME NEXT | RESUME line</code></p>
+<p><em>Statement</em> · <code>RESUME | RESUME NEXT | RESUME line | RESUME label</code></p>
 <p>Ends an error handler: <code>RESUME</code> retries the statement that failed, <code>RESUME NEXT</code> goes on after it, <code>RESUME line</code> goes to the line.</p>
 <ul>
 <li>Errors: <code>RESUME without error</code> (20).</li>
@@ -3477,7 +3622,7 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-lset">LSET</a></p>
 <h3 id="ref-run">RUN</h3>
-<p><em>Command</em> · <code>RUN [line] | RUN file$</code></p>
+<p><em>Command</em> · <code>RUN [line | label] | RUN file$</code></p>
 <p>Runs the program from the start (or from <code>line</code>), after clearing the variables, closing files and resetting DATA; <code>RUN file$</code> loads the file first.</p>
 <ul>
 <li>Pins used by the last run are set back to inputs.</li>

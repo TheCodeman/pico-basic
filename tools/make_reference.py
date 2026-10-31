@@ -88,15 +88,24 @@ e('MKDIR', 'Statement', 'MKDIR path$', 'Makes a folder.',
   ['Errors: `Path/File Access Error` (75) if it exists.'], 'MKDIR "SD:/GAMES"', '', ['CHDIR', 'RMDIR'], P)
 e('NAME', 'Statement', 'NAME old$ AS new$', 'Renames a file (or moves it to another folder on the same drive).',
   ['Errors: `File not found` (53), `File already exists` (58).'], 'NAME "A.BAS" AS "B.BAS"', '', ['KILL'], P)
+e('FORMAT', 'Command', 'FORMAT ON | FORMAT OFF | FORMAT n',
+  'Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the subroutines (the lines under a label GOSUB calls or ON ERROR GOTO goes to; labels stay at the left).',
+  ['Only the look changes: loading a program takes the indent off again.', 'On at start-up.'],
+  '10 FOR I = 1 TO 2\n20 PRINT I\n30 NEXT\nLIST', '10 FOR I = 1 TO 2\n20   PRINT I\n30 NEXT', ['LIST', 'EDIT', 'SAVE'], P)
+e('NUMBERS', 'Command', 'NUMBERS OFF | NUMBERS ON',
+  '`NUMBERS OFF` takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (`L100:`), and those use the label. `NUMBERS ON` numbers the lines 10, 20, 30... again, keeping the labels.',
+  ['A program without numbers is listed, saved and edited without them; its lines\' numbers (in errors, ERL, TRON) are their lines in the file.',
+   'Numbers compared with ERL (`IF ERL = 100`) aren\'t changed.'],
+  '10 PRINT "HI": GOTO 10\nNUMBERS OFF\nLIST', 'L10: PRINT "HI": GOTO L10', ['RENUM', 'GOTO', 'EDIT'], P)
 e('NEW', 'Command', 'NEW', 'Deletes the program and its variables, closes files, and frees the pins BASIC used.',
   [], '', '', ['CLEAR', 'DELETE'], P)
 e('RENUM', 'Command', 'RENUM [new][, [old][, step]]',
-  'Renumbers program lines from line `old` (default the first) as `new`, `new+step`... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE and RUN to match.',
-  [], 'RENUM 100, , 10', '', ['AUTO', 'DELETE'], P)
+  'Renumbers program lines from line `old` (default the first) as `new`, `new+step`... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME and RUN to match.',
+  ['Not for a program without line numbers (NUMBERS ON first).'], 'RENUM 100, , 10', '', ['AUTO', 'DELETE'], P)
 e('RESET', 'Statement', 'RESET', 'Closes every open file.', [], '', '', ['CLOSE'], P)
 e('RMDIR', 'Statement', 'RMDIR path$', 'Removes an empty folder.',
   ['Errors: `Path/File Access Error` (75) if it isn\'t empty.'], 'RMDIR "GAMES"', '', ['MKDIR'], P)
-e('RUN', 'Command', 'RUN [line] | RUN file$',
+e('RUN', 'Command', 'RUN [line | label] | RUN file$',
   'Runs the program from the start (or from `line`), after clearing the variables, closing files and resetting DATA; `RUN file$` loads the file first.',
   ['Pins used by the last run are set back to inputs.'], 'RUN "PRIMES"', ' 168 primes below 1000', ['LOAD', 'CONT'], P)
 e('SAVE', 'Command', 'SAVE file$[, A]',
@@ -134,27 +143,28 @@ e('FOR', 'Statement', 'FOR v = a TO b [STEP s] ... NEXT [v]',
   'Repeats the lines up to NEXT with `v` = a, a+s, ... while it hasn\'t passed `b`. STEP defaults to 1; a negative STEP counts down.',
   ['The loop body is skipped when `a` is already past `b`.', 'Up to 32 loops nested.'],
   'FOR I = 10 TO 1 STEP -3: PRINT I;: NEXT', ' 10  7  4  1', ['NEXT', 'EXIT FOR', 'WHILE'], F)
-e('GOSUB', 'Statement', 'GOSUB line', 'Calls the subroutine at `line`; RETURN comes back to the statement after the GOSUB.',
-  ['Up to 32 deep.', 'Errors: `Undefined line number` (8).'], '10 GOSUB 100: END\n100 PRINT "SUB": RETURN\nRUN', 'SUB', ['RETURN', 'ON...GOSUB'], F)
-e('GOTO', 'Statement', 'GOTO line', 'Goes on at `line`.', ['Errors: `Undefined line number` (8).'],
+e('GOSUB', 'Statement', 'GOSUB line | GOSUB label', 'Calls the subroutine at `line` (or `label`); RETURN comes back to the statement after the GOSUB.',
+  ['Up to 32 deep.', 'Errors: `Undefined line number` (8), `Undefined label` (80).'], '10 GOSUB 100: END\n100 PRINT "SUB": RETURN\nRUN', 'SUB', ['RETURN', 'ON...GOSUB'], F)
+e('GOTO', 'Statement', 'GOTO line | GOTO label', 'Goes on at `line`, or at the line that starts with `label:` (a name and a colon).',
+  ['Labels: letters, digits, `.` and `_`, up to 40, any case; a program can have them with line numbers or without.', 'Errors: `Undefined line number` (8), `Undefined label` (80), `Duplicate label` (81, at RUN).'],
   '10 PRINT "HI": GOTO 10\nRUN', 'HI\nHI\n...', ['GOSUB', 'IF'], F)
 e('IF', 'Statement', 'IF cond THEN statements [ELSE statements] | IF cond THEN line | IF cond GOTO line',
-  'Runs the statements after THEN when `cond` is not 0 (true), else those after ELSE. A line number after THEN or ELSE jumps there.',
+  'Runs the statements after THEN when `cond` is not 0 (true), else those after ELSE. A line number or label after THEN or ELSE jumps there (a label when nothing else follows it).',
   ['Comparisons give -1 (true) or 0 (false); any number not 0 counts as true.', 'Everything to the end of the line belongs to THEN or ELSE.'],
   'A = 5: IF A > 3 THEN PRINT "BIG" ELSE PRINT "SMALL"', 'BIG', ['WHILE', 'ON...GOTO'], F)
 e('NEXT', 'Statement', 'NEXT [v[, v...]]', 'Ends a FOR loop: adds the step and goes round again unless the end is passed. `NEXT J, I` ends two loops.',
   ['Errors: `NEXT without FOR` (1).'], 'FOR I = 1 TO 3: PRINT I;: NEXT I', ' 1  2  3', ['FOR'], F)
-e('ON...GOSUB', 'Statement', 'ON n GOSUB line1[, line2...]', 'Calls the n-th subroutine in the list. If `n` is 0 or past the list, it goes on with the next statement.',
+e('ON...GOSUB', 'Statement', 'ON n GOSUB line1[, line2...] (lines or labels)', 'Calls the n-th subroutine in the list. If `n` is 0 or past the list, it goes on with the next statement.',
   [], '10 ON 2 GOSUB 100, 200: END\n100 PRINT "A": RETURN\n200 PRINT "B": RETURN\nRUN', 'B', ['ON...GOTO', 'GOSUB'], F)
-e('ON...GOTO', 'Statement', 'ON n GOTO line1[, line2...]', 'Goes to the n-th line in the list; with `n` 0 or past the list, goes on.',
+e('ON...GOTO', 'Statement', 'ON n GOTO line1[, line2...] (lines or labels)', 'Goes to the n-th line in the list; with `n` 0 or past the list, goes on.',
   [], 'ON 1 GOTO 100, 200', '', ['ON...GOSUB'], F)
-e('ON ERROR GOTO', 'Statement', 'ON ERROR GOTO line | ON ERROR GOTO 0',
+e('ON ERROR GOTO', 'Statement', 'ON ERROR GOTO line | ON ERROR GOTO label | ON ERROR GOTO 0',
   'Sends errors in a running program to an error handler at `line`. `ON ERROR GOTO 0` turns that off; inside a handler it reports the error and stops.',
   ['ERR and ERL say what and where; RESUME ends the handler.', 'Ctrl-C can\'t be trapped.', 'A program that ends inside a handler stops with `No RESUME` (19).'],
   '10 ON ERROR GOTO 100\n20 OPEN "NONE" FOR INPUT AS #1\n30 END\n100 PRINT "no file": RESUME 30\nRUN', 'no file', ['RESUME', 'ERR', 'ERROR'], F)
 e('PAUSE', 'Statement', 'PAUSE ms', 'Waits `ms` milliseconds (an extension); Ctrl-C still stops it.', [], 'PAUSE 500', '', ['TIMER'], F)
 e('REM', 'Statement', "REM text | ' text", 'A remark: the rest of the line is ignored. `\'` is short for `:REM`.', [], "10 REM Setup\n20 X = 1 ' start", '', [], F)
-e('RESUME', 'Statement', 'RESUME | RESUME NEXT | RESUME line',
+e('RESUME', 'Statement', 'RESUME | RESUME NEXT | RESUME line | RESUME label',
   'Ends an error handler: `RESUME` retries the statement that failed, `RESUME NEXT` goes on after it, `RESUME line` goes to the line.',
   ['Errors: `RESUME without error` (20).'], '100 PRINT "skipped": RESUME NEXT', '', ['ON ERROR GOTO'], F)
 e('RETURN', 'Statement', 'RETURN', 'Returns from a GOSUB (or an event subroutine) to the statement after the call. It also ends FOR and WHILE loops started in the subroutine.',
@@ -185,7 +195,7 @@ e('MID$ =', 'Statement', 'MID$(v$, start[, n]) = x$', 'Replaces characters of `v
 e('OPTION BASE', 'Statement', 'OPTION BASE 0 | 1', 'The lowest array subscript, before any array is used.', [], 'OPTION BASE 1: DIM A(3)', '', ['DIM'], V)
 e('RANDOMIZE', 'Statement', 'RANDOMIZE [seed]', 'Starts RND\'s sequence afresh: from the clock without a seed, else from `seed` (the same seed, the same numbers).', [], 'RANDOMIZE: PRINT INT(RND * 6) + 1', ' 4', ['RND'], V)
 e('READ', 'Statement', 'READ var[, var...]', 'Takes the next items from DATA lines, in order.', ['Errors: `Out of DATA` (4); `Syntax error` reading a string into a number.'], '10 READ A, B$: PRINT A; B$\n20 DATA 5, CATS\nRUN', ' 5 CATS', ['DATA', 'RESTORE'], V)
-e('RESTORE', 'Statement', 'RESTORE [line]', 'Makes READ start again from the first DATA (or from `line`).', [], 'RESTORE 500', '', ['READ', 'DATA'], V)
+e('RESTORE', 'Statement', 'RESTORE [line | label]', 'Makes READ start again from the first DATA (or from `line` or `label`).', [], 'RESTORE 500', '', ['READ', 'DATA'], V)
 e('SWAP', 'Statement', 'SWAP a, b', 'Exchanges two variables of the same type.', ['Errors: `Type mismatch` (13).'], 'A = 1: B = 2: SWAP A, B: PRINT A; B', ' 2  1', ['LET'], V)
 
 # ---- Text in and out ---------------------------------------------------------------

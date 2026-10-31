@@ -369,21 +369,47 @@ static bool save(const char *path) {
     return ok;
 }
 
-/// For a program: the first line BASIC wouldn't take (no line number, a
-/// number over 65529, or longer than 255), with why; -1 if all are fine.
-/// Blank lines are fine (they are left out).
+/// Whether a program has line numbers: its first line that isn't blank
+/// starts with one.
+/// @return it has
+static bool program_numbered(void) {
+    for (int i = 0; i < nlines; ++i) {
+        int k = 0;
+        while (k < lines[i].len && (lines[i].s[k] == ' ' || lines[i].s[k] == '\t'))
+            ++k;
+        if (k < lines[i].len)
+            return isdigit((unsigned char)lines[i].s[k]);
+    }
+    return false;
+}
+
+/// For a program: the first line BASIC wouldn't take (a line number in a
+/// program without them or none in one with them, a number over 65529, or
+/// longer than 255), with why; -1 if all are fine. Blank lines are fine.
 /// @param why set to the reason
 /// @return the bad line, or -1
 static int check_program(const char **why) {
+    bool numbered = program_numbered();
     for (int i = 0; i < nlines; ++i) {
         const char *s = lines[i].s;
         int n = lines[i].len, k = 0;
-        while (k < n && s[k] == ' ')
+        while (k < n && (s[k] == ' ' || s[k] == '\t'))
             ++k;
         if (k == n)
             continue;
+        if (n - k > BASIC_LINE) {  // (its indent doesn't count)
+            *why = "a program line can be 255 characters at most";
+            return i;
+        }
+        if (!numbered) {
+            if (isdigit((unsigned char)s[k])) {
+                *why = "a line number, but the first line has none (all or none)";
+                return i;
+            }
+            continue;
+        }
         if (!isdigit((unsigned char)s[k])) {
-            *why = "this line has no line number";
+            *why = "no line number, but the first line has one (all or none)";
             return i;
         }
         long num = 0;
@@ -391,10 +417,6 @@ static int check_program(const char **why) {
             num = num * 10 + (s[k++] - '0');
         if (num > 65529) {
             *why = "line numbers go up to 65529";
-            return i;
-        }
-        if (n > BASIC_LINE) {
-            *why = "a program line can be 255 characters at most";
             return i;
         }
     }
@@ -655,12 +677,13 @@ static void help(void) {
         "  Ctrl-V                            paste above the cursor's line",
         "  Ctrl-Z, Ctrl-R                    undo, redo",
         "  Ctrl-F, F3                        find, find the next",
-        "  Ctrl-G                            go to a line (a program: a line number)",
+        "  Ctrl-G                            go to a line (or a BASIC line number)",
         "  Ctrl-S                            save (a program: BASIC takes it on leaving)",
         "  Esc or Ctrl-Q                     leave (asks if there are changes)",
         "  Ctrl-L                            draw the screen again",
         "",
-        "A program's lines each need a line number; blank lines are left out.",
+        "A program's lines all have line numbers, or none do (then use labels:",
+        "a name and a colon starting a line, LOOP:, and GOTO LOOP).",
         "",
         "Any key goes back.",
     };
@@ -853,10 +876,11 @@ static void find_next(void) {
 /// Ctrl-G: a program's line number, else a line of the file.
 static void go_to_line(void) {
     char buf[12] = "";
-    if (!ask(is_program ? "Go to BASIC line: " : "Go to line: ", buf, sizeof buf) || !buf[0])
+    bool numbered = is_program && program_numbered();
+    if (!ask(numbered ? "Go to BASIC line: " : "Go to line: ", buf, sizeof buf) || !buf[0])
         return;
     long n = strtol(buf, NULL, 10);
-    if (is_program) {
+    if (numbered) {
         for (int i = 0; i < nlines; ++i) {
             const char *s = lines[i].s;
             int k = 0;
