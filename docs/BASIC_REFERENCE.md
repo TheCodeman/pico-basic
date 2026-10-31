@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -460,6 +460,31 @@ COMMON SCORE, NAME$
 ```
 
 See also: [CHAIN](#ref-chain)
+
+### CONFIG {#ref-config}
+
+*Command* · `CONFIG`
+
+Shows the board's settings: whether the SD card is used and its pins, the speaker's pin and NEOPIXEL's default pin, from FLASH:/CONFIG.TXT or the build's defaults, and any problems CONFIG.TXT has.
+
+- Change them with `EDIT "FLASH:CONFIG.TXT"`; they take effect at the next power-up or reset (see the manual's Settings section).
+
+Example:
+
+```
+CONFIG
+```
+
+Shows:
+
+```
+Settings (FLASH:/CONFIG.TXT):
+  SD = OFF
+  SPEAKER = GP18
+  NEOPIXEL = GP28 (NEOPIXEL OPEN's default)
+```
+
+See also: [EDIT](#ref-edit), [NEOPIXEL](#ref-neopixel), [BEEP](#ref-beep)
 
 ### CONT {#ref-cont}
 

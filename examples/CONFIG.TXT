@@ -1,0 +1,21 @@
+# Pico BASIC settings: copy to FLASH:/CONFIG.TXT (XRECV "FLASH:CONFIG.TXT",
+# or EDIT "FLASH:CONFIG.TXT"), then reset the board. CONFIG shows them.
+# # ' or ; start a comment; keys and values can be any case.
+
+# The SD card: ON or OFF (OFF: no card slot, no start-up delay looking for one).
+SD = ON
+# Its pins: SCK, MOSI and MISO of one SPI (SPI0 or SPI1 follows from them), CS any pin.
+# These are the Cytron Maker Pi Pico's slot.
+SD_SCK = 10
+SD_MOSI = 11
+SD_MISO = 12
+SD_CS = 15
+# SPI mode 0-3: 3 works on most slots (the Maker Pi Pico's needs it).
+SD_MODE = 3
+# Pins held up while the card is used (its DAT1 and DAT2, if wired), or none.
+SD_PULLUPS = 13, 14
+
+# BEEP, SOUND and PLAY's pin (none: no speaker).
+SPEAKER = 18
+# NEOPIXEL OPEN's default pin (the Maker Pi Pico's RGB LED is on 28).
+NEOPIXEL = 28

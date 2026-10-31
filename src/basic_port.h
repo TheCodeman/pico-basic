@@ -332,6 +332,12 @@ void port_pixels_bright(int level);  ///< brightness 0-255 for the next shows
 int port_pixels_count(void);  ///< the LEDs open, or 0
 void port_pixels_close(void);  ///< frees the pin and the state machine
 
+/// NEOPIXEL OPEN's default pin (CONFIG.TXT's NEOPIXEL).
+/// @return the pin
+int port_neopixel_pin(void);
+/// CONFIG: prints the board's settings (CONFIG.TXT).
+void port_config_show(void);
+
 /// XSEND "file": sends it over the console by XMODEM (1K blocks with CRC-16,
 /// or 128-byte blocks with a checksum if the receiver asks). XRECV "file":
 /// receives one into it (CRC-16, or a checksum if the sender only has that;

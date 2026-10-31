@@ -48,6 +48,10 @@ e('CLEAR', 'Statement', 'CLEAR [, n[, m]]',
 e('COMMON', 'Statement', 'COMMON var[, var...]',
   'Names the variables CHAIN passes to the next program. Arrays are written with empty brackets: `COMMON A(), N$`.',
   ['Up to 64 names.'], 'COMMON SCORE, NAME$', '', ['CHAIN'], P)
+e('CONFIG', 'Command', 'CONFIG',
+  'Shows the board\'s settings: whether the SD card is used and its pins, the speaker\'s pin and NEOPIXEL\'s default pin, from FLASH:/CONFIG.TXT or the build\'s defaults, and any problems CONFIG.TXT has.',
+  ['Change them with `EDIT "FLASH:CONFIG.TXT"`; they take effect at the next power-up or reset (see the manual\'s Settings section).'],
+  'CONFIG', 'Settings (FLASH:/CONFIG.TXT):\n  SD = OFF\n  SPEAKER = GP18\n  NEOPIXEL = GP28 (NEOPIXEL OPEN\'s default)', ['EDIT', 'NEOPIXEL', 'BEEP'], P)
 e('CONT', 'Command', 'CONT',
   'Carries on with the program after Ctrl-C or STOP, from where it stopped.',
   ['Errors: `Can\'t continue` (17) after the program has been changed or after an error.'],

@@ -13,6 +13,7 @@
 
 #include "basic.h"
 #include "ff.h"
+#include "config.h"
 #include "flash_disk.h"
 #if PICO_BASIC_SD
 #include "sd_card.h"
@@ -104,6 +105,7 @@ void board_banner(void) {
     else
         printf("SD card (SD:): %s\n", sd_error ? sd_error : "none");
 #endif
+    config_warnings();
 }
 
 /// Runs BASIC (on its own stack); SYSTEM comes back here.
@@ -122,7 +124,7 @@ static void run_basic(void *arg) {
 static const char *autorun(void) {
     static const char *const paths[] = {"SD:/AUTORUN.BAS", "FLASH:/AUTORUN.BAS"};
     FILINFO info;
-    for (unsigned i = 0; i < sizeof paths / sizeof *paths; ++i)
+    for (unsigned i = config.sd ? 0 : 1; i < sizeof paths / sizeof *paths; ++i)
         if (f_stat(paths[i], &info) == FR_OK && !(info.fattrib & AM_DIR))
             return paths[i];
     return NULL;
@@ -217,6 +219,7 @@ int main(void) {
     disk_error = flash_disk_mount();
     stdio_init_all();
 #endif
+    config_load();  // FLASH:/CONFIG.TXT: the SD card's pins and so on
     console_backlog_start();
 #if PICO_BASIC_SD
     sd_error = sd_card_mount();

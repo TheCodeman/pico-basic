@@ -1604,7 +1604,7 @@ static const char *const builtin_words[] = {
 };
 /// The start of every keyword statement() tries.
 static const char *const statement_words[] = {
-    "BASE", "BEEP", "BLOAD", "BSAVE", "BYE", "CALL", "CHAIN", "CHDIR", "CIRCLE", "CLEAR",
+    "BASE", "BEEP", "BLOAD", "BSAVE", "BYE", "CALL", "CHAIN", "CHDIR", "CIRCLE", "CLEAR", "CONFIG",
     "CLOSE", "CLS", "COLOR", "COM", "CONT", "DATA", "DATE", "DEF", "DELETE", "DIM", "DRAW",
     "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "GET",
     "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
@@ -6575,7 +6575,6 @@ static void do_pwm(void) {
 
 // ---- WS2812B LEDs: NEOPIXEL (a Pico extension) ------------------------------
 
-#define NEOPIXEL_PIN_DEFAULT 28  ///< the Maker Pi Pico's RGB LED
 #define NEOPIXEL_MAX 1024  ///< LEDs on one strip
 
 static void open_failed(const char *why);
@@ -6594,7 +6593,7 @@ static int colour_arg(void) {
 /// | NEOPIXEL BRIGHT level | NEOPIXEL CLOSE
 static void do_neopixel(void) {
     if (accept_word("OPEN")) {
-        int pin = NEOPIXEL_PIN_DEFAULT, count = 1;
+        int pin = port_neopixel_pin(), count = 1;
         bool rgb = false;
         skip_spaces();
         if (!at_end_of_statement()) {
@@ -9094,6 +9093,10 @@ static int statement(void) {
         do_pin();
     } else if (accept("PWM")) {
         do_pwm();
+    } else if (accept_word("CONFIG")) {
+        out_flush();
+        port_config_show();
+        out_col = 0;
     } else if (accept_word("NEOPIXEL")) {
         do_neopixel();
     } else if (accept("SERVO")) {
