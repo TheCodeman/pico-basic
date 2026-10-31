@@ -110,6 +110,9 @@ static void put(const char *s, int n) {
     on += n;
 }
 
+/// Adds a string literal (its length counted by the compiler).
+#define PUTS(lit) put(lit, sizeof lit - 1)
+
 /// Adds text, printf style.
 /// @param fmt the format
 static void putf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
@@ -492,7 +495,7 @@ static int key_in(void) {
 /// Asks the terminal its size (by moving the cursor far away and asking
 /// where it is); 80 x 24 if it doesn't say.
 static void get_size(void) {
-    put("\x1b[999;999H\x1b[6n", 15);
+    PUTS("\x1b[999;999H\x1b[6n");
     flush();
     int r = 0, c = 0, ch, state = 0;
     absolute_time_t until = make_timeout_time_ms(300);
@@ -537,7 +540,7 @@ static void draw_row(int r) {
     bool marked = selecting && i < nlines &&
                   i >= (sel_anchor < cy ? sel_anchor : cy) && i <= (sel_anchor > cy ? sel_anchor : cy);
     if (marked)
-        put("\x1b[7m", 4);
+        PUTS("\x1b[7m");
     if (i < nlines) {
         const line_t *l = &lines[i];
         for (int k = coloff; k < l->len && k < coloff + cols; ++k) {
@@ -550,11 +553,11 @@ static void draw_row(int r) {
             }
         }
     } else {
-        put("\x1b[2m~\x1b[0m", 9);
+        PUTS("\x1b[2m~\x1b[0m");
     }
     if (marked)
-        put(" \x1b[0m", 5);  // (a marked empty line still shows)
-    put("\x1b[K", 3);
+        PUTS(" \x1b[0m");  // (a marked empty line still shows)
+    PUTS("\x1b[K");
 }
 
 /// Sends the status line: the message if there is one, else where you are
@@ -573,7 +576,7 @@ static void draw_status(const char *name) {
         buf[n++] = ' ';
     putf("\x1b[%d;1H\x1b[7m", rows);
     put(buf, n);
-    put("\x1b[0m", 4);
+    PUTS("\x1b[0m");
 }
 
 /// Brings the cursor into view, scrolling if need be.
@@ -598,7 +601,7 @@ static void scroll(void) {
 /// @param name the name on the status line
 static void refresh(const char *name) {
     scroll();
-    put("\x1b[?25l", 6);
+    PUTS("\x1b[?25l");
     for (int r = 0; r < textrows; ++r)
         if (full || (rowoff + r >= dirty_lo && rowoff + r <= dirty_hi))
             draw_row(r);
@@ -661,7 +664,7 @@ static void help(void) {
         "",
         "Any key goes back.",
     };
-    put("\x1b[2J", 4);
+    PUTS("\x1b[2J");
     for (unsigned i = 0; i < sizeof text / sizeof *text && (int)i < rows; ++i)
         putf("\x1b[%u;1H%s", i + 1, text[i]);
     flush();
@@ -896,6 +899,7 @@ void term_edit(const char *path, bool program) {
     is_program = program;
     modified = overwrite = out_of_memory = cutting = selecting = false;
     last_edit = this_edit = E_NONE;
+    pending = -1;
     cx = cy = want_x = rowoff = coloff = 0;
     msg[0] = 0;
     if (!load(path)) {
@@ -905,7 +909,7 @@ void term_edit(const char *path, bool program) {
     }
     const char *name = is_program ? "Program" : path;
     get_size();
-    put("\x1b[0m\x1b[2J", 8);
+    PUTS("\x1b[0m\x1b[2J");
     full = true;
     dirty_lo = INT_MAX;
     dirty_hi = -1;
@@ -1015,7 +1019,7 @@ void term_edit(const char *path, bool program) {
         case K_F3: find_next(); break;
         case 7: go_to_line(); full = true; break;  // Ctrl-G
         case 19: do_save(path); break;  // Ctrl-S
-        case 12: get_size(); put("\x1b[2J", 4); full = true; break;  // Ctrl-L
+        case 12: get_size(); PUTS("\x1b[2J"); full = true; break;  // Ctrl-L
         case K_F1: help(); break;
         case K_ESC:
         case 17: {  // Ctrl-Q
@@ -1030,9 +1034,10 @@ void term_edit(const char *path, bool program) {
                     break;  // not saved (a bad line): stay
                 }
             }
-            put("\x1b[0m\x1b[2J\x1b[H\x1b[?25h", 15);
+            PUTS("\x1b[0m\x1b[2J\x1b[H\x1b[?25h");
             flush();
             free_all();
+            pending = -1;
             return;
         }
         default:
