@@ -4,9 +4,12 @@ A GW-BASIC style BASIC for the RP2350 and RP2040 on their own: no HDMI, no keybo
 USB drive. You use it from a terminal program on the PC, over the board's own
 USB port, and it keeps its files in the Pico's own flash.
 
-The manual is [docs/BASIC_MANUAL.md](docs/BASIC_MANUAL.md) (also as
-[PDF](docs/BASIC_MANUAL.pdf) and [HTML](docs/BASIC_MANUAL.html); remake them
-with `python3 tools/make_manual.py`).
+The manual is [docs/BASIC_MANUAL.md](docs/BASIC_MANUAL.md), with an A-Z
+reference of every command, function and operator in
+[docs/BASIC_REFERENCE.md](docs/BASIC_REFERENCE.md); both are in the
+[PDF](docs/BASIC_MANUAL.pdf) and [HTML](docs/BASIC_MANUAL.html). Remake them
+with `python3 tools/make_reference.py` (which also checks every keyword in
+`src/basic.c` has an entry) and `python3 tools/make_manual.py`.
 
 The interpreter (`src/basic.c`) is copied from pico-os (`src/basic/`). It is
 built with `BASIC_NO_SCREEN`, which makes the features that need a screen of

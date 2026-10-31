@@ -10,6 +10,8 @@ h1.title { font-size: 30pt; margin: 60mm 0 4mm; color: #0b3d91; }
 .tochead { font-size: 15pt; font-weight: bold; color: #0b3d91; margin-bottom: 4mm; }
 .toc ul { list-style: none; padding-left: 1.2em; }
 .toc > ul { padding-left: 0; }
+.toc ul ul { columns: 3; column-gap: 6mm; }
+.toc ul ul li { break-inside: avoid; }
 .toc a { color: #111; text-decoration: none; }
 h2 { color: #0b3d91; border-bottom: 2px solid #0b3d91; padding-bottom: 2px; margin-top: 1.6em;
      page-break-before: always; }
@@ -80,6 +82,227 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#10-not-in-this-build">10. Not in this build</a></li>
 <li><a href="#11-limits">11. Limits</a></li>
 <li><a href="#12-example-programs">12. Example programs</a></li>
+<li><a href="#13-command-reference">13. Command reference</a><ul>
+<li><a href="#index-by-topic">Index by topic</a></li>
+<li><a href="#ref--">+ - * / ^</a></li>
+<li><a href="#ref-op">= &lt;&gt; &lt; &gt; &lt;= &gt;=</a></li>
+<li><a href="#ref-op-1">?</a></li>
+<li><a href="#ref-abs">ABS</a></li>
+<li><a href="#ref-adc">ADC</a></li>
+<li><a href="#ref-and">AND</a></li>
+<li><a href="#ref-asc">ASC</a></li>
+<li><a href="#ref-atn">ATN</a></li>
+<li><a href="#ref-auto">AUTO</a></li>
+<li><a href="#ref-beep">BEEP</a></li>
+<li><a href="#ref-bload">BLOAD</a></li>
+<li><a href="#ref-bsave">BSAVE</a></li>
+<li><a href="#ref-bye">BYE</a></li>
+<li><a href="#ref-call">CALL</a></li>
+<li><a href="#ref-cdbl">CDBL</a></li>
+<li><a href="#ref-chain">CHAIN</a></li>
+<li><a href="#ref-chdir">CHDIR</a></li>
+<li><a href="#ref-chr">CHR$</a></li>
+<li><a href="#ref-cint">CINT</a></li>
+<li><a href="#ref-circle">CIRCLE</a></li>
+<li><a href="#ref-clear">CLEAR</a></li>
+<li><a href="#ref-close">CLOSE</a></li>
+<li><a href="#ref-cls">CLS</a></li>
+<li><a href="#ref-color">COLOR</a></li>
+<li><a href="#ref-com1">COM(1)</a></li>
+<li><a href="#ref-common">COMMON</a></li>
+<li><a href="#ref-cont">CONT</a></li>
+<li><a href="#ref-cos">COS</a></li>
+<li><a href="#ref-csng">CSNG</a></li>
+<li><a href="#ref-csrlin">CSRLIN</a></li>
+<li><a href="#ref-cvd">CVD</a></li>
+<li><a href="#ref-cvi">CVI</a></li>
+<li><a href="#ref-cvs">CVS</a></li>
+<li><a href="#ref-data">DATA</a></li>
+<li><a href="#ref-date">DATE$</a></li>
+<li><a href="#ref-def-fn">DEF FN</a></li>
+<li><a href="#ref-def-seg">DEF SEG</a></li>
+<li><a href="#ref-defdbl">DEFDBL</a></li>
+<li><a href="#ref-defint">DEFINT</a></li>
+<li><a href="#ref-defsng">DEFSNG</a></li>
+<li><a href="#ref-defstr">DEFSTR</a></li>
+<li><a href="#ref-delete">DELETE</a></li>
+<li><a href="#ref-dim">DIM</a></li>
+<li><a href="#ref-dir">DIR$</a></li>
+<li><a href="#ref-draw">DRAW</a></li>
+<li><a href="#ref-edit">EDIT</a></li>
+<li><a href="#ref-end">END</a></li>
+<li><a href="#ref-environ">ENVIRON</a></li>
+<li><a href="#ref-environ-1">ENVIRON$</a></li>
+<li><a href="#ref-eof">EOF</a></li>
+<li><a href="#ref-eqv">EQV</a></li>
+<li><a href="#ref-erase">ERASE</a></li>
+<li><a href="#ref-erdev">ERDEV</a></li>
+<li><a href="#ref-erl">ERL</a></li>
+<li><a href="#ref-err">ERR</a></li>
+<li><a href="#ref-error">ERROR</a></li>
+<li><a href="#ref-exit-for">EXIT FOR</a></li>
+<li><a href="#ref-exp">EXP</a></li>
+<li><a href="#ref-exterr">EXTERR</a></li>
+<li><a href="#ref-field">FIELD</a></li>
+<li><a href="#ref-files">FILES</a></li>
+<li><a href="#ref-fix">FIX</a></li>
+<li><a href="#ref-font">FONT</a></li>
+<li><a href="#ref-fontw">FONTW</a></li>
+<li><a href="#ref-for">FOR</a></li>
+<li><a href="#ref-fre">FRE</a></li>
+<li><a href="#ref-freefile">FREEFILE</a></li>
+<li><a href="#ref-get">GET</a></li>
+<li><a href="#ref-gosub">GOSUB</a></li>
+<li><a href="#ref-goto">GOTO</a></li>
+<li><a href="#ref-gprint">GPRINT</a></li>
+<li><a href="#ref-hex">HEX$</a></li>
+<li><a href="#ref-i2c">I2C</a></li>
+<li><a href="#ref-i2cread">I2CREAD</a></li>
+<li><a href="#ref-i2cread-1">I2CREAD$</a></li>
+<li><a href="#ref-if">IF</a></li>
+<li><a href="#ref-image">IMAGE</a></li>
+<li><a href="#ref-imp">IMP</a></li>
+<li><a href="#ref-inkey">INKEY$</a></li>
+<li><a href="#ref-input">INPUT</a></li>
+<li><a href="#ref-input-1">INPUT</a></li>
+<li><a href="#ref-input-2">INPUT$</a></li>
+<li><a href="#ref-instr">INSTR</a></li>
+<li><a href="#ref-int">INT</a></li>
+<li><a href="#ref-key">KEY</a></li>
+<li><a href="#ref-keyn">KEY(n)</a></li>
+<li><a href="#ref-keydown">KEYDOWN</a></li>
+<li><a href="#ref-kill">KILL</a></li>
+<li><a href="#ref-lcase">LCASE$</a></li>
+<li><a href="#ref-left">LEFT$</a></li>
+<li><a href="#ref-len">LEN</a></li>
+<li><a href="#ref-let">LET</a></li>
+<li><a href="#ref-line">LINE</a></li>
+<li><a href="#ref-line-input">LINE INPUT</a></li>
+<li><a href="#ref-line-input-1">LINE INPUT</a></li>
+<li><a href="#ref-list">LIST</a></li>
+<li><a href="#ref-llist">LLIST</a></li>
+<li><a href="#ref-load">LOAD</a></li>
+<li><a href="#ref-loc">LOC</a></li>
+<li><a href="#ref-locate">LOCATE</a></li>
+<li><a href="#ref-lock">LOCK</a></li>
+<li><a href="#ref-lof">LOF</a></li>
+<li><a href="#ref-log">LOG</a></li>
+<li><a href="#ref-lpos">LPOS</a></li>
+<li><a href="#ref-lprint">LPRINT</a></li>
+<li><a href="#ref-lset">LSET</a></li>
+<li><a href="#ref-merge">MERGE</a></li>
+<li><a href="#ref-mid">MID$</a></li>
+<li><a href="#ref-mid-1">MID$ =</a></li>
+<li><a href="#ref-mkd">MKD$</a></li>
+<li><a href="#ref-mkdir">MKDIR</a></li>
+<li><a href="#ref-mki">MKI$</a></li>
+<li><a href="#ref-mks">MKS$</a></li>
+<li><a href="#ref-mouse">MOUSE</a></li>
+<li><a href="#ref-mousex">MOUSEX</a></li>
+<li><a href="#ref-music">MUSIC</a></li>
+<li><a href="#ref-musicn">MUSIC(n)</a></li>
+<li><a href="#ref-name">NAME</a></li>
+<li><a href="#ref-neopixel">NEOPIXEL</a></li>
+<li><a href="#ref-new">NEW</a></li>
+<li><a href="#ref-next">NEXT</a></li>
+<li><a href="#ref-not">NOT</a></li>
+<li><a href="#ref-oct">OCT$</a></li>
+<li><a href="#ref-on-com">ON COM</a></li>
+<li><a href="#ref-on-error-goto">ON ERROR GOTO</a></li>
+<li><a href="#ref-on-key">ON KEY</a></li>
+<li><a href="#ref-on-play">ON PLAY</a></li>
+<li><a href="#ref-on-timer">ON TIMER</a></li>
+<li><a href="#ref-ongosub">ON...GOSUB</a></li>
+<li><a href="#ref-ongoto">ON...GOTO</a></li>
+<li><a href="#ref-open">OPEN</a></li>
+<li><a href="#ref-option-base">OPTION BASE</a></li>
+<li><a href="#ref-or">OR</a></li>
+<li><a href="#ref-paint">PAINT</a></li>
+<li><a href="#ref-palette">PALETTE</a></li>
+<li><a href="#ref-pause">PAUSE</a></li>
+<li><a href="#ref-pcopy">PCOPY</a></li>
+<li><a href="#ref-peek">PEEK</a></li>
+<li><a href="#ref-pin">PIN</a></li>
+<li><a href="#ref-pinmode">PINMODE</a></li>
+<li><a href="#ref-pins">PINS</a></li>
+<li><a href="#ref-play">PLAY</a></li>
+<li><a href="#ref-play-on">PLAY ON</a></li>
+<li><a href="#ref-playn">PLAY(n)</a></li>
+<li><a href="#ref-pmap">PMAP</a></li>
+<li><a href="#ref-point">POINT</a></li>
+<li><a href="#ref-poke">POKE</a></li>
+<li><a href="#ref-pos">POS</a></li>
+<li><a href="#ref-preset">PRESET</a></li>
+<li><a href="#ref-print">PRINT</a></li>
+<li><a href="#ref-print-1">PRINT</a></li>
+<li><a href="#ref-print-using">PRINT USING</a></li>
+<li><a href="#ref-pset">PSET</a></li>
+<li><a href="#ref-put">PUT</a></li>
+<li><a href="#ref-pwm">PWM</a></li>
+<li><a href="#ref-randomize">RANDOMIZE</a></li>
+<li><a href="#ref-read">READ</a></li>
+<li><a href="#ref-rem">REM</a></li>
+<li><a href="#ref-renum">RENUM</a></li>
+<li><a href="#ref-reset">RESET</a></li>
+<li><a href="#ref-restore">RESTORE</a></li>
+<li><a href="#ref-resume">RESUME</a></li>
+<li><a href="#ref-return">RETURN</a></li>
+<li><a href="#ref-rgb">RGB</a></li>
+<li><a href="#ref-right">RIGHT$</a></li>
+<li><a href="#ref-rmdir">RMDIR</a></li>
+<li><a href="#ref-rnd">RND</a></li>
+<li><a href="#ref-rset">RSET</a></li>
+<li><a href="#ref-run">RUN</a></li>
+<li><a href="#ref-save">SAVE</a></li>
+<li><a href="#ref-saveimage">SAVEIMAGE</a></li>
+<li><a href="#ref-screen">SCREEN</a></li>
+<li><a href="#ref-screenr-c">SCREEN(r, c)</a></li>
+<li><a href="#ref-servo">SERVO</a></li>
+<li><a href="#ref-sgn">SGN</a></li>
+<li><a href="#ref-shell">SHELL</a></li>
+<li><a href="#ref-sin">SIN</a></li>
+<li><a href="#ref-sound">SOUND</a></li>
+<li><a href="#ref-space">SPACE$</a></li>
+<li><a href="#ref-spc">SPC</a></li>
+<li><a href="#ref-spi">SPI</a></li>
+<li><a href="#ref-spi-1">SPI$</a></li>
+<li><a href="#ref-sprite">SPRITE</a></li>
+<li><a href="#ref-spritehit">SPRITEHIT</a></li>
+<li><a href="#ref-sqr">SQR</a></li>
+<li><a href="#ref-stop">STOP</a></li>
+<li><a href="#ref-str">STR$</a></li>
+<li><a href="#ref-string">STRING$</a></li>
+<li><a href="#ref-swap">SWAP</a></li>
+<li><a href="#ref-system">SYSTEM</a></li>
+<li><a href="#ref-tab">TAB</a></li>
+<li><a href="#ref-tan">TAN</a></li>
+<li><a href="#ref-temp">TEMP</a></li>
+<li><a href="#ref-time">TIME$</a></li>
+<li><a href="#ref-timer">TIMER</a></li>
+<li><a href="#ref-timer-on">TIMER ON</a></li>
+<li><a href="#ref-troff">TROFF</a></li>
+<li><a href="#ref-tron">TRON</a></li>
+<li><a href="#ref-ucase">UCASE$</a></li>
+<li><a href="#ref-val">VAL</a></li>
+<li><a href="#ref-view">VIEW</a></li>
+<li><a href="#ref-view-print">VIEW PRINT</a></li>
+<li><a href="#ref-wend">WEND</a></li>
+<li><a href="#ref-while">WHILE</a></li>
+<li><a href="#ref-width">WIDTH</a></li>
+<li><a href="#ref-window">WINDOW</a></li>
+<li><a href="#ref-write">WRITE</a></li>
+<li><a href="#ref-write-1">WRITE</a></li>
+<li><a href="#ref-xor">XOR</a></li>
+<li><a href="#ref-xrecv">XRECV</a></li>
+<li><a href="#ref-xsend">XSEND</a></li>
+<li><a href="#ref-and-mod">\ and MOD</a></li>
+</ul>
+</li>
+<li><a href="#appendix-a-error-codes">Appendix A: error codes</a></li>
+<li><a href="#appendix-b-print-using-formats">Appendix B: PRINT USING formats</a></li>
+<li><a href="#appendix-c-inkey-key-codes">Appendix C: INKEY$ key codes</a></li>
+<li><a href="#appendix-d-characters">Appendix D: characters</a></li>
+<li><a href="#appendix-e-pins-basic-uses">Appendix E: pins BASIC uses</a></li>
 </ul>
 </div>
 </div>
@@ -1774,4 +1997,2188 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 sx examples/PRIMES.BAS &lt; /dev/ttyACM1 &gt; /dev/ttyACM1
 RUN "PRIMES"                               (in BASIC)
 </code></pre>
+<h2 id="13-command-reference">13. Command reference</h2>
+<p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
+<h3 id="index-by-topic">Index by topic</h3>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
+<p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
+<p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
+<p><strong>Numbers:</strong> <a href="#ref-abs">ABS</a>, <a href="#ref-atn">ATN</a>, <a href="#ref-cdbl">CDBL</a>, <a href="#ref-cint">CINT</a>, <a href="#ref-cos">COS</a>, <a href="#ref-csng">CSNG</a>, <a href="#ref-exp">EXP</a>, <a href="#ref-fix">FIX</a>, <a href="#ref-int">INT</a>, <a href="#ref-log">LOG</a>, <a href="#ref-rnd">RND</a>, <a href="#ref-sgn">SGN</a>, <a href="#ref-sin">SIN</a>, <a href="#ref-sqr">SQR</a>, <a href="#ref-tan">TAN</a></p>
+<p><strong>Strings:</strong> <a href="#ref-asc">ASC</a>, <a href="#ref-chr">CHR$</a>, <a href="#ref-hex">HEX$</a>, <a href="#ref-instr">INSTR</a>, <a href="#ref-lcase">LCASE$</a>, <a href="#ref-left">LEFT$</a>, <a href="#ref-len">LEN</a>, <a href="#ref-mid">MID$</a>, <a href="#ref-oct">OCT$</a>, <a href="#ref-right">RIGHT$</a>, <a href="#ref-space">SPACE$</a>, <a href="#ref-str">STR$</a>, <a href="#ref-string">STRING$</a>, <a href="#ref-ucase">UCASE$</a>, <a href="#ref-val">VAL</a></p>
+<p><strong>Data files:</strong> <a href="#ref-close">CLOSE</a>, <a href="#ref-cvd">CVD</a>, <a href="#ref-cvi">CVI</a>, <a href="#ref-cvs">CVS</a>, <a href="#ref-dir">DIR$</a>, <a href="#ref-eof">EOF</a>, <a href="#ref-field">FIELD</a>, <a href="#ref-freefile">FREEFILE</a>, <a href="#ref-get">GET</a>, <a href="#ref-input-1">INPUT #</a>, <a href="#ref-line-input-1">LINE INPUT #</a>, <a href="#ref-loc">LOC</a>, <a href="#ref-lof">LOF</a>, <a href="#ref-lset">LSET</a>, <a href="#ref-mkd">MKD$</a>, <a href="#ref-mki">MKI$</a>, <a href="#ref-mks">MKS$</a>, <a href="#ref-open">OPEN</a>, <a href="#ref-print-1">PRINT #</a>, <a href="#ref-put">PUT</a>, <a href="#ref-rset">RSET</a>, <a href="#ref-write-1">WRITE #</a></p>
+<p><strong>Events:</strong> <a href="#ref-com1">COM(1)</a>, <a href="#ref-keyn">KEY(n)</a>, <a href="#ref-on-com">ON COM</a>, <a href="#ref-on-key">ON KEY</a>, <a href="#ref-on-play">ON PLAY</a>, <a href="#ref-on-timer">ON TIMER</a>, <a href="#ref-play-on">PLAY ON</a>, <a href="#ref-timer-on">TIMER ON</a></p>
+<p><strong>Sound:</strong> <a href="#ref-beep">BEEP</a>, <a href="#ref-play">PLAY</a>, <a href="#ref-playn">PLAY(n)</a>, <a href="#ref-sound">SOUND</a></p>
+<p><strong>Pins and hardware:</strong> <a href="#ref-adc">ADC</a>, <a href="#ref-i2c">I2C</a>, <a href="#ref-i2cread">I2CREAD</a>, <a href="#ref-i2cread-1">I2CREAD$</a>, <a href="#ref-neopixel">NEOPIXEL</a>, <a href="#ref-pin">PIN</a>, <a href="#ref-pinmode">PINMODE</a>, <a href="#ref-pins">PINS</a>, <a href="#ref-pwm">PWM</a>, <a href="#ref-servo">SERVO</a>, <a href="#ref-spi">SPI</a>, <a href="#ref-spi-1">SPI$</a>, <a href="#ref-temp">TEMP</a></p>
+<p><strong>System:</strong> <a href="#ref-bload">BLOAD</a>, <a href="#ref-bsave">BSAVE</a>, <a href="#ref-date">DATE$</a>, <a href="#ref-environ">ENVIRON</a>, <a href="#ref-environ-1">ENVIRON$</a>, <a href="#ref-erdev">ERDEV</a>, <a href="#ref-exterr">EXTERR</a>, <a href="#ref-fre">FRE</a>, <a href="#ref-peek">PEEK</a>, <a href="#ref-poke">POKE</a>, <a href="#ref-screenr-c">SCREEN(r, c)</a>, <a href="#ref-time">TIME$</a>, <a href="#ref-timer">TIMER</a></p>
+<p><strong>Operators:</strong> <a href="#ref--">+ - * / ^</a>, <a href="#ref-op">= &lt;&gt; &lt; &gt; &lt;= &gt;=</a>, <a href="#ref-and">AND</a>, <a href="#ref-eqv">EQV</a>, <a href="#ref-imp">IMP</a>, <a href="#ref-not">NOT</a>, <a href="#ref-or">OR</a>, <a href="#ref-xor">XOR</a>, <a href="#ref-and-mod">\ and MOD</a></p>
+<p><strong>Not in this build:</strong> <a href="#ref-call">CALL</a>, <a href="#ref-circle">CIRCLE</a>, <a href="#ref-draw">DRAW</a>, <a href="#ref-font">FONT</a>, <a href="#ref-fontw">FONTW</a>, <a href="#ref-gprint">GPRINT</a>, <a href="#ref-image">IMAGE</a>, <a href="#ref-keydown">KEYDOWN</a>, <a href="#ref-line">LINE</a>, <a href="#ref-lock">LOCK</a>, <a href="#ref-lpos">LPOS</a>, <a href="#ref-mouse">MOUSE</a>, <a href="#ref-mousex">MOUSEX</a>, <a href="#ref-music">MUSIC</a>, <a href="#ref-musicn">MUSIC(n)</a>, <a href="#ref-paint">PAINT</a>, <a href="#ref-palette">PALETTE</a>, <a href="#ref-pcopy">PCOPY</a>, <a href="#ref-pmap">PMAP</a>, <a href="#ref-point">POINT</a>, <a href="#ref-preset">PRESET</a>, <a href="#ref-pset">PSET</a>, <a href="#ref-rgb">RGB</a>, <a href="#ref-saveimage">SAVEIMAGE</a>, <a href="#ref-screen">SCREEN</a>, <a href="#ref-shell">SHELL</a>, <a href="#ref-sprite">SPRITE</a>, <a href="#ref-spritehit">SPRITEHIT</a>, <a href="#ref-view">VIEW</a>, <a href="#ref-window">WINDOW</a></p>
+<h3 id="ref--">+ - * / ^</h3>
+<p><em>Operator</em> · <code>a + b, a - b, a * b, a / b, a ^ b</code></p>
+<p>Add, subtract, multiply, divide, power. <code>+</code> also joins strings. <code>-x</code> negates. Calculations are in double precision.</p>
+<ul>
+<li>Errors: <code>Division by zero</code> (11), <code>Overflow</code> (6), <code>Type mismatch</code> (13) mixing strings and numbers.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT 2 ^ 10; 7 / 2; &quot;AB&quot; + &quot;CD&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1024  3.5 ABCD
+</code></pre>
+<p>See also: <a href="#ref-and-mod">\ and MOD</a></p>
+<h3 id="ref-op">= &lt;&gt; &lt; &gt; &lt;= &gt;=</h3>
+<p><em>Operator</em> · <code>a = b, a &lt;&gt; b, a &lt; b, a &gt; b, a &lt;= b, a &gt;= b</code></p>
+<p>Comparisons, of numbers or of strings (by character codes): -1 for true, 0 for false.</p>
+<p>Example:</p>
+<pre><code>PRINT 3 &gt; 2; &quot;A&quot; &lt; &quot;B&quot;; 1 = 2
+</code></pre>
+<p>Shows:</p>
+<pre><code>-1 -1  0
+</code></pre>
+<p>See also: <a href="#ref-if">IF</a>, <a href="#ref-and">AND</a></p>
+<h3 id="ref-op-1">?</h3>
+<p><em>Statement</em> · <code>? items</code></p>
+<p>Short for PRINT.</p>
+<p>Example:</p>
+<pre><code>? 1 + 1
+</code></pre>
+<p>Shows:</p>
+<pre><code> 2
+</code></pre>
+<p>See also: <a href="#ref-print">PRINT</a></p>
+<h3 id="ref-abs">ABS</h3>
+<p><em>Function</em> · <code>ABS(x)</code></p>
+<p>The absolute value of <code>x</code> (<code>x</code> without its sign).</p>
+<p>Example:</p>
+<pre><code>PRINT ABS(-3.5)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3.5
+</code></pre>
+<p>See also: <a href="#ref-sgn">SGN</a></p>
+<h3 id="ref-adc">ADC</h3>
+<p><em>Function</em> · <code>ADC(pin)</code></p>
+<p>Reads an analog input: 0-4095 for 0-3.3 V. GP26-29 on the Pico and Pico 2 (GP29 is VSYS / 3), GP40-46 on the Pico Plus 2.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) for a pin without one.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT ADC(26) * 3.3 / 4095
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1.65040293
+</code></pre>
+<p>See also: <a href="#ref-temp">TEMP</a>, <a href="#ref-pin">PIN</a></p>
+<h3 id="ref-and">AND</h3>
+<p><em>Operator</em> · <code>a AND b</code></p>
+<p>Bitwise AND of two integers: true (-1) only if both are. Also masks bits: <code>X AND 15</code>.</p>
+<p>Example:</p>
+<pre><code>PRINT 12 AND 10; (1 &lt; 2) AND (2 &lt; 3)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 8 -1
+</code></pre>
+<p>See also: <a href="#ref-or">OR</a>, <a href="#ref-not">NOT</a></p>
+<h3 id="ref-asc">ASC</h3>
+<p><em>Function</em> · <code>ASC(s$)</code></p>
+<p>The code (0-255) of the first character of <code>s$</code>.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) for "".</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT ASC(&quot;A&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 65
+</code></pre>
+<p>See also: <a href="#ref-chr">CHR$</a></p>
+<h3 id="ref-atn">ATN</h3>
+<p><em>Function</em> · <code>ATN(x)</code></p>
+<p>The arctangent of <code>x</code>, in radians (-π/2 to π/2).</p>
+<p>Example:</p>
+<pre><code>PRINT ATN(1) * 4
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3.14159265
+</code></pre>
+<p>See also: <a href="#ref-tan">TAN</a>, <a href="#ref-sin">SIN</a>, <a href="#ref-cos">COS</a></p>
+<h3 id="ref-auto">AUTO</h3>
+<p><em>Command</em> · <code>AUTO [start][, step]</code></p>
+<p>Numbers the lines you type: each new line starts with the next number, so you just type the statement.</p>
+<ul>
+<li><code>start</code> and <code>step</code> default to 10 and 10.</li>
+<li>A <code>*</code> after the number means that line already exists: Enter keeps it as it is.</li>
+<li>An empty line where no line exists, or Ctrl-C, stops it.</li>
+</ul>
+<p>Example:</p>
+<pre><code>AUTO 100, 5
+</code></pre>
+<p>Shows:</p>
+<pre><code>100 
+</code></pre>
+<p>See also: <a href="#ref-renum">RENUM</a>, <a href="#ref-delete">DELETE</a></p>
+<h3 id="ref-beep">BEEP</h3>
+<p><em>Statement</em> · <code>BEEP</code></p>
+<p>A short beep: 800 Hz for a quarter of a second, on the speaker pin (GP18, the Maker Pi Pico's buzzer).</p>
+<p>Example:</p>
+<pre><code>BEEP
+</code></pre>
+<p>See also: <a href="#ref-sound">SOUND</a>, <a href="#ref-play">PLAY</a></p>
+<h3 id="ref-bload">BLOAD</h3>
+<p><em>Statement</em> · <code>BLOAD file$[, offset]</code></p>
+<p>Loads a file saved by BSAVE (GW-BASIC's 7-byte header) into the emulated memory (DEF SEG).</p>
+<p>See also: <a href="#ref-bsave">BSAVE</a>, <a href="#ref-def-seg">DEF SEG</a></p>
+<h3 id="ref-bsave">BSAVE</h3>
+<p><em>Statement</em> · <code>BSAVE file$, offset, length</code></p>
+<p>Saves <code>length</code> bytes of the emulated memory (DEF SEG) to a file.</p>
+<p>See also: <a href="#ref-bload">BLOAD</a></p>
+<h3 id="ref-bye">BYE</h3>
+<p><em>Command</em> · <code>BYE</code></p>
+<p>The same as SYSTEM.</p>
+<p>See also: <a href="#ref-system">SYSTEM</a></p>
+<h3 id="ref-call">CALL</h3>
+<p><em>Function / statement</em> · <code>CALL | DEF USR | USR | VARPTR | VARPTR$ | INP(port) | OUT port, b | WAIT port, m | IOCTL | IOCTL$</code></p>
+<p>Machine code and PC I/O ports: <code>Illegal function call</code> (5).</p>
+<h3 id="ref-cdbl">CDBL</h3>
+<p><em>Function</em> · <code>CDBL(x)</code></p>
+<p><code>x</code> as a double-precision number.</p>
+<p>Example:</p>
+<pre><code>PRINT CDBL(1) / 3
+</code></pre>
+<p>Shows:</p>
+<pre><code> .333333333
+</code></pre>
+<p>See also: <a href="#ref-csng">CSNG</a>, <a href="#ref-cint">CINT</a></p>
+<h3 id="ref-chain">CHAIN</h3>
+<p><em>Statement</em> · <code>CHAIN [MERGE] file$[, [line][, ALL][, DELETE range]]</code></p>
+<p>Runs another program from a program, keeping the files that are open.</p>
+<ul>
+<li>Only the variables named in COMMON are passed on, or all of them with <code>ALL</code>.</li>
+<li><code>line</code> is where the new program starts (default its first line).</li>
+<li><code>CHAIN MERGE</code> adds the file's lines to the program (after deleting <code>range</code>) and keeps every variable.</li>
+<li><code>.BAS</code> is added if the name has no extension.</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 COMMON SCORE
+20 SCORE = 100: CHAIN &quot;PART2&quot;
+RUN
+</code></pre>
+<p>See also: <a href="#ref-common">COMMON</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-run">RUN</a></p>
+<h3 id="ref-chdir">CHDIR</h3>
+<p><em>Statement</em> · <code>CHDIR path$</code></p>
+<p>Makes a folder the current one, or a drive the current drive.</p>
+<ul>
+<li><code>CHDIR "GAMES"</code>, <code>CHDIR ".."</code>, <code>CHDIR "/"</code> move between folders.</li>
+<li><code>CHDIR "SD:"</code> makes the SD card the current drive, <code>CHDIR "SD:/GAMES"</code> its folder too, <code>CHDIR "FLASH:"</code> goes back.</li>
+<li>Errors: <code>Path not found</code> (76).</li>
+</ul>
+<p>Example:</p>
+<pre><code>MKDIR &quot;GAMES&quot;: CHDIR &quot;GAMES&quot;: FILES
+</code></pre>
+<p>Shows:</p>
+<pre><code>File not found
+3080192 Bytes free
+</code></pre>
+<p>See also: <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-files">FILES</a></p>
+<h3 id="ref-chr">CHR$</h3>
+<p><em>Function</em> · <code>CHR$(n)</code></p>
+<p>The character with code <code>n</code> (0-255), in the IBM PC character set (see Characters).</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) out of range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT CHR$(65); CHR$(219); CHR$(1)
+</code></pre>
+<p>Shows:</p>
+<pre><code>A█☺
+</code></pre>
+<p>See also: <a href="#ref-asc">ASC</a>, <a href="#ref-string">STRING$</a></p>
+<h3 id="ref-cint">CINT</h3>
+<p><em>Function</em> · <code>CINT(x)</code></p>
+<p><code>x</code> rounded to the nearest whole number (halves away from 0), -32768 to 32767.</p>
+<ul>
+<li>Errors: <code>Overflow</code> (6) out of range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT CINT(2.5); CINT(-2.5); CINT(2.4)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3 -3  2
+</code></pre>
+<p>See also: <a href="#ref-int">INT</a>, <a href="#ref-fix">FIX</a></p>
+<h3 id="ref-circle">CIRCLE</h3>
+<p><em>Not available</em> · <code>CIRCLE (x, y), r[, colour...]</code></p>
+<p>Draws a circle. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-clear">CLEAR</h3>
+<p><em>Statement</em> · <code>CLEAR [, n[, m]]</code></p>
+<p>Deletes every variable and array, closes every file, and forgets DATA, FOR, GOSUB and WHILE positions and event traps. The program stays.</p>
+<ul>
+<li>Any numbers after it (GW-BASIC's memory sizes) are accepted and ignored.</li>
+</ul>
+<p>Example:</p>
+<pre><code>A = 5: CLEAR: PRINT A
+</code></pre>
+<p>Shows:</p>
+<pre><code> 0
+</code></pre>
+<p>See also: <a href="#ref-new">NEW</a>, <a href="#ref-erase">ERASE</a></p>
+<h3 id="ref-close">CLOSE</h3>
+<p><em>Statement</em> · <code>CLOSE [[#]n[, [#]n...]]</code></p>
+<p>Closes the files numbered, or all of them. Writes still in memory go to the disk.</p>
+<p>Example:</p>
+<pre><code>CLOSE #1
+</code></pre>
+<p>See also: <a href="#ref-open">OPEN</a>, <a href="#ref-reset">RESET</a></p>
+<h3 id="ref-cls">CLS</h3>
+<p><em>Statement</em> · <code>CLS [n]</code></p>
+<p>Clears the terminal and puts the cursor at the top left.</p>
+<ul>
+<li><code>n</code> (0-2) is accepted for old programs.</li>
+</ul>
+<p>See also: <a href="#ref-locate">LOCATE</a>, <a href="#ref-color">COLOR</a></p>
+<h3 id="ref-color">COLOR</h3>
+<p><em>Statement</em> · <code>COLOR [fg][, [bg][, border]]</code></p>
+<p>Sets the text colours, as PC colours 0-15 sent as ANSI codes: 0 black, 1 blue, 2 green, 3 cyan, 4 red, 5 magenta, 6 brown, 7 white, 8-15 bright. 7 (fg) and 0 (bg) give the terminal's own colours.</p>
+<ul>
+<li>fg 16-31 counts as 0-15 (no blinking). <code>border</code> is ignored.</li>
+<li>Errors: <code>Illegal function call</code> (5) out of range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>COLOR 14, 1: PRINT &quot;YELLOW ON BLUE&quot;: COLOR 7, 0
+</code></pre>
+<p>Shows:</p>
+<pre><code>YELLOW ON BLUE
+</code></pre>
+<p>See also: <a href="#ref-cls">CLS</a></p>
+<h3 id="ref-com1">COM(1)</h3>
+<p><em>Statement</em> · <code>COM(1) ON | OFF | STOP</code></p>
+<p>Turns the COM1 event (ON COM) on, off, or holds it (remembered until ON).</p>
+<p>See also: <a href="#ref-on-com">ON COM</a></p>
+<h3 id="ref-common">COMMON</h3>
+<p><em>Statement</em> · <code>COMMON var[, var...]</code></p>
+<p>Names the variables CHAIN passes to the next program. Arrays are written with empty brackets: <code>COMMON A(), N$</code>.</p>
+<ul>
+<li>Up to 64 names.</li>
+</ul>
+<p>Example:</p>
+<pre><code>COMMON SCORE, NAME$
+</code></pre>
+<p>See also: <a href="#ref-chain">CHAIN</a></p>
+<h3 id="ref-cont">CONT</h3>
+<p><em>Command</em> · <code>CONT</code></p>
+<p>Carries on with the program after Ctrl-C or STOP, from where it stopped.</p>
+<ul>
+<li>Errors: <code>Can't continue</code> (17) after the program has been changed or after an error.</li>
+</ul>
+<p>See also: <a href="#ref-stop">STOP</a>, <a href="#ref-end">END</a></p>
+<h3 id="ref-cos">COS</h3>
+<p><em>Function</em> · <code>COS(x)</code></p>
+<p>The cosine of <code>x</code> radians.</p>
+<p>Example:</p>
+<pre><code>PRINT COS(0)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1
+</code></pre>
+<p>See also: <a href="#ref-sin">SIN</a>, <a href="#ref-tan">TAN</a></p>
+<h3 id="ref-csng">CSNG</h3>
+<p><em>Function</em> · <code>CSNG(x)</code></p>
+<p><code>x</code> as a single-precision number (7 digits).</p>
+<p>Example:</p>
+<pre><code>PRINT CSNG(1#/3)
+</code></pre>
+<p>Shows:</p>
+<pre><code> .3333333
+</code></pre>
+<p>See also: <a href="#ref-cdbl">CDBL</a></p>
+<h3 id="ref-csrlin">CSRLIN</h3>
+<p><em>Function</em> · <code>CSRLIN</code></p>
+<p>The row the cursor is on, 1-30.</p>
+<p>Example:</p>
+<pre><code>LOCATE 10, 1: PRINT CSRLIN
+</code></pre>
+<p>Shows:</p>
+<pre><code> 10
+</code></pre>
+<p>See also: <a href="#ref-pos">POS</a>, <a href="#ref-locate">LOCATE</a></p>
+<h3 id="ref-cvd">CVD</h3>
+<p><em>Function</em> · <code>CVD(s$)</code></p>
+<p>The double-precision number in an 8-byte string made by MKD$ (GW-BASIC's format).</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) for a string shorter than 8.</li>
+</ul>
+<p>See also: <a href="#ref-mkd">MKD$</a></p>
+<h3 id="ref-cvi">CVI</h3>
+<p><em>Function</em> · <code>CVI(s$)</code></p>
+<p>The integer in a 2-byte string made by MKI$ (low byte first).</p>
+<p>Example:</p>
+<pre><code>PRINT CVI(MKI$(1234))
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1234
+</code></pre>
+<p>See also: <a href="#ref-mki">MKI$</a></p>
+<h3 id="ref-cvs">CVS</h3>
+<p><em>Function</em> · <code>CVS(s$)</code></p>
+<p>The single-precision number in a 4-byte string made by MKS$.</p>
+<p>Example:</p>
+<pre><code>PRINT CVS(MKS$(2.5))
+</code></pre>
+<p>Shows:</p>
+<pre><code> 2.5
+</code></pre>
+<p>See also: <a href="#ref-mks">MKS$</a></p>
+<h3 id="ref-data">DATA</h3>
+<p><em>Statement</em> · <code>DATA item[, item...]</code></p>
+<p>Holds numbers and strings for READ. Strings may be quoted (needed if they hold commas or start with spaces).</p>
+<p>Example:</p>
+<pre><code>10 DATA 3, &quot;RED&quot;, 2.5
+</code></pre>
+<p>See also: <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a></p>
+<h3 id="ref-date">DATE$</h3>
+<p><em>Statement / function</em> · <code>DATE$ = "mm-dd-yyyy" | DATE$</code></p>
+<p>Sets the date, or gives it as "mm-dd-yyyy". <code>-</code> or <code>/</code> and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up.</p>
+<p>Example:</p>
+<pre><code>DATE$ = &quot;10-31-2026&quot;: PRINT DATE$
+</code></pre>
+<p>Shows:</p>
+<pre><code>10-31-2026
+</code></pre>
+<p>See also: <a href="#ref-time">TIME$</a></p>
+<h3 id="ref-def-fn">DEF FN</h3>
+<p><em>Statement</em> · <code>DEF FNname[(arg[, arg...])] = expr</code></p>
+<p>Defines a one-line function, called as FNname(...). String functions end in $.</p>
+<ul>
+<li>Errors: <code>Undefined user function</code> (18) for one not defined.</li>
+</ul>
+<p>Example:</p>
+<pre><code>DEF FNSQ(X) = X * X: PRINT FNSQ(7)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 49
+</code></pre>
+<p>See also: <a href="#ref-gosub">GOSUB</a></p>
+<h3 id="ref-def-seg">DEF SEG</h3>
+<p><em>Statement</em> · <code>DEF SEG [= segment]</code></p>
+<p>Chooses the memory segment PEEK, POKE, BSAVE and BLOAD use: only <code>&amp;HB800</code> (the text screen) and <code>0</code> (BIOS data) are emulated.</p>
+<p>Example:</p>
+<pre><code>DEF SEG = 0: PRINT PEEK(&amp;H44A)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 80
+</code></pre>
+<p>See also: <a href="#ref-peek">PEEK</a>, <a href="#ref-poke">POKE</a></p>
+<h3 id="ref-defdbl">DEFDBL</h3>
+<p><em>Statement</em> · <code>DEFDBL letters</code></p>
+<p>Names starting with these letters (and no type character) are double precision: <code>DEFDBL A-C, X</code>.</p>
+<ul>
+<li>RUN, NEW and CLEAR reset it.</li>
+</ul>
+<p>Example:</p>
+<pre><code>DEFDBL D: D = 1 / 3: PRINT D
+</code></pre>
+<p>Shows:</p>
+<pre><code> .333333333
+</code></pre>
+<p>See also: <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a></p>
+<h3 id="ref-defint">DEFINT</h3>
+<p><em>Statement</em> · <code>DEFINT letters</code></p>
+<p>Names starting with these letters are integers (-32768 to 32767): <code>DEFINT A-Z</code> makes all plain names integers.</p>
+<p>Example:</p>
+<pre><code>DEFINT I: I = 2.7: PRINT I
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3
+</code></pre>
+<p>See also: <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a></p>
+<h3 id="ref-defsng">DEFSNG</h3>
+<p><em>Statement</em> · <code>DEFSNG letters</code></p>
+<p>Names starting with these letters are single precision (the default).</p>
+<p>See also: <a href="#ref-defint">DEFINT</a>, <a href="#ref-defdbl">DEFDBL</a></p>
+<h3 id="ref-defstr">DEFSTR</h3>
+<p><em>Statement</em> · <code>DEFSTR letters</code></p>
+<p>Names starting with these letters are strings, without a <code>$</code>.</p>
+<p>Example:</p>
+<pre><code>DEFSTR S: S = &quot;HI&quot;: PRINT S
+</code></pre>
+<p>Shows:</p>
+<pre><code>HI
+</code></pre>
+<p>See also: <a href="#ref-defint">DEFINT</a></p>
+<h3 id="ref-delete">DELETE</h3>
+<p><em>Command</em> · <code>DELETE range</code></p>
+<p>Deletes program lines. <code>range</code> is <code>n</code>, <code>n-</code>, <code>-n</code> or <code>n-m</code>.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) if there is nothing in the range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>DELETE 100-190
+</code></pre>
+<p>See also: <a href="#ref-new">NEW</a>, <a href="#ref-auto">AUTO</a></p>
+<h3 id="ref-dim">DIM</h3>
+<p><em>Statement</em> · <code>DIM name(size[, size...])[, ...]</code></p>
+<p>Makes an array with subscripts 0 (or 1 after OPTION BASE 1) to <code>size</code>, up to 8 dimensions. An array used without DIM gets 0-10 in each dimension.</p>
+<ul>
+<li>Errors: <code>Duplicate Definition</code> (10) if it exists; <code>Subscript out of range</code> (9) for a subscript too big; <code>Out of memory</code> (7).</li>
+</ul>
+<p>Example:</p>
+<pre><code>DIM A(5), B$(2, 3): A(5) = 7: PRINT A(5)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 7
+</code></pre>
+<p>See also: <a href="#ref-erase">ERASE</a>, <a href="#ref-option-base">OPTION BASE</a></p>
+<h3 id="ref-dir">DIR$</h3>
+<p><em>Function</em> · <code>DIR$(pattern$[, n])</code></p>
+<p>The <code>n</code>-th (default 1st) file name matching the pattern, e.g. <code>DIR$("*.BAS", 2)</code>; "" after the last. For going through a folder's files.</p>
+<p>Example:</p>
+<pre><code>10 I = 1
+20 F$ = DIR$(&quot;*.BAS&quot;, I): IF F$ = &quot;&quot; THEN END
+30 PRINT F$: I = I + 1: GOTO 20
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>PRIMES.BAS
+NEODEMO.BAS
+</code></pre>
+<p>See also: <a href="#ref-files">FILES</a></p>
+<h3 id="ref-draw">DRAW</h3>
+<p><em>Not available</em> · <code>DRAW cmd$</code></p>
+<p>Turtle graphics. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-edit">EDIT</h3>
+<p><em>Command</em> · <code>EDIT n | EDIT .</code></p>
+<p>Puts program line <code>n</code> (or <code>.</code>, the last line typed or the one that failed) on the input line to change; Enter stores it.</p>
+<ul>
+<li><code>EDIT</code> alone (the full-screen editor) is not available in this build: Feature not available.</li>
+</ul>
+<p>Example:</p>
+<pre><code>EDIT 20
+</code></pre>
+<p>Shows:</p>
+<pre><code>20 PRINT &quot;HELLO&quot;
+</code></pre>
+<p>See also: <a href="#ref-list">LIST</a>, <a href="#ref-auto">AUTO</a></p>
+<h3 id="ref-end">END</h3>
+<p><em>Statement</em> · <code>END</code></p>
+<p>Ends the program and closes its files.</p>
+<p>Example:</p>
+<pre><code>10 PRINT &quot;DONE&quot;: END
+</code></pre>
+<p>Shows:</p>
+<pre><code>DONE
+</code></pre>
+<p>See also: <a href="#ref-stop">STOP</a></p>
+<h3 id="ref-environ">ENVIRON</h3>
+<p><em>Statement</em> · <code>ENVIRON "name=value"</code></p>
+<p>Sets a string ENVIRON$ gives back (there is no DOS environment).</p>
+<p>Example:</p>
+<pre><code>ENVIRON &quot;USER=KEN&quot;
+</code></pre>
+<p>See also: <a href="#ref-environ-1">ENVIRON$</a></p>
+<h3 id="ref-environ-1">ENVIRON$</h3>
+<p><em>Function</em> · <code>ENVIRON$(name$) | ENVIRON$(n)</code></p>
+<p>The value set for <code>name$</code> with ENVIRON, or the n-th "name=value" string; "" if none.</p>
+<p>Example:</p>
+<pre><code>ENVIRON &quot;USER=KEN&quot;: PRINT ENVIRON$(&quot;USER&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code>KEN
+</code></pre>
+<p>See also: <a href="#ref-environ">ENVIRON</a></p>
+<h3 id="ref-eof">EOF</h3>
+<p><em>Function</em> · <code>EOF(n)</code></p>
+<p>-1 when file <code>n</code> has nothing more to read (for a random file: the last GET was past the end; for COM1: nothing waiting), else 0.</p>
+<p>Example:</p>
+<pre><code>WHILE NOT EOF(1): LINE INPUT #1, L$: PRINT L$: WEND
+</code></pre>
+<p>See also: <a href="#ref-lof">LOF</a>, <a href="#ref-loc">LOC</a></p>
+<h3 id="ref-eqv">EQV</h3>
+<p><em>Operator</em> · <code>a EQV b</code></p>
+<p>Bitwise equivalence: a bit is 1 where both are the same.</p>
+<p>Example:</p>
+<pre><code>PRINT -1 EQV 0
+</code></pre>
+<p>Shows:</p>
+<pre><code> 0
+</code></pre>
+<p>See also: <a href="#ref-xor">XOR</a></p>
+<h3 id="ref-erase">ERASE</h3>
+<p><em>Statement</em> · <code>ERASE array[, array...]</code></p>
+<p>Deletes arrays, freeing their memory, so they can be dimensioned again.</p>
+<p>Example:</p>
+<pre><code>DIM A(100): ERASE A: DIM A(5)
+</code></pre>
+<p>See also: <a href="#ref-dim">DIM</a></p>
+<h3 id="ref-erdev">ERDEV</h3>
+<p><em>Function</em> · <code>ERDEV | ERDEV$</code></p>
+<p>GW-BASIC's device error details: always 0 and "" here.</p>
+<p>See also: <a href="#ref-err">ERR</a></p>
+<h3 id="ref-erl">ERL</h3>
+<p><em>Function</em> · <code>ERL</code></p>
+<p>The line number where the last error happened (0 in direct mode).</p>
+<p>Example:</p>
+<pre><code>100 PRINT &quot;Error&quot;; ERR; &quot;in&quot;; ERL: RESUME NEXT
+</code></pre>
+<p>See also: <a href="#ref-err">ERR</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a></p>
+<h3 id="ref-err">ERR</h3>
+<p><em>Function</em> · <code>ERR</code></p>
+<p>The code of the last error (see Error codes).</p>
+<p>Example:</p>
+<pre><code>10 ON ERROR GOTO 100
+20 X = 1 / 0
+30 END
+100 PRINT ERR: RESUME NEXT
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code> 11
+</code></pre>
+<p>See also: <a href="#ref-erl">ERL</a>, <a href="#ref-error">ERROR</a></p>
+<h3 id="ref-error">ERROR</h3>
+<p><em>Statement</em> · <code>ERROR n</code></p>
+<p>Raises error <code>n</code> (1-255), as if it had happened: a test, or a program's own error codes.</p>
+<ul>
+<li>Codes without a message print <code>Unprintable error</code>.</li>
+</ul>
+<p>Example:</p>
+<pre><code>ERROR 53
+</code></pre>
+<p>Shows:</p>
+<pre><code>File not found
+</code></pre>
+<p>See also: <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-err">ERR</a></p>
+<h3 id="ref-exit-for">EXIT FOR</h3>
+<p><em>Statement</em> · <code>EXIT FOR</code></p>
+<p>Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC).</p>
+<p>Example:</p>
+<pre><code>10 FOR I = 1 TO 10: IF I = 3 THEN EXIT FOR
+20 NEXT: PRINT I
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3
+</code></pre>
+<p>See also: <a href="#ref-for">FOR</a></p>
+<h3 id="ref-exp">EXP</h3>
+<p><em>Function</em> · <code>EXP(x)</code></p>
+<p>e (2.718...) to the power <code>x</code>.</p>
+<ul>
+<li>Errors: <code>Overflow</code> (6) if too big.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT EXP(1)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 2.71828183
+</code></pre>
+<p>See also: <a href="#ref-log">LOG</a></p>
+<h3 id="ref-exterr">EXTERR</h3>
+<p><em>Function</em> · <code>EXTERR(n)</code></p>
+<p>DOS extended error information: always 0 here.</p>
+<p>See also: <a href="#ref-err">ERR</a></p>
+<h3 id="ref-field">FIELD</h3>
+<p><em>Statement</em> · <code>FIELD #n, width AS var$[, width AS var$...]</code></p>
+<p>Divides random file <code>n</code>'s record buffer into string fields (at most 16, no more than the record length). GET fills them; LSET/RSET set them for PUT.</p>
+<ul>
+<li>Errors: <code>FIELD overflow</code> (50).</li>
+</ul>
+<p>Example:</p>
+<pre><code>FIELD #1, 20 AS NM$, 2 AS AGE$
+</code></pre>
+<p>See also: <a href="#ref-get">GET</a>, <a href="#ref-put">PUT</a>, <a href="#ref-lset">LSET</a></p>
+<h3 id="ref-files">FILES</h3>
+<p><em>Command</em> · <code>FILES [pattern$]</code></p>
+<p>Lists files, four to a line (folders marked <code>&lt;DIR&gt;</code>), then the free space on that drive.</p>
+<ul>
+<li>The pattern may have <code>*</code> and <code>?</code> and a drive and folder in front: <code>FILES "*.BAS"</code>, <code>FILES "SD:"</code>, <code>FILES "SD:/GAMES/*.BAS"</code>.</li>
+<li>Without one, all files in the current folder.</li>
+<li><code>File not found</code> is printed (not an error) when nothing matches.</li>
+</ul>
+<p>Example:</p>
+<pre><code>FILES &quot;*.BAS&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>PRIMES.BAS          NEODEMO.BAS
+3084288 Bytes free
+</code></pre>
+<p>See also: <a href="#ref-dir">DIR$</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-chdir">CHDIR</a></p>
+<h3 id="ref-fix">FIX</h3>
+<p><em>Function</em> · <code>FIX(x)</code></p>
+<p><code>x</code> with its fraction cut off (towards 0).</p>
+<p>Example:</p>
+<pre><code>PRINT FIX(-2.7); FIX(2.7)
+</code></pre>
+<p>Shows:</p>
+<pre><code>-2  2
+</code></pre>
+<p>See also: <a href="#ref-int">INT</a>, <a href="#ref-cint">CINT</a></p>
+<h3 id="ref-font">FONT</h3>
+<p><em>Not available</em> · <code>FONT LOAD n, file$... | FONT n</code></p>
+<p>Font sheets for GPRINT. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-fontw">FONTW</h3>
+<p><em>Function / statement</em> · <code>FONTW(n) | FONTH(n) | GWIDTH(s$)</code></p>
+<p>Font cell sizes: font 0 is 8 x 16 (FONTW(0) 8, FONTH(0) 16, GWIDTH 8 a character); other fonts give 0.</p>
+<h3 id="ref-for">FOR</h3>
+<p><em>Statement</em> · <code>FOR v = a TO b [STEP s] ... NEXT [v]</code></p>
+<p>Repeats the lines up to NEXT with <code>v</code> = a, a+s, ... while it hasn't passed <code>b</code>. STEP defaults to 1; a negative STEP counts down.</p>
+<ul>
+<li>The loop body is skipped when <code>a</code> is already past <code>b</code>.</li>
+<li>Up to 32 loops nested.</li>
+</ul>
+<p>Example:</p>
+<pre><code>FOR I = 10 TO 1 STEP -3: PRINT I;: NEXT
+</code></pre>
+<p>Shows:</p>
+<pre><code> 10  7  4  1
+</code></pre>
+<p>See also: <a href="#ref-next">NEXT</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-while">WHILE</a></p>
+<h3 id="ref-fre">FRE</h3>
+<p><em>Function</em> · <code>FRE(x)</code></p>
+<p>The memory free for programs and data, in bytes (<code>x</code> is ignored).</p>
+<p>Example:</p>
+<pre><code>PRINT FRE(0)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 431456
+</code></pre>
+<h3 id="ref-freefile">FREEFILE</h3>
+<p><em>Function</em> · <code>FREEFILE</code></p>
+<p>The lowest file number (1-4) not in use.</p>
+<p>Example:</p>
+<pre><code>F = FREEFILE: OPEN &quot;LOG.TXT&quot; FOR APPEND AS #F
+</code></pre>
+<p>See also: <a href="#ref-open">OPEN</a></p>
+<h3 id="ref-get">GET</h3>
+<p><em>Statement</em> · <code>GET [#]n[, record]</code></p>
+<p>Reads record <code>record</code> (from 1; default the next) of random file <code>n</code> into its buffer and FIELD variables.</p>
+<ul>
+<li><code>GET (x1,y1)-(x2,y2), a</code> (graphics) is not available: Feature not available.</li>
+<li>Errors: <code>Bad record number</code> (63).</li>
+</ul>
+<p>Example:</p>
+<pre><code>GET #1, 3: PRINT NM$
+</code></pre>
+<p>See also: <a href="#ref-put">PUT</a>, <a href="#ref-field">FIELD</a></p>
+<h3 id="ref-gosub">GOSUB</h3>
+<p><em>Statement</em> · <code>GOSUB line</code></p>
+<p>Calls the subroutine at <code>line</code>; RETURN comes back to the statement after the GOSUB.</p>
+<ul>
+<li>Up to 32 deep.</li>
+<li>Errors: <code>Undefined line number</code> (8).</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 GOSUB 100: END
+100 PRINT &quot;SUB&quot;: RETURN
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>SUB
+</code></pre>
+<p>See also: <a href="#ref-return">RETURN</a>, <a href="#ref-ongosub">ON...GOSUB</a></p>
+<h3 id="ref-goto">GOTO</h3>
+<p><em>Statement</em> · <code>GOTO line</code></p>
+<p>Goes on at <code>line</code>.</p>
+<ul>
+<li>Errors: <code>Undefined line number</code> (8).</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 PRINT &quot;HI&quot;: GOTO 10
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>HI
+HI
+...
+</code></pre>
+<p>See also: <a href="#ref-gosub">GOSUB</a>, <a href="#ref-if">IF</a></p>
+<h3 id="ref-gprint">GPRINT</h3>
+<p><em>Not available</em> · <code>GPRINT x, y, items</code></p>
+<p>Text drawn with a font sheet. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-hex">HEX$</h3>
+<p><em>Function</em> · <code>HEX$(n)</code></p>
+<p><code>n</code> (-32768 to 65535) in hexadecimal; negative numbers as their 16-bit two's complement.</p>
+<ul>
+<li>Errors: <code>Overflow</code> (6) out of range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT HEX$(255); &quot; &quot;; HEX$(-1)
+</code></pre>
+<p>Shows:</p>
+<pre><code>FF FFFF
+</code></pre>
+<p>See also: <a href="#ref-oct">OCT$</a>, <a href="#ref-val">VAL</a></p>
+<h3 id="ref-i2c">I2C</h3>
+<p><em>Statement</em> · <code>I2C OPEN [sda, scl[, khz]] | I2C WRITE addr, item[, item...][, NOSTOP] | I2C SCAN | I2C CLOSE</code></p>
+<p>The chip's I2C. OPEN starts it (default GP2 SDA, GP3 SCL, I2C1, 100 kHz; 10-1000), WRITE sends bytes (numbers 0-255 and strings) to device <code>addr</code> (0-127) (NOSTOP keeps the bus for a read), SCAN lists the devices that answer, CLOSE frees the pins.</p>
+<ul>
+<li>SDA on an even pin, SCL the next one.</li>
+<li>Errors: <code>Device I/O error</code> (57) if no device answers, <code>Device unavailable</code> (68) before OPEN.</li>
+</ul>
+<p>Example:</p>
+<pre><code>I2C OPEN: I2C SCAN
+</code></pre>
+<p>See also: <a href="#ref-i2cread">I2CREAD</a>, <a href="#ref-spi">SPI</a></p>
+<h3 id="ref-i2cread">I2CREAD</h3>
+<p><em>Function</em> · <code>I2CREAD(addr[, reg])</code></p>
+<p>Reads one byte from I2C device <code>addr</code>; with <code>reg</code>, first writes the register number.</p>
+<p>Example:</p>
+<pre><code>PRINT I2CREAD(&amp;H68, &amp;H75)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 104
+</code></pre>
+<p>See also: <a href="#ref-i2cread-1">I2CREAD$</a>, <a href="#ref-i2c">I2C</a></p>
+<h3 id="ref-i2cread-1">I2CREAD$</h3>
+<p><em>Function</em> · <code>I2CREAD$(addr, n[, reg])</code></p>
+<p>Reads <code>n</code> bytes (1-255) from I2C device <code>addr</code> as a string; with <code>reg</code>, from that register.</p>
+<p>Example:</p>
+<pre><code>D$ = I2CREAD$(&amp;H68, 6, &amp;H3B)
+</code></pre>
+<p>See also: <a href="#ref-i2cread">I2CREAD</a></p>
+<h3 id="ref-if">IF</h3>
+<p><em>Statement</em> · <code>IF cond THEN statements [ELSE statements] | IF cond THEN line | IF cond GOTO line</code></p>
+<p>Runs the statements after THEN when <code>cond</code> is not 0 (true), else those after ELSE. A line number after THEN or ELSE jumps there.</p>
+<ul>
+<li>Comparisons give -1 (true) or 0 (false); any number not 0 counts as true.</li>
+<li>Everything to the end of the line belongs to THEN or ELSE.</li>
+</ul>
+<p>Example:</p>
+<pre><code>A = 5: IF A &gt; 3 THEN PRINT &quot;BIG&quot; ELSE PRINT &quot;SMALL&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>BIG
+</code></pre>
+<p>See also: <a href="#ref-while">WHILE</a>, <a href="#ref-ongoto">ON...GOTO</a></p>
+<h3 id="ref-image">IMAGE</h3>
+<p><em>Not available</em> · <code>IMAGE file$[, x, y[, w, h]]</code></p>
+<p>Draws a picture. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-imp">IMP</h3>
+<p><em>Operator</em> · <code>a IMP b</code></p>
+<p>Bitwise implication: false only where <code>a</code> is true and <code>b</code> false.</p>
+<p>Example:</p>
+<pre><code>PRINT 0 IMP 0
+</code></pre>
+<p>Shows:</p>
+<pre><code>-1
+</code></pre>
+<p>See also: <a href="#ref-eqv">EQV</a></p>
+<h3 id="ref-inkey">INKEY$</h3>
+<p><em>Function</em> · <code>INKEY$</code></p>
+<p>The key waiting, or "" if none: it doesn't wait. Cursor and function keys give CHR$(0) and the PC scan code (see INKEY$ key codes).</p>
+<p>Example:</p>
+<pre><code>K$ = INKEY$: IF K$ = CHR$(0) + CHR$(72) THEN PRINT &quot;UP&quot;
+</code></pre>
+<p>See also: <a href="#ref-input-2">INPUT$</a>, <a href="#ref-on-key">ON KEY</a></p>
+<h3 id="ref-input">INPUT</h3>
+<p><em>Statement</em> · <code>INPUT ["prompt"{; | ,}] var[, var...]</code></p>
+<p>Waits for a line typed at the terminal and puts its comma-separated items into the variables. A <code>;</code> after the prompt adds <code>?</code>, a <code>,</code> doesn't.</p>
+<ul>
+<li>If the items don't fit (too few, or text for a number) it says <code>?Redo from start</code> and asks again.</li>
+<li>Ctrl-C stops the program.</li>
+</ul>
+<p>Example:</p>
+<pre><code>INPUT &quot;Age&quot;; A: PRINT A * 12; &quot;months&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>Age? 3
+ 36 months
+</code></pre>
+<p>See also: <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-input-1">INPUT #</a></p>
+<h3 id="ref-input-1">INPUT</h3>
+<p><em>Statement</em> · <code>INPUT #n, var[, var...]</code></p>
+<p>Reads items from file <code>n</code>: quoted strings, or text up to a comma or the end of the line (numbers stop at a space too).</p>
+<ul>
+<li>Errors: <code>Input past end</code> (62).</li>
+</ul>
+<p>Example:</p>
+<pre><code>INPUT #1, N$, S
+</code></pre>
+<p>See also: <a href="#ref-write-1">WRITE #</a>, <a href="#ref-line-input-1">LINE INPUT #</a></p>
+<h3 id="ref-input-2">INPUT$</h3>
+<p><em>Function</em> · <code>INPUT$(n[, [#]f])</code></p>
+<p>Reads <code>n</code> characters: from file <code>f</code>, or from the keyboard (waiting, without showing them).</p>
+<p>Example:</p>
+<pre><code>K$ = INPUT$(1): PRINT &quot;You pressed &quot;; K$
+</code></pre>
+<p>Shows:</p>
+<pre><code>You pressed A
+</code></pre>
+<p>See also: <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a></p>
+<h3 id="ref-instr">INSTR</h3>
+<p><em>Function</em> · <code>INSTR([start,] s$, find$)</code></p>
+<p>Where <code>find$</code> first appears in <code>s$</code> (from position <code>start</code>, default 1); 0 if it doesn't.</p>
+<p>Example:</p>
+<pre><code>PRINT INSTR(&quot;HELLO&quot;, &quot;L&quot;); INSTR(4, &quot;HELLO&quot;, &quot;L&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3  4
+</code></pre>
+<p>See also: <a href="#ref-mid">MID$</a></p>
+<h3 id="ref-int">INT</h3>
+<p><em>Function</em> · <code>INT(x)</code></p>
+<p>The largest whole number not more than <code>x</code> (rounds down).</p>
+<p>Example:</p>
+<pre><code>PRINT INT(-2.5); INT(2.5)
+</code></pre>
+<p>Shows:</p>
+<pre><code>-3  2
+</code></pre>
+<p>See also: <a href="#ref-fix">FIX</a>, <a href="#ref-cint">CINT</a></p>
+<h3 id="ref-key">KEY</h3>
+<p><em>Statement</em> · <code>KEY n, text$ | KEY LIST | KEY ON | KEY OFF</code></p>
+<p>Sets what function key F1-F10 types (<code>CHR$(13)</code> in it is Enter), lists them, or shows their labels on row 25 (<code>KEY ON</code>) as on a PC.</p>
+<ul>
+<li>Defaults: F1 <code>LIST</code>, F2 <code>RUN</code>+Enter, F3 <code>LOAD"</code>, F4 <code>SAVE"</code>, F5 <code>CONT</code>+Enter, F7 <code>TRON</code>, F8 <code>TROFF</code>, F9 <code>KEY</code>, F10 <code>SCREEN 0,0,0</code>.</li>
+<li><code>KEY(n) ON/OFF/STOP</code> is for key events: see ON KEY.</li>
+</ul>
+<p>Example:</p>
+<pre><code>KEY 5, &quot;FILES&quot; + CHR$(13)
+</code></pre>
+<p>See also: <a href="#ref-on-key">ON KEY</a></p>
+<h3 id="ref-keyn">KEY(n)</h3>
+<p><em>Statement</em> · <code>KEY(n) ON | OFF | STOP</code></p>
+<p>Turns key <code>n</code>'s event (ON KEY) on, off, or holds it.</p>
+<p>Example:</p>
+<pre><code>KEY(1) ON
+</code></pre>
+<p>See also: <a href="#ref-on-key">ON KEY</a></p>
+<h3 id="ref-keydown">KEYDOWN</h3>
+<p><em>Function / statement</em> · <code>KEYDOWN(n)</code></p>
+<p>Whether a key is held: a terminal sends key presses, not that, so it is always 0.</p>
+<h3 id="ref-kill">KILL</h3>
+<p><em>Statement</em> · <code>KILL file$</code></p>
+<p>Deletes a file. No extension is added.</p>
+<ul>
+<li>Errors: <code>File not found</code> (53); <code>File already open</code> (55) while it is open.</li>
+</ul>
+<p>Example:</p>
+<pre><code>KILL &quot;OLD.BAS&quot;
+</code></pre>
+<p>See also: <a href="#ref-name">NAME</a>, <a href="#ref-files">FILES</a></p>
+<h3 id="ref-lcase">LCASE$</h3>
+<p><em>Function</em> · <code>LCASE$(s$)</code></p>
+<p><code>s$</code> in lower case.</p>
+<p>Example:</p>
+<pre><code>PRINT LCASE$(&quot;Hello&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code>hello
+</code></pre>
+<p>See also: <a href="#ref-ucase">UCASE$</a></p>
+<h3 id="ref-left">LEFT$</h3>
+<p><em>Function</em> · <code>LEFT$(s$, n)</code></p>
+<p>The first <code>n</code> characters of <code>s$</code>.</p>
+<p>Example:</p>
+<pre><code>PRINT LEFT$(&quot;HELLO&quot;, 2)
+</code></pre>
+<p>Shows:</p>
+<pre><code>HE
+</code></pre>
+<p>See also: <a href="#ref-right">RIGHT$</a>, <a href="#ref-mid">MID$</a></p>
+<h3 id="ref-len">LEN</h3>
+<p><em>Function</em> · <code>LEN(s$)</code></p>
+<p>The number of characters in <code>s$</code> (0-255).</p>
+<p>Example:</p>
+<pre><code>PRINT LEN(&quot;HELLO&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 5
+</code></pre>
+<h3 id="ref-let">LET</h3>
+<p><em>Statement</em> · <code>[LET] var = expr</code></p>
+<p>Gives a variable a value. <code>LET</code> itself is optional.</p>
+<ul>
+<li>Errors: <code>Type mismatch</code> (13) for a string into a number or the other way; <code>Overflow</code> (6) out of an integer's range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>LET A = 5: B$ = &quot;X&quot;
+</code></pre>
+<p>See also: <a href="#ref-swap">SWAP</a></p>
+<h3 id="ref-line">LINE</h3>
+<p><em>Not available</em> · <code>LINE (x1, y1)-(x2, y2)[, colour[, B | BF]]</code></p>
+<p>Draws a line or box (LINE INPUT works). Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-line-input">LINE INPUT</h3>
+<p><em>Statement</em> · <code>LINE INPUT ["prompt";] var$</code></p>
+<p>Reads a whole line typed at the terminal, commas and quotes included, into a string.</p>
+<p>Example:</p>
+<pre><code>LINE INPUT &quot;Name: &quot;; N$
+</code></pre>
+<p>Shows:</p>
+<pre><code>Name: Ada Lovelace
+</code></pre>
+<p>See also: <a href="#ref-input">INPUT</a></p>
+<h3 id="ref-line-input-1">LINE INPUT</h3>
+<p><em>Statement</em> · <code>LINE INPUT #n, var$</code></p>
+<p>Reads a whole line of file <code>n</code> into a string.</p>
+<p>Example:</p>
+<pre><code>LINE INPUT #1, L$
+</code></pre>
+<p>See also: <a href="#ref-input-1">INPUT #</a></p>
+<h3 id="ref-list">LIST</h3>
+<p><em>Command</em> · <code>LIST [range]</code></p>
+<p>Lists the program, pausing after each 28 lines (any key goes on, Q stops). <code>range</code> is <code>n</code>, <code>n-</code>, <code>-n</code> or <code>n-m</code>.</p>
+<p>Example:</p>
+<pre><code>LIST 10-30
+</code></pre>
+<p>Shows:</p>
+<pre><code>10 PRINT &quot;HELLO&quot;
+20 GOTO 10
+</code></pre>
+<p>See also: <a href="#ref-llist">LLIST</a>, <a href="#ref-edit">EDIT</a></p>
+<h3 id="ref-llist">LLIST</h3>
+<p><em>Command</em> · <code>LLIST [range]</code></p>
+<p>The same as LIST: there is no printer.</p>
+<p>See also: <a href="#ref-list">LIST</a></p>
+<h3 id="ref-load">LOAD</h3>
+<p><em>Command</em> · <code>LOAD file$[, R]</code></p>
+<p>Loads a program, replacing the one in memory; with <code>,R</code> runs it too.</p>
+<ul>
+<li><code>.BAS</code> is added if the name has no extension.</li>
+<li>Plain text (CR LF or LF lines) and GW-BASIC tokenised files are read.</li>
+<li>Errors: <code>File not found</code> (53).</li>
+</ul>
+<p>Example:</p>
+<pre><code>LOAD &quot;PRIMES&quot;: RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code> 168 primes below 1000
+</code></pre>
+<p>See also: <a href="#ref-save">SAVE</a>, <a href="#ref-run">RUN</a>, <a href="#ref-merge">MERGE</a></p>
+<h3 id="ref-loc">LOC</h3>
+<p><em>Function</em> · <code>LOC(n)</code></p>
+<p>For a random file: the last record read or written. For COM1: the bytes waiting. Otherwise the position in 128-byte blocks.</p>
+<p>See also: <a href="#ref-lof">LOF</a>, <a href="#ref-eof">EOF</a></p>
+<h3 id="ref-locate">LOCATE</h3>
+<p><em>Statement</em> · <code>LOCATE [row][, [col][, cursor]]</code></p>
+<p>Moves the cursor to <code>row</code> (1-30) and <code>col</code> (1-80); <code>cursor</code> 0 hides it, 1 shows it.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) off the screen.</li>
+</ul>
+<p>Example:</p>
+<pre><code>LOCATE 12, 35: PRINT &quot;MIDDLE&quot;
+</code></pre>
+<p>See also: <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-pos">POS</a></p>
+<h3 id="ref-lock">LOCK</h3>
+<p><em>Function / statement</em> · <code>LOCK | UNLOCK | MOTOR</code></p>
+<p>Accepted for old programs; they do nothing.</p>
+<h3 id="ref-lof">LOF</h3>
+<p><em>Function</em> · <code>LOF(n)</code></p>
+<p>The length of file <code>n</code> in bytes (for COM1: the room left in its buffer).</p>
+<p>Example:</p>
+<pre><code>OPEN &quot;PRIMES.BAS&quot; FOR INPUT AS #1: PRINT LOF(1): CLOSE
+</code></pre>
+<p>Shows:</p>
+<pre><code> 329
+</code></pre>
+<p>See also: <a href="#ref-loc">LOC</a></p>
+<h3 id="ref-log">LOG</h3>
+<p><em>Function</em> · <code>LOG(x)</code></p>
+<p>The natural logarithm of <code>x</code> (&gt; 0). LOG(x) / LOG(10) is the base-10 log.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) for 0 or less.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT LOG(100) / LOG(10)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 2
+</code></pre>
+<p>See also: <a href="#ref-exp">EXP</a></p>
+<h3 id="ref-lpos">LPOS</h3>
+<p><em>Function / statement</em> · <code>LPOS(n) | STICK(n) | STRIG(n) | PEN(n)</code></p>
+<p>Printer column, joystick, light pen: always 0. STRIG and PEN statements are accepted and do nothing.</p>
+<h3 id="ref-lprint">LPRINT</h3>
+<p><em>Statement</em> · <code>LPRINT items | LPRINT USING fmt$; items</code></p>
+<p>The same as PRINT: there is no printer.</p>
+<p>See also: <a href="#ref-print">PRINT</a></p>
+<h3 id="ref-lset">LSET</h3>
+<p><em>Statement</em> · <code>LSET var$ = s$</code></p>
+<p>Puts <code>s$</code> in a FIELD variable, left-aligned and padded with spaces (cut if too long). Use it, not LET, for field variables.</p>
+<p>Example:</p>
+<pre><code>LSET NM$ = &quot;Grace&quot;
+</code></pre>
+<p>See also: <a href="#ref-rset">RSET</a>, <a href="#ref-field">FIELD</a></p>
+<h3 id="ref-merge">MERGE</h3>
+<p><em>Command</em> · <code>MERGE file$</code></p>
+<p>Adds the lines of a plain-text program to the one in memory; lines with the same number are replaced.</p>
+<p>Example:</p>
+<pre><code>MERGE &quot;SUBS&quot;
+</code></pre>
+<p>See also: <a href="#ref-load">LOAD</a>, <a href="#ref-chain">CHAIN</a></p>
+<h3 id="ref-mid">MID$</h3>
+<p><em>Function</em> · <code>MID$(s$, start[, n])</code></p>
+<p>Up to <code>n</code> characters of <code>s$</code> from position <code>start</code> (all the rest without <code>n</code>).</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) for <code>start</code> &lt; 1.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT MID$(&quot;HELLO&quot;, 2, 3)
+</code></pre>
+<p>Shows:</p>
+<pre><code>ELL
+</code></pre>
+<p>See also: <a href="#ref-left">LEFT$</a>, <a href="#ref-right">RIGHT$</a>, <a href="#ref-mid-1">MID$ =</a></p>
+<h3 id="ref-mid-1">MID$ =</h3>
+<p><em>Statement</em> · <code>MID$(v$, start[, n]) = x$</code></p>
+<p>Replaces characters of <code>v$</code> in place, from <code>start</code>, with those of <code>x$</code> (at most <code>n</code>); <code>v$</code> keeps its length.</p>
+<p>Example:</p>
+<pre><code>A$ = &quot;HELLO&quot;: MID$(A$, 2, 3) = &quot;ipp&quot;: PRINT A$
+</code></pre>
+<p>Shows:</p>
+<pre><code>HippO
+</code></pre>
+<p>See also: <a href="#ref-mid">MID$</a></p>
+<h3 id="ref-mkd">MKD$</h3>
+<p><em>Function</em> · <code>MKD$(x)</code></p>
+<p>The number <code>x</code> as an 8-byte double-precision string, for random files.</p>
+<p>See also: <a href="#ref-cvd">CVD</a></p>
+<h3 id="ref-mkdir">MKDIR</h3>
+<p><em>Statement</em> · <code>MKDIR path$</code></p>
+<p>Makes a folder.</p>
+<ul>
+<li>Errors: <code>Path/File Access Error</code> (75) if it exists.</li>
+</ul>
+<p>Example:</p>
+<pre><code>MKDIR &quot;SD:/GAMES&quot;
+</code></pre>
+<p>See also: <a href="#ref-chdir">CHDIR</a>, <a href="#ref-rmdir">RMDIR</a></p>
+<h3 id="ref-mki">MKI$</h3>
+<p><em>Function</em> · <code>MKI$(n)</code></p>
+<p>The integer <code>n</code> (-32768 to 32767) as a 2-byte string, low byte first.</p>
+<ul>
+<li>Errors: <code>Overflow</code> (6).</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT LEN(MKI$(5))
+</code></pre>
+<p>Shows:</p>
+<pre><code> 2
+</code></pre>
+<p>See also: <a href="#ref-cvi">CVI</a></p>
+<h3 id="ref-mks">MKS$</h3>
+<p><em>Function</em> · <code>MKS$(x)</code></p>
+<p>The number <code>x</code> as a 4-byte single-precision string (GW-BASIC's format).</p>
+<p>See also: <a href="#ref-cvs">CVS</a></p>
+<h3 id="ref-mouse">MOUSE</h3>
+<p><em>Not available</em> · <code>MOUSE ON | OFF</code></p>
+<p>The mouse pointer. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-mousex">MOUSEX</h3>
+<p><em>Function / statement</em> · <code>MOUSEX | MOUSEY | MOUSEB | MOUSEW</code></p>
+<p>The mouse: there is none, so they give 0.</p>
+<h3 id="ref-music">MUSIC</h3>
+<p><em>Not available</em> · <code>MUSIC file$ | MUSIC STOP...</code></p>
+<p>MOD and XM songs in the background. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-musicn">MUSIC(n)</h3>
+<p><em>Function / statement</em> · <code>MUSIC(n)</code></p>
+<p>The song's state: always 0 (MUSIC isn't available).</p>
+<h3 id="ref-name">NAME</h3>
+<p><em>Statement</em> · <code>NAME old$ AS new$</code></p>
+<p>Renames a file (or moves it to another folder on the same drive).</p>
+<ul>
+<li>Errors: <code>File not found</code> (53), <code>File already exists</code> (58).</li>
+</ul>
+<p>Example:</p>
+<pre><code>NAME &quot;A.BAS&quot; AS &quot;B.BAS&quot;
+</code></pre>
+<p>See also: <a href="#ref-kill">KILL</a></p>
+<h3 id="ref-neopixel">NEOPIXEL</h3>
+<p><em>Statement</em> · <code>NEOPIXEL OPEN [pin[, count[, order$]]] | NEOPIXEL n, r, g, b | NEOPIXEL FILL r, g, b | NEOPIXEL SHOW | NEOPIXEL BRIGHT level | NEOPIXEL CLEAR | NEOPIXEL CLOSE</code></p>
+<p>WS2812B LEDs ("NeoPixels") on one pin, through a PIO state machine. OPEN sets up <code>count</code> (1-1024, default 1) LEDs on <code>pin</code> (default GP28, the Maker Pi Pico's RGB LED), GRB order or "RGB"; <code>n, r, g, b</code> and FILL set colours (0-255) in the buffer; SHOW sends it; BRIGHT (0-255) scales the next SHOWs; CLEAR turns them all off; CLOSE frees the pin.</p>
+<ul>
+<li>Errors: <code>Device unavailable</code> (68) before OPEN, <code>Illegal function call</code> (5) for a value out of range.</li>
+<li>RUN, NEW and SYSTEM close it.</li>
+</ul>
+<p>Example:</p>
+<pre><code>NEOPIXEL OPEN: NEOPIXEL BRIGHT 40: NEOPIXEL 0, 255, 0, 0: NEOPIXEL SHOW
+</code></pre>
+<p>See also: <a href="#ref-pin">PIN</a>, <a href="#ref-pwm">PWM</a></p>
+<h3 id="ref-new">NEW</h3>
+<p><em>Command</em> · <code>NEW</code></p>
+<p>Deletes the program and its variables, closes files, and frees the pins BASIC used.</p>
+<p>See also: <a href="#ref-clear">CLEAR</a>, <a href="#ref-delete">DELETE</a></p>
+<h3 id="ref-next">NEXT</h3>
+<p><em>Statement</em> · <code>NEXT [v[, v...]]</code></p>
+<p>Ends a FOR loop: adds the step and goes round again unless the end is passed. <code>NEXT J, I</code> ends two loops.</p>
+<ul>
+<li>Errors: <code>NEXT without FOR</code> (1).</li>
+</ul>
+<p>Example:</p>
+<pre><code>FOR I = 1 TO 3: PRINT I;: NEXT I
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1  2  3
+</code></pre>
+<p>See also: <a href="#ref-for">FOR</a></p>
+<h3 id="ref-not">NOT</h3>
+<p><em>Operator</em> · <code>NOT a</code></p>
+<p>Bitwise NOT: -1 becomes 0 and 0 becomes -1 (NOT x is -x - 1).</p>
+<p>Example:</p>
+<pre><code>PRINT NOT 0; NOT 5
+</code></pre>
+<p>Shows:</p>
+<pre><code>-1 -6
+</code></pre>
+<p>See also: <a href="#ref-and">AND</a></p>
+<h3 id="ref-oct">OCT$</h3>
+<p><em>Function</em> · <code>OCT$(n)</code></p>
+<p><code>n</code> (-32768 to 65535) in octal.</p>
+<p>Example:</p>
+<pre><code>PRINT OCT$(8)
+</code></pre>
+<p>Shows:</p>
+<pre><code>10
+</code></pre>
+<p>See also: <a href="#ref-hex">HEX$</a></p>
+<h3 id="ref-on-com">ON COM</h3>
+<p><em>Statement</em> · <code>ON COM(1) GOSUB line</code></p>
+<p>Calls the subroutine when bytes arrive on the open COM1 (with COM(1) ON).</p>
+<p>See also: <a href="#ref-com1">COM(1)</a>, <a href="#ref-open">OPEN</a></p>
+<h3 id="ref-on-error-goto">ON ERROR GOTO</h3>
+<p><em>Statement</em> · <code>ON ERROR GOTO line | ON ERROR GOTO 0</code></p>
+<p>Sends errors in a running program to an error handler at <code>line</code>. <code>ON ERROR GOTO 0</code> turns that off; inside a handler it reports the error and stops.</p>
+<ul>
+<li>ERR and ERL say what and where; RESUME ends the handler.</li>
+<li>Ctrl-C can't be trapped.</li>
+<li>A program that ends inside a handler stops with <code>No RESUME</code> (19).</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 ON ERROR GOTO 100
+20 OPEN &quot;NONE&quot; FOR INPUT AS #1
+30 END
+100 PRINT &quot;no file&quot;: RESUME 30
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>no file
+</code></pre>
+<p>See also: <a href="#ref-resume">RESUME</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a></p>
+<h3 id="ref-on-key">ON KEY</h3>
+<p><em>Statement</em> · <code>ON KEY(n) GOSUB line</code></p>
+<p>Calls the subroutine when key <code>n</code> is pressed (with KEY(n) ON): 1-10 are F1-F10, 11 Up, 12 Left, 13 Right, 14 Down.</p>
+<ul>
+<li><code>KEY 15</code>-<code>KEY 20</code> user keys are accepted but never trigger.</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 ON KEY(1) GOSUB 100: KEY(1) ON
+20 GOTO 20
+100 PRINT &quot;F1&quot;: RETURN
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>F1
+</code></pre>
+<p>See also: <a href="#ref-keyn">KEY(n)</a>, <a href="#ref-inkey">INKEY$</a></p>
+<h3 id="ref-on-play">ON PLAY</h3>
+<p><em>Statement</em> · <code>ON PLAY(n) GOSUB line</code></p>
+<p>Calls the subroutine when PLAY's background queue drops below <code>n</code> notes (with PLAY ON): for music that never stops.</p>
+<p>See also: <a href="#ref-play">PLAY</a>, <a href="#ref-play-on">PLAY ON</a></p>
+<h3 id="ref-on-timer">ON TIMER</h3>
+<p><em>Statement</em> · <code>ON TIMER(s) GOSUB line</code></p>
+<p>Calls the subroutine every <code>s</code> seconds (1-86400), with TIMER ON.</p>
+<p>Example:</p>
+<pre><code>10 ON TIMER(1) GOSUB 100: TIMER ON
+20 GOTO 20
+100 PRINT TIME$: RETURN
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>12:00:01
+12:00:02
+</code></pre>
+<p>See also: <a href="#ref-timer-on">TIMER ON</a></p>
+<h3 id="ref-ongosub">ON...GOSUB</h3>
+<p><em>Statement</em> · <code>ON n GOSUB line1[, line2...]</code></p>
+<p>Calls the n-th subroutine in the list. If <code>n</code> is 0 or past the list, it goes on with the next statement.</p>
+<p>Example:</p>
+<pre><code>10 ON 2 GOSUB 100, 200: END
+100 PRINT &quot;A&quot;: RETURN
+200 PRINT &quot;B&quot;: RETURN
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>B
+</code></pre>
+<p>See also: <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-gosub">GOSUB</a></p>
+<h3 id="ref-ongoto">ON...GOTO</h3>
+<p><em>Statement</em> · <code>ON n GOTO line1[, line2...]</code></p>
+<p>Goes to the n-th line in the list; with <code>n</code> 0 or past the list, goes on.</p>
+<p>Example:</p>
+<pre><code>ON 1 GOTO 100, 200
+</code></pre>
+<p>See also: <a href="#ref-ongosub">ON...GOSUB</a></p>
+<h3 id="ref-open">OPEN</h3>
+<p><em>Statement</em> · <code>OPEN file$ FOR INPUT | OUTPUT | APPEND | RANDOM AS [#]n [LEN = size] | OPEN mode$, [#]n, file$[, size] | OPEN "COM1:..." AS [#]n</code></p>
+<p>Opens a file as number <code>n</code> (1-4). OUTPUT creates or empties it, APPEND adds to its end, INPUT reads it, RANDOM reads and writes fixed-size records (LEN 1-1024, default 128; also the default without FOR).</p>
+<ul>
+<li>The short form takes "I", "O", "A" or "R".</li>
+<li>A "COM1:" name opens the serial port: see the manual's COM1 section.</li>
+<li>Errors: <code>File not found</code> (53), <code>File already open</code> (55), <code>Bad file number</code> (52).</li>
+</ul>
+<p>Example:</p>
+<pre><code>OPEN &quot;SCORES.TXT&quot; FOR OUTPUT AS #1: PRINT #1, &quot;Ann&quot;, 120: CLOSE #1
+</code></pre>
+<p>See also: <a href="#ref-close">CLOSE</a>, <a href="#ref-print-1">PRINT #</a>, <a href="#ref-input-1">INPUT #</a></p>
+<h3 id="ref-option-base">OPTION BASE</h3>
+<p><em>Statement</em> · <code>OPTION BASE 0 | 1</code></p>
+<p>The lowest array subscript, before any array is used.</p>
+<p>Example:</p>
+<pre><code>OPTION BASE 1: DIM A(3)
+</code></pre>
+<p>See also: <a href="#ref-dim">DIM</a></p>
+<h3 id="ref-or">OR</h3>
+<p><em>Operator</em> · <code>a OR b</code></p>
+<p>Bitwise OR: true if either is.</p>
+<p>Example:</p>
+<pre><code>PRINT 12 OR 3
+</code></pre>
+<p>Shows:</p>
+<pre><code> 15
+</code></pre>
+<p>See also: <a href="#ref-and">AND</a>, <a href="#ref-xor">XOR</a></p>
+<h3 id="ref-paint">PAINT</h3>
+<p><em>Not available</em> · <code>PAINT (x, y)[, colour[, border]]</code></p>
+<p>Flood fill. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-palette">PALETTE</h3>
+<p><em>Not available</em> · <code>PALETTE [attr, colour]</code></p>
+<p>Changes colours. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-pause">PAUSE</h3>
+<p><em>Statement</em> · <code>PAUSE ms</code></p>
+<p>Waits <code>ms</code> milliseconds (an extension); Ctrl-C still stops it.</p>
+<p>Example:</p>
+<pre><code>PAUSE 500
+</code></pre>
+<p>See also: <a href="#ref-timer">TIMER</a></p>
+<h3 id="ref-pcopy">PCOPY</h3>
+<p><em>Not available</em> · <code>PCOPY from, to</code></p>
+<p>Copies screen pages. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-peek">PEEK</h3>
+<p><em>Function</em> · <code>PEEK(offset)</code></p>
+<p>A byte of the emulated memory chosen by DEF SEG: the text screen (&amp;HB800: reads spaces and colour 7, as a terminal can't be read) or BIOS data (DEF SEG = 0: &amp;H449 mode 3, &amp;H44A columns 80, &amp;H484 rows-1 29, &amp;H46C-&amp;H46E timer ticks).</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) anywhere else.</li>
+</ul>
+<p>Example:</p>
+<pre><code>DEF SEG = 0: PRINT PEEK(&amp;H44A)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 80
+</code></pre>
+<p>See also: <a href="#ref-poke">POKE</a>, <a href="#ref-def-seg">DEF SEG</a></p>
+<h3 id="ref-pin">PIN</h3>
+<p><em>Statement / function</em> · <code>PIN pin, level | PIN(pin)</code></p>
+<p><code>PIN pin, level</code> drives a pin high (1) or low (0), making it an output first. <code>PIN(pin)</code> reads it (0 or 1), making an unused pin an input. <code>LED</code> stands for the board's LED (GP25).</p>
+<ul>
+<li>Pins BASIC uses (the speaker, SD card, PSRAM, open I2C/SPI/COM1/NeoPixel) are refused: <code>GPn is used by ...</code> then <code>Illegal function call</code>.</li>
+<li>On the Maker Pi Pico the buttons GP20-22 read 0 when pressed (turn their pull-ups on with PINMODE).</li>
+</ul>
+<p>Example:</p>
+<pre><code>PIN LED, 1: PRINT PIN(20)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1
+</code></pre>
+<p>See also: <a href="#ref-pinmode">PINMODE</a>, <a href="#ref-pins">PINS</a>, <a href="#ref-pwm">PWM</a></p>
+<h3 id="ref-pinmode">PINMODE</h3>
+<p><em>Statement</em> · <code>PINMODE pin, INPUT | OUTPUT | PULLUP | PULLDOWN</code></p>
+<p>Sets a pin up as an input, an output, or an input with its pull-up or pull-down (or modes 0-3).</p>
+<ul>
+<li>On the RP2350 a pull-down may not pull a pin low (its erratum E9); pull-ups are fine.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PINMODE 20, PULLUP: PRINT PIN(20)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1
+</code></pre>
+<p>See also: <a href="#ref-pin">PIN</a></p>
+<h3 id="ref-pins">PINS</h3>
+<p><em>Command</em> · <code>PINS</code></p>
+<p>Lists every pin and what it is doing (free, in, out, PWM, ADC, the speaker, SD card, I2C, SPI, COM1, NeoPixel...).</p>
+<p>Example:</p>
+<pre><code>PINS
+</code></pre>
+<p>Shows:</p>
+<pre><code>GP0  free           GP8  free  ...
+</code></pre>
+<p>See also: <a href="#ref-pin">PIN</a></p>
+<h3 id="ref-play">PLAY</h3>
+<p><em>Statement</em> · <code>PLAY music$</code></p>
+<p>Plays notes in GW-BASIC's music language (see the manual's Sound section: A-G, O, L, T, P, MF/MB...).</p>
+<ul>
+<li>After <code>MB</code> the notes play in the background (up to 32 queued) while the program goes on.</li>
+<li><code>X</code> substrings aren't supported; <code>=variable;</code> is.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PLAY &quot;T160 O3 L8 CDEFGAB &gt; C&quot;
+</code></pre>
+<p>See also: <a href="#ref-sound">SOUND</a>, <a href="#ref-playn">PLAY(n)</a>, <a href="#ref-on-play">ON PLAY</a></p>
+<h3 id="ref-play-on">PLAY ON</h3>
+<p><em>Statement</em> · <code>PLAY ON | OFF | STOP</code></p>
+<p>Turns the PLAY event (ON PLAY) on, off, or holds it.</p>
+<p>See also: <a href="#ref-on-play">ON PLAY</a></p>
+<h3 id="ref-playn">PLAY(n)</h3>
+<p><em>Function</em> · <code>PLAY(n)</code></p>
+<p>The number of notes still waiting in the background queue (<code>n</code> is ignored).</p>
+<p>Example:</p>
+<pre><code>PLAY &quot;MB CDE&quot;: PRINT PLAY(0)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3
+</code></pre>
+<p>See also: <a href="#ref-play">PLAY</a>, <a href="#ref-on-play">ON PLAY</a></p>
+<h3 id="ref-pmap">PMAP</h3>
+<p><em>Not available</em> · <code>PMAP(v, n)</code></p>
+<p>Converts WINDOW coordinates. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-point">POINT</h3>
+<p><em>Not available</em> · <code>POINT(x, y) | POINT(n)</code></p>
+<p>A pixel's colour, or the graphics cursor. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-poke">POKE</h3>
+<p><em>Statement</em> · <code>POKE offset, byte</code></p>
+<p>Writes a byte to the emulated memory (DEF SEG). The text screen and BIOS bytes accept it and change nothing here.</p>
+<p>See also: <a href="#ref-peek">PEEK</a></p>
+<h3 id="ref-pos">POS</h3>
+<p><em>Function</em> · <code>POS(n)</code></p>
+<p>The column the cursor is in, 1-80 (<code>n</code> is ignored).</p>
+<p>Example:</p>
+<pre><code>PRINT &quot;ABC&quot;;: PRINT POS(0)
+</code></pre>
+<p>Shows:</p>
+<pre><code>ABC 4
+</code></pre>
+<p>See also: <a href="#ref-csrlin">CSRLIN</a></p>
+<h3 id="ref-preset">PRESET</h3>
+<p><em>Not available</em> · <code>PRESET (x, y)[, colour]</code></p>
+<p>Plots a point in the background colour. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-print">PRINT</h3>
+<p><em>Statement</em> · <code>PRINT [items]</code></p>
+<p>Prints numbers and strings. <code>;</code> between items prints them together, <code>,</code> jumps to the next 14-column zone; a <code>;</code> or <code>,</code> at the end keeps the cursor on the line.</p>
+<ul>
+<li>Numbers print with a space before them (or a <code>-</code>) and one after.</li>
+<li><code>TAB(n)</code> and <code>SPC(n)</code> position the text.</li>
+<li>Lines wrap at 80 columns.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT &quot;A&quot;; 1, &quot;B&quot;; 2
+</code></pre>
+<p>Shows:</p>
+<pre><code>A 1           B 2
+</code></pre>
+<p>See also: <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-write">WRITE</a>, <a href="#ref-tab">TAB</a></p>
+<h3 id="ref-print-1">PRINT</h3>
+<p><em>Statement</em> · <code>PRINT #n, [USING fmt$;] items</code></p>
+<p>Like PRINT, into file <code>n</code>. Lines end in CR LF (CR alone on COM1 unless LF was asked for), and there is no 80-column wrap.</p>
+<p>Example:</p>
+<pre><code>PRINT #1, &quot;TOTAL&quot;; 42
+</code></pre>
+<p>See also: <a href="#ref-write-1">WRITE #</a>, <a href="#ref-print">PRINT</a></p>
+<h3 id="ref-print-using">PRINT USING</h3>
+<p><em>Statement</em> · <code>PRINT USING fmt$; items[;]</code></p>
+<p>Prints numbers and strings in the fields of <code>fmt$</code> (see PRINT USING formats); the format is used again from its start for more items.</p>
+<ul>
+<li>Also <code>PRINT #n, USING</code>, and after other items: <code>PRINT "X ="; USING "##.#"; X</code>.</li>
+<li>A number too big for its field is printed in full after a <code>%</code>.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT USING &quot;###.##&quot;; 3.14159; -2
+</code></pre>
+<p>Shows:</p>
+<pre><code>  3.14 -2.00
+</code></pre>
+<p>See also: <a href="#ref-print">PRINT</a></p>
+<h3 id="ref-pset">PSET</h3>
+<p><em>Not available</em> · <code>PSET (x, y)[, colour]</code></p>
+<p>Plots a point. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-put">PUT</h3>
+<p><em>Statement</em> · <code>PUT [#]n[, record]</code></p>
+<p>Writes random file <code>n</code>'s buffer as record <code>record</code> (from 1; default the one after the last).</p>
+<ul>
+<li><code>PUT (x, y), a</code> (graphics) is not available: Feature not available.</li>
+</ul>
+<p>Example:</p>
+<pre><code>LSET NM$ = &quot;Ada&quot;: PUT #1, 1
+</code></pre>
+<p>See also: <a href="#ref-get">GET</a>, <a href="#ref-field">FIELD</a></p>
+<h3 id="ref-pwm">PWM</h3>
+<p><em>Statement</em> · <code>PWM pin, freq[, duty]</code></p>
+<p>Runs PWM on a pin at <code>freq</code> (8 Hz-10 MHz) with a duty of 0-100 % (default 50); <code>PWM pin, 0</code> stops it.</p>
+<ul>
+<li>Pins in pairs (GP0/1, GP2/3...) share one frequency, and GP16-31 share GP0-15's slices: changing one warns about its partner.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PWM LED, 1000, 10
+</code></pre>
+<p>See also: <a href="#ref-servo">SERVO</a>, <a href="#ref-pin">PIN</a></p>
+<h3 id="ref-randomize">RANDOMIZE</h3>
+<p><em>Statement</em> · <code>RANDOMIZE [seed]</code></p>
+<p>Starts RND's sequence afresh: from the clock without a seed, else from <code>seed</code> (the same seed, the same numbers).</p>
+<p>Example:</p>
+<pre><code>RANDOMIZE: PRINT INT(RND * 6) + 1
+</code></pre>
+<p>Shows:</p>
+<pre><code> 4
+</code></pre>
+<p>See also: <a href="#ref-rnd">RND</a></p>
+<h3 id="ref-read">READ</h3>
+<p><em>Statement</em> · <code>READ var[, var...]</code></p>
+<p>Takes the next items from DATA lines, in order.</p>
+<ul>
+<li>Errors: <code>Out of DATA</code> (4); <code>Syntax error</code> reading a string into a number.</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 READ A, B$: PRINT A; B$
+20 DATA 5, CATS
+RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code> 5 CATS
+</code></pre>
+<p>See also: <a href="#ref-data">DATA</a>, <a href="#ref-restore">RESTORE</a></p>
+<h3 id="ref-rem">REM</h3>
+<p><em>Statement</em> · <code>REM text | ' text</code></p>
+<p>A remark: the rest of the line is ignored. <code>'</code> is short for <code>:REM</code>.</p>
+<p>Example:</p>
+<pre><code>10 REM Setup
+20 X = 1 ' start
+</code></pre>
+<h3 id="ref-renum">RENUM</h3>
+<p><em>Command</em> · <code>RENUM [new][, [old][, step]]</code></p>
+<p>Renumbers program lines from line <code>old</code> (default the first) as <code>new</code>, <code>new+step</code>... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE and RUN to match.</p>
+<p>Example:</p>
+<pre><code>RENUM 100, , 10
+</code></pre>
+<p>See also: <a href="#ref-auto">AUTO</a>, <a href="#ref-delete">DELETE</a></p>
+<h3 id="ref-reset">RESET</h3>
+<p><em>Statement</em> · <code>RESET</code></p>
+<p>Closes every open file.</p>
+<p>See also: <a href="#ref-close">CLOSE</a></p>
+<h3 id="ref-restore">RESTORE</h3>
+<p><em>Statement</em> · <code>RESTORE [line]</code></p>
+<p>Makes READ start again from the first DATA (or from <code>line</code>).</p>
+<p>Example:</p>
+<pre><code>RESTORE 500
+</code></pre>
+<p>See also: <a href="#ref-read">READ</a>, <a href="#ref-data">DATA</a></p>
+<h3 id="ref-resume">RESUME</h3>
+<p><em>Statement</em> · <code>RESUME | RESUME NEXT | RESUME line</code></p>
+<p>Ends an error handler: <code>RESUME</code> retries the statement that failed, <code>RESUME NEXT</code> goes on after it, <code>RESUME line</code> goes to the line.</p>
+<ul>
+<li>Errors: <code>RESUME without error</code> (20).</li>
+</ul>
+<p>Example:</p>
+<pre><code>100 PRINT &quot;skipped&quot;: RESUME NEXT
+</code></pre>
+<p>See also: <a href="#ref-on-error-goto">ON ERROR GOTO</a></p>
+<h3 id="ref-return">RETURN</h3>
+<p><em>Statement</em> · <code>RETURN</code></p>
+<p>Returns from a GOSUB (or an event subroutine) to the statement after the call. It also ends FOR and WHILE loops started in the subroutine.</p>
+<ul>
+<li>Errors: <code>RETURN without GOSUB</code> (3).</li>
+</ul>
+<p>See also: <a href="#ref-gosub">GOSUB</a></p>
+<h3 id="ref-rgb">RGB</h3>
+<p><em>Function / statement</em> · <code>RGB(r, g, b)</code></p>
+<p>A colour for the graphics statements (256 + an RGB332 value): it works, but nothing here draws with it.</p>
+<h3 id="ref-right">RIGHT$</h3>
+<p><em>Function</em> · <code>RIGHT$(s$, n)</code></p>
+<p>The last <code>n</code> characters of <code>s$</code>.</p>
+<p>Example:</p>
+<pre><code>PRINT RIGHT$(&quot;HELLO&quot;, 3)
+</code></pre>
+<p>Shows:</p>
+<pre><code>LLO
+</code></pre>
+<p>See also: <a href="#ref-left">LEFT$</a></p>
+<h3 id="ref-rmdir">RMDIR</h3>
+<p><em>Statement</em> · <code>RMDIR path$</code></p>
+<p>Removes an empty folder.</p>
+<ul>
+<li>Errors: <code>Path/File Access Error</code> (75) if it isn't empty.</li>
+</ul>
+<p>Example:</p>
+<pre><code>RMDIR &quot;GAMES&quot;
+</code></pre>
+<p>See also: <a href="#ref-mkdir">MKDIR</a></p>
+<h3 id="ref-rnd">RND</h3>
+<p><em>Function</em> · <code>RND | RND(x)</code></p>
+<p>A random number from 0 to just under 1. <code>RND(0)</code> repeats the last one; a negative <code>x</code> starts a sequence from it.</p>
+<ul>
+<li>RUN always starts the same sequence: RANDOMIZE for a different one.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT INT(RND * 6) + 1
+</code></pre>
+<p>Shows:</p>
+<pre><code> 5
+</code></pre>
+<p>See also: <a href="#ref-randomize">RANDOMIZE</a></p>
+<h3 id="ref-rset">RSET</h3>
+<p><em>Statement</em> · <code>RSET var$ = s$</code></p>
+<p>Like LSET, right-aligned.</p>
+<p>Example:</p>
+<pre><code>RSET N$ = STR$(42)
+</code></pre>
+<p>See also: <a href="#ref-lset">LSET</a></p>
+<h3 id="ref-run">RUN</h3>
+<p><em>Command</em> · <code>RUN [line] | RUN file$</code></p>
+<p>Runs the program from the start (or from <code>line</code>), after clearing the variables, closing files and resetting DATA; <code>RUN file$</code> loads the file first.</p>
+<ul>
+<li>Pins used by the last run are set back to inputs.</li>
+</ul>
+<p>Example:</p>
+<pre><code>RUN &quot;PRIMES&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code> 168 primes below 1000
+</code></pre>
+<p>See also: <a href="#ref-load">LOAD</a>, <a href="#ref-cont">CONT</a></p>
+<h3 id="ref-save">SAVE</h3>
+<p><em>Command</em> · <code>SAVE file$[, A]</code></p>
+<p>Saves the program as plain text. <code>.BAS</code> is added if the name has no extension; <code>,A</code> is accepted (text is the only format).</p>
+<ul>
+<li><code>SAVE "SD:GAME"</code> saves to the SD card; <code>SAVE "AUTORUN"</code> makes it run at power-up.</li>
+</ul>
+<p>Example:</p>
+<pre><code>SAVE &quot;HELLO&quot;
+</code></pre>
+<p>See also: <a href="#ref-load">LOAD</a>, <a href="#ref-files">FILES</a></p>
+<h3 id="ref-saveimage">SAVEIMAGE</h3>
+<p><em>Not available</em> · <code>SAVEIMAGE file$</code></p>
+<p>Saves the screen as a BMP. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-screen">SCREEN</h3>
+<p><em>Not available</em> · <code>SCREEN mode[, , apage[, vpage]]</code></p>
+<p>Graphics modes (SCREEN 0 is accepted). Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-screenr-c">SCREEN(r, c)</h3>
+<p><em>Function</em> · <code>SCREEN(row, col[, 1])</code></p>
+<p>The character at a screen position, or with 1 its colours. A terminal can't be read back, so it gives 32 (a space), or 7.</p>
+<p>Example:</p>
+<pre><code>PRINT SCREEN(1, 1)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 32
+</code></pre>
+<p>See also: <a href="#ref-peek">PEEK</a></p>
+<h3 id="ref-servo">SERVO</h3>
+<p><em>Statement</em> · <code>SERVO pin, angle</code></p>
+<p>Drives a hobby servo to <code>angle</code> 0-180 degrees (0.5-2.5 ms pulses at 50 Hz).</p>
+<p>Example:</p>
+<pre><code>SERVO 16, 90
+</code></pre>
+<p>See also: <a href="#ref-pwm">PWM</a></p>
+<h3 id="ref-sgn">SGN</h3>
+<p><em>Function</em> · <code>SGN(x)</code></p>
+<p>1 if <code>x</code> is positive, -1 if negative, 0 if 0.</p>
+<p>Example:</p>
+<pre><code>PRINT SGN(-7); SGN(0); SGN(3)
+</code></pre>
+<p>Shows:</p>
+<pre><code>-1  0  1
+</code></pre>
+<p>See also: <a href="#ref-abs">ABS</a></p>
+<h3 id="ref-shell">SHELL</h3>
+<p><em>Not available</em> · <code>SHELL command$</code></p>
+<p>Runs a pico-os shell command. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-sin">SIN</h3>
+<p><em>Function</em> · <code>SIN(x)</code></p>
+<p>The sine of <code>x</code> radians.</p>
+<p>Example:</p>
+<pre><code>PRINT SIN(3.14159 / 2)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1
+</code></pre>
+<p>See also: <a href="#ref-cos">COS</a>, <a href="#ref-tan">TAN</a>, <a href="#ref-atn">ATN</a></p>
+<h3 id="ref-sound">SOUND</h3>
+<p><em>Statement</em> · <code>SOUND freq, ticks</code></p>
+<p>A tone of <code>freq</code> Hz (37-32767; 32767 is silence) for <code>ticks</code> (18.2 make a second). After PLAY "MB" it joins the background queue; ticks 0 stops the sound.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) out of range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>SOUND 440, 18
+</code></pre>
+<p>See also: <a href="#ref-beep">BEEP</a>, <a href="#ref-play">PLAY</a></p>
+<h3 id="ref-space">SPACE$</h3>
+<p><em>Function</em> · <code>SPACE$(n)</code></p>
+<p>A string of <code>n</code> (0-255) spaces.</p>
+<p>Example:</p>
+<pre><code>PRINT &quot;[&quot;; SPACE$(3); &quot;]&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>[   ]
+</code></pre>
+<p>See also: <a href="#ref-string">STRING$</a>, <a href="#ref-spc">SPC</a></p>
+<h3 id="ref-spc">SPC</h3>
+<p><em>Function</em> · <code>SPC(n)</code></p>
+<p>In PRINT, prints <code>n</code> spaces.</p>
+<p>Example:</p>
+<pre><code>PRINT &quot;A&quot;; SPC(3); &quot;B&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>A   B
+</code></pre>
+<p>See also: <a href="#ref-tab">TAB</a>, <a href="#ref-space">SPACE$</a></p>
+<h3 id="ref-spi">SPI</h3>
+<p><em>Statement</em> · <code>SPI OPEN [sck, mosi, miso[, khz[, mode]]] | SPI WRITE item[, item...] | SPI CLOSE</code></p>
+<p>The chip's SPI. OPEN starts it (default SPI0: GP6 SCK, GP7 MOSI, GP4 MISO; 1000 kHz, 1-50000; mode 0-3), WRITE sends bytes ignoring what comes back, CLOSE frees the pins. Drive chip select yourself with PIN (GP5 is free for it).</p>
+<ul>
+<li>SPI1 (GP10-15) is the SD card's while a card is in.</li>
+<li>Errors: <code>Device unavailable</code> (68) before OPEN.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &amp;H9F: ID$ = SPI$(STRING$(3, 0)): PIN 5, 1
+</code></pre>
+<p>See also: <a href="#ref-spi-1">SPI$</a>, <a href="#ref-i2c">I2C</a></p>
+<h3 id="ref-spi-1">SPI$</h3>
+<p><em>Function</em> · <code>SPI$(out$)</code></p>
+<p>Sends the bytes of <code>out$</code> on the open SPI and returns the bytes that came back meanwhile (as many).</p>
+<p>Example:</p>
+<pre><code>R$ = SPI$(STRING$(4, 0))
+</code></pre>
+<p>See also: <a href="#ref-spi">SPI</a></p>
+<h3 id="ref-sprite">SPRITE</h3>
+<p><em>Not available</em> · <code>SPRITE n, x, y... | SPRITE UPDATE...</code></p>
+<p>Moving pictures. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-spritehit">SPRITEHIT</h3>
+<p><em>Function / statement</em> · <code>SPRITEHIT(n[, first, last]) | SPRITEX(n) | SPRITEY(n) | SPRITEON(n)</code></p>
+<p>Sprites' positions and collisions: there are none (SPRITEHIT gives -1, the rest 0).</p>
+<h3 id="ref-sqr">SQR</h3>
+<p><em>Function</em> · <code>SQR(x)</code></p>
+<p>The square root of <code>x</code> (0 or more).</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) for a negative <code>x</code>.</li>
+</ul>
+<p>Example:</p>
+<pre><code>PRINT SQR(2)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1.41421356
+</code></pre>
+<h3 id="ref-stop">STOP</h3>
+<p><em>Statement</em> · <code>STOP</code></p>
+<p>Stops the program with <code>Break in &lt;line&gt;</code>; CONT carries on. Files stay open.</p>
+<p>See also: <a href="#ref-end">END</a>, <a href="#ref-cont">CONT</a></p>
+<h3 id="ref-str">STR$</h3>
+<p><em>Function</em> · <code>STR$(x)</code></p>
+<p>The number <code>x</code> as PRINT shows it, with a space before a positive number.</p>
+<p>Example:</p>
+<pre><code>PRINT &quot;&lt;&quot;; STR$(42); &quot;&gt;&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>&lt; 42&gt;
+</code></pre>
+<p>See also: <a href="#ref-val">VAL</a></p>
+<h3 id="ref-string">STRING$</h3>
+<p><em>Function</em> · <code>STRING$(n, c | c$)</code></p>
+<p><code>n</code> (0-255) copies of character code <code>c</code> or of the first character of <code>c$</code>.</p>
+<p>Example:</p>
+<pre><code>PRINT STRING$(5, &quot;*&quot;); STRING$(3, 65)
+</code></pre>
+<p>Shows:</p>
+<pre><code>*****AAA
+</code></pre>
+<p>See also: <a href="#ref-space">SPACE$</a></p>
+<h3 id="ref-swap">SWAP</h3>
+<p><em>Statement</em> · <code>SWAP a, b</code></p>
+<p>Exchanges two variables of the same type.</p>
+<ul>
+<li>Errors: <code>Type mismatch</code> (13).</li>
+</ul>
+<p>Example:</p>
+<pre><code>A = 1: B = 2: SWAP A, B: PRINT A; B
+</code></pre>
+<p>Shows:</p>
+<pre><code> 2  1
+</code></pre>
+<p>See also: <a href="#ref-let">LET</a></p>
+<h3 id="ref-system">SYSTEM</h3>
+<p><em>Command</em> · <code>SYSTEM</code></p>
+<p>Leaves BASIC and starts it afresh, as after a reset (the files on the disks stay; AUTORUN.BAS isn't run again).</p>
+<p>See also: <a href="#ref-new">NEW</a></p>
+<h3 id="ref-tab">TAB</h3>
+<p><em>Function</em> · <code>TAB(n)</code></p>
+<p>In PRINT, moves to column <code>n</code> (1-80); to the next line first if the cursor is already past it.</p>
+<p>Example:</p>
+<pre><code>PRINT &quot;A&quot;; TAB(10); &quot;B&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>A        B
+</code></pre>
+<p>See also: <a href="#ref-spc">SPC</a>, <a href="#ref-locate">LOCATE</a></p>
+<h3 id="ref-tan">TAN</h3>
+<p><em>Function</em> · <code>TAN(x)</code></p>
+<p>The tangent of <code>x</code> radians.</p>
+<p>Example:</p>
+<pre><code>PRINT TAN(.7854)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 1.00000367
+</code></pre>
+<p>See also: <a href="#ref-atn">ATN</a></p>
+<h3 id="ref-temp">TEMP</h3>
+<p><em>Function</em> · <code>TEMP()</code></p>
+<p>The chip's temperature in °C (uncalibrated: within a few degrees).</p>
+<p>Example:</p>
+<pre><code>PRINT INT(TEMP() * 10) / 10
+</code></pre>
+<p>Shows:</p>
+<pre><code> 27.3
+</code></pre>
+<p>See also: <a href="#ref-adc">ADC</a></p>
+<h3 id="ref-time">TIME$</h3>
+<p><em>Statement / function</em> · <code>TIME$ = "hh:mm:ss" | TIME$</code></p>
+<p>Sets the time of day, or gives it as "hh:mm:ss" (24-hour, UTC).</p>
+<p>Example:</p>
+<pre><code>TIME$ = &quot;09:30:00&quot;: PRINT TIME$
+</code></pre>
+<p>Shows:</p>
+<pre><code>09:30:00
+</code></pre>
+<p>See also: <a href="#ref-date">DATE$</a>, <a href="#ref-timer">TIMER</a></p>
+<h3 id="ref-timer">TIMER</h3>
+<p><em>Function</em> · <code>TIMER</code></p>
+<p>Seconds since the board started, with fractions: for timing things.</p>
+<p>Example:</p>
+<pre><code>T = TIMER: PAUSE 500: PRINT TIMER - T
+</code></pre>
+<p>Shows:</p>
+<pre><code> .500118999
+</code></pre>
+<p>See also: <a href="#ref-pause">PAUSE</a>, <a href="#ref-on-timer">ON TIMER</a></p>
+<h3 id="ref-timer-on">TIMER ON</h3>
+<p><em>Statement</em> · <code>TIMER ON | OFF | STOP</code></p>
+<p>Turns the timer event (ON TIMER) on, off, or holds it.</p>
+<p>See also: <a href="#ref-on-timer">ON TIMER</a></p>
+<h3 id="ref-troff">TROFF</h3>
+<p><em>Command</em> · <code>TROFF</code></p>
+<p>Turns line tracing off.</p>
+<p>See also: <a href="#ref-tron">TRON</a></p>
+<h3 id="ref-tron">TRON</h3>
+<p><em>Command</em> · <code>TRON</code></p>
+<p>Turns line tracing on: each line's number is printed in brackets as it runs.</p>
+<p>Example:</p>
+<pre><code>TRON: RUN
+</code></pre>
+<p>Shows:</p>
+<pre><code>[10][20][10][20]...
+</code></pre>
+<p>See also: <a href="#ref-troff">TROFF</a></p>
+<h3 id="ref-ucase">UCASE$</h3>
+<p><em>Function</em> · <code>UCASE$(s$)</code></p>
+<p><code>s$</code> in upper case.</p>
+<p>Example:</p>
+<pre><code>PRINT UCASE$(&quot;Hello&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code>HELLO
+</code></pre>
+<p>See also: <a href="#ref-lcase">LCASE$</a></p>
+<h3 id="ref-val">VAL</h3>
+<p><em>Function</em> · <code>VAL(s$)</code></p>
+<p>The number at the start of <code>s$</code> (spaces skipped; <code>&amp;H</code> hex and <code>&amp;O</code> octal too); 0 if there isn't one.</p>
+<p>Example:</p>
+<pre><code>PRINT VAL(&quot;12.5KG&quot;); VAL(&quot;&amp;HFF&quot;); VAL(&quot;X&quot;)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 12.5  255  0
+</code></pre>
+<p>See also: <a href="#ref-str">STR$</a></p>
+<h3 id="ref-view">VIEW</h3>
+<p><em>Not available</em> · <code>VIEW (x1, y1)-(x2, y2)...</code></p>
+<p>A graphics viewport (VIEW PRINT works). Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-view-print">VIEW PRINT</h3>
+<p><em>Statement</em> · <code>VIEW PRINT [top TO bottom]</code></p>
+<p>Makes only rows <code>top</code> to <code>bottom</code> scroll (an ANSI scroll region); <code>VIEW PRINT</code> alone undoes it.</p>
+<p>Example:</p>
+<pre><code>VIEW PRINT 5 TO 20
+</code></pre>
+<p>See also: <a href="#ref-locate">LOCATE</a>, <a href="#ref-cls">CLS</a></p>
+<h3 id="ref-wend">WEND</h3>
+<p><em>Statement</em> · <code>WEND</code></p>
+<p>Ends a WHILE loop.</p>
+<ul>
+<li>Errors: <code>WEND without WHILE</code> (30).</li>
+</ul>
+<p>See also: <a href="#ref-while">WHILE</a></p>
+<h3 id="ref-while">WHILE</h3>
+<p><em>Statement</em> · <code>WHILE cond ... WEND</code></p>
+<p>Repeats the lines up to WEND while <code>cond</code> is true (not 0); tested before each pass.</p>
+<ul>
+<li>Up to 32 nested.</li>
+<li>Errors: <code>WHILE without WEND</code> (29).</li>
+</ul>
+<p>Example:</p>
+<pre><code>I = 1: WHILE I &lt; 100: I = I * 2: WEND: PRINT I
+</code></pre>
+<p>Shows:</p>
+<pre><code> 128
+</code></pre>
+<p>See also: <a href="#ref-for">FOR</a>, <a href="#ref-if">IF</a></p>
+<h3 id="ref-width">WIDTH</h3>
+<p><em>Statement</em> · <code>WIDTH n</code></p>
+<p>Accepted for old programs; the screen stays 80 columns.</p>
+<h3 id="ref-window">WINDOW</h3>
+<p><em>Not available</em> · <code>WINDOW (x1, y1)-(x2, y2)</code></p>
+<p>Graphics coordinates. Not available in this build: it gives <strong>Feature not available</strong> (error 73), as there is no screen of its own.</p>
+<h3 id="ref-write">WRITE</h3>
+<p><em>Statement</em> · <code>WRITE [items]</code></p>
+<p>Prints the items separated by commas, strings in quotes, numbers without spaces: what INPUT # reads back exactly.</p>
+<p>Example:</p>
+<pre><code>WRITE &quot;Ann&quot;, 120
+</code></pre>
+<p>Shows:</p>
+<pre><code>&quot;Ann&quot;,120
+</code></pre>
+<p>See also: <a href="#ref-write-1">WRITE #</a>, <a href="#ref-print">PRINT</a></p>
+<h3 id="ref-write-1">WRITE</h3>
+<p><em>Statement</em> · <code>WRITE #n, items</code></p>
+<p>Writes the items to file <code>n</code> separated by commas, strings in quotes: INPUT # reads them back exactly.</p>
+<p>Example:</p>
+<pre><code>WRITE #1, &quot;Ann&quot;, 120
+</code></pre>
+<p>See also: <a href="#ref-input-1">INPUT #</a></p>
+<h3 id="ref-xor">XOR</h3>
+<p><em>Operator</em> · <code>a XOR b</code></p>
+<p>Bitwise exclusive OR: true if just one is.</p>
+<p>Example:</p>
+<pre><code>PRINT 12 XOR 10
+</code></pre>
+<p>Shows:</p>
+<pre><code> 6
+</code></pre>
+<p>See also: <a href="#ref-or">OR</a></p>
+<h3 id="ref-xrecv">XRECV</h3>
+<p><em>Statement</em> · <code>XRECV file$</code></p>
+<p>Receives a file from the terminal by XMODEM and saves it as <code>file$</code>, replacing one of that name. Start the terminal's XMODEM send within a minute.</p>
+<ul>
+<li>CRC-16 or checksum; 128- or 1K-byte blocks. XMODEM's ^Z padding is taken off the end.</li>
+<li>A failed transfer deletes the partial file and gives <code>Device I/O error</code> (57). Ctrl-X a few times cancels.</li>
+<li>Works to either drive: <code>XRECV "SD:PIC.BMP"</code>.</li>
+</ul>
+<p>Example:</p>
+<pre><code>XRECV &quot;GAME.BAS&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>Start the XMODEM send on the terminal now.
+Received 1 file, 2048 bytes.
+</code></pre>
+<p>See also: <a href="#ref-xsend">XSEND</a>, <a href="#ref-load">LOAD</a></p>
+<h3 id="ref-xsend">XSEND</h3>
+<p><em>Statement</em> · <code>XSEND file$</code></p>
+<p>Sends a file to the terminal by XMODEM (1K blocks with CRC-16, or 128-byte ones with a checksum if the receiver asks).</p>
+<ul>
+<li>Errors: <code>Device I/O error</code> (57) if it fails or the file can't be read.</li>
+</ul>
+<p>Example:</p>
+<pre><code>XSEND &quot;GAME.BAS&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>Start the XMODEM receive on the terminal now.
+Sent 1 file, 2048 bytes.
+</code></pre>
+<p>See also: <a href="#ref-xrecv">XRECV</a></p>
+<h3 id="ref-and-mod">\ and MOD</h3>
+<p><em>Operator</em> · <code>a \ b, a MOD b</code></p>
+<p>Integer division (both rounded to whole numbers first, the result cut towards 0) and its remainder.</p>
+<p>Example:</p>
+<pre><code>PRINT 17 \ 5; 17 MOD 5
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3  2
+</code></pre>
+<p>See also: <a href="#ref--">+ - * / ^</a></p>
+<h2 id="appendix-a-error-codes">Appendix A: error codes</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Message</th>
+<th>Code</th>
+<th>Message</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>NEXT without FOR</td>
+<td>26</td>
+<td>FOR without NEXT</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Syntax error</td>
+<td>29</td>
+<td>WHILE without WEND</td>
+</tr>
+<tr>
+<td>3</td>
+<td>RETURN without GOSUB</td>
+<td>30</td>
+<td>WEND without WHILE</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Out of DATA</td>
+<td>50</td>
+<td>FIELD overflow</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Illegal function call</td>
+<td>52</td>
+<td>Bad file number</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Overflow</td>
+<td>53</td>
+<td>File not found</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Out of memory</td>
+<td>54</td>
+<td>Bad file mode</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Undefined line number</td>
+<td>55</td>
+<td>File already open</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Subscript out of range</td>
+<td>57</td>
+<td>Device I/O error</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Duplicate Definition</td>
+<td>58</td>
+<td>File already exists</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Division by zero</td>
+<td>61</td>
+<td>Disk full</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Illegal direct</td>
+<td>62</td>
+<td>Input past end</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Type mismatch</td>
+<td>63</td>
+<td>Bad record number</td>
+</tr>
+<tr>
+<td>15</td>
+<td>String too long</td>
+<td>64</td>
+<td>Bad file name</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Can't continue</td>
+<td>67</td>
+<td>Too many files</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Undefined user function</td>
+<td>68</td>
+<td>Device unavailable</td>
+</tr>
+<tr>
+<td>19</td>
+<td>No RESUME</td>
+<td>70</td>
+<td>Permission denied</td>
+</tr>
+<tr>
+<td>20</td>
+<td>RESUME without error</td>
+<td>71</td>
+<td>Disk not ready</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Missing operand</td>
+<td>73</td>
+<td>Feature not available</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Device Timeout</td>
+<td>75</td>
+<td>Path/File Access Error</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Device Fault</td>
+<td>76</td>
+<td>Path not found</td>
+</tr>
+</tbody>
+</table>
+<p>(Other GW-BASIC codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print <code>Unprintable error</code>.)</p>
+<h2 id="appendix-b-print-using-formats">Appendix B: PRINT USING formats</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>#</code></td>
+<td>a digit position</td>
+</tr>
+<tr>
+<td><code>.</code></td>
+<td>the decimal point</td>
+</tr>
+<tr>
+<td><code>,</code> before the point</td>
+<td>commas between thousands</td>
+</tr>
+<tr>
+<td><code>+</code> first or last</td>
+<td>always show the sign there</td>
+</tr>
+<tr>
+<td><code>-</code> last</td>
+<td>a minus after negative numbers</td>
+</tr>
+<tr>
+<td><code>**</code></td>
+<td>fill the space before the number with <code>*</code></td>
+</tr>
+<tr>
+<td><code>$$</code></td>
+<td>a <code>$</code> just before the number (<code>**$</code> does both)</td>
+</tr>
+<tr>
+<td><code>^^^^</code></td>
+<td>exponent form (<code>##.##^^^^</code> prints <code>2.35E+02</code>)</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>the first character of a string</td>
+</tr>
+<tr>
+<td><code>\  \</code></td>
+<td>the first n + 2 characters of a string</td>
+</tr>
+<tr>
+<td><code>&amp;</code></td>
+<td>the whole string</td>
+</tr>
+<tr>
+<td><code>_</code></td>
+<td>prints the next character as it is</td>
+</tr>
+</tbody>
+</table>
+<h2 id="appendix-c-inkey-key-codes">Appendix C: INKEY$ key codes</h2>
+<p>Ordinary keys give their character. These give CHR$(0) followed by the PC scan code:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Code</th>
+<th>Key</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Up</td>
+<td>72</td>
+<td>Home</td>
+<td>71</td>
+</tr>
+<tr>
+<td>Down</td>
+<td>80</td>
+<td>End</td>
+<td>79</td>
+</tr>
+<tr>
+<td>Left</td>
+<td>75</td>
+<td>PgUp</td>
+<td>73</td>
+</tr>
+<tr>
+<td>Right</td>
+<td>77</td>
+<td>PgDn</td>
+<td>81</td>
+</tr>
+<tr>
+<td>F1-F10</td>
+<td>59-68</td>
+<td>Ins</td>
+<td>82</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Del</td>
+<td>83</td>
+</tr>
+</tbody>
+</table>
+<p>Esc gives CHR$(27), Enter CHR$(13), Backspace CHR$(8), Tab CHR$(9), Ctrl-A to Ctrl-Z CHR$(1)-CHR$(26) (Ctrl-C stops the program).</p>
+<h2 id="appendix-d-characters">Appendix D: characters</h2>
+<p>BASIC uses the IBM PC character set (code page 437) and sends each character to the terminal as its Unicode picture in UTF-8: CHR$(1) ☺, CHR$(3) ♥, CHR$(176)-CHR$(178) ░▒▓, CHR$(179) │, CHR$(196) ─, CHR$(218) ┌, CHR$(219) █, CHR$(227) π, CHR$(248) °. Control codes print their pictures too, except 7 (beep), 8 (backspace), 9 (tab), 10 (line feed), 12 (clear screen), 13 (carriage return) and 27 (Esc, for ANSI codes); 11 moves the cursor home and 28-31 move it right, left, up and down.</p>
+<h2 id="appendix-e-pins-basic-uses">Appendix E: pins BASIC uses</h2>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Used by</th>
+<th>Boards</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP18</td>
+<td>the speaker (BEEP, SOUND, PLAY)</td>
+<td>all (the Maker Pi Pico's buzzer)</td>
+</tr>
+<tr>
+<td>GP10-15</td>
+<td>the SD card, while one is in</td>
+<td>all (the Maker Pi Pico's slot)</td>
+</tr>
+<tr>
+<td>GP47</td>
+<td>the PSRAM</td>
+<td>Pico Plus 2</td>
+</tr>
+<tr>
+<td>GP28</td>
+<td>NEOPIXEL's default (the Maker Pi Pico's RGB LED)</td>
+<td>while open</td>
+</tr>
+<tr>
+<td>GP20</td>
+<td>held low at power-up: skip AUTORUN.BAS</td>
+<td>all (the Maker Pi Pico's first button)</td>
+</tr>
+<tr>
+<td>GP2/3, GP4-7, GP8/9</td>
+<td>I2C, SPI and COM1's defaults</td>
+<td>while open</td>
+</tr>
+</tbody>
+</table>
+<p>The console is the board's USB port, so GP0 and GP1 are free. PINS lists what each pin is doing.</p>
 </body></html>

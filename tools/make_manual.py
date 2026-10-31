@@ -14,8 +14,12 @@ cover_name = sys.argv[3] if len(sys.argv) > 3 else 'none'
 text = open(src, encoding='utf-8').read()
 title = re.search(r'^# (.+)$', text, re.M).group(1)
 body_md = re.sub(r'^# .+\n', '', text, count=1)
+# The command reference (tools/make_reference.py) follows the manual.
+ref = os.path.join(os.path.dirname(src), 'BASIC_REFERENCE.md')
+if os.path.exists(ref) and os.path.abspath(ref) != os.path.abspath(src):
+    body_md += '\n\n' + re.sub(r'^# .+\n', '', open(ref, encoding='utf-8').read(), count=1)
 
-md = markdown.Markdown(extensions=['tables', 'fenced_code', 'toc', 'sane_lists'],
+md = markdown.Markdown(extensions=['tables', 'fenced_code', 'toc', 'sane_lists', 'attr_list'],
                        extension_configs={'toc': {'toc_depth': '2-3'}})
 body = md.convert(body_md)
 toc = md.toc
@@ -38,6 +42,8 @@ h1.title { font-size: 30pt; margin: 60mm 0 4mm; color: #0b3d91; }
 .tochead { font-size: 15pt; font-weight: bold; color: #0b3d91; margin-bottom: 4mm; }
 .toc ul { list-style: none; padding-left: 1.2em; }
 .toc > ul { padding-left: 0; }
+.toc ul ul { columns: 3; column-gap: 6mm; }
+.toc ul ul li { break-inside: avoid; }
 .toc a { color: #111; text-decoration: none; }
 h2 { color: #0b3d91; border-bottom: 2px solid #0b3d91; padding-bottom: 2px; margin-top: 1.6em;
      page-break-before: always; }
@@ -73,7 +79,7 @@ open(page_path, 'w', encoding='utf-8').write(page)
 chrome = shutil.which('google-chrome') or shutil.which('chromium') or shutil.which('chromium-browser')
 subprocess.run([chrome, '--headless=new', '--disable-gpu', '--no-pdf-header-footer',
                 '--allow-file-access-from-files', '--user-data-dir=' + os.path.join(tmp, 'profile'),
-                '--print-to-pdf=' + os.path.abspath(out), 'file://' + page_path],
+                '--generate-pdf-document-outline', '--print-to-pdf=' + os.path.abspath(out), 'file://' + page_path],
                check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 shutil.rmtree(tmp, ignore_errors=True)
 print('wrote', out)
