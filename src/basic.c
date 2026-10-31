@@ -1061,8 +1061,10 @@ static int find_label(const char *name, int len) {
 //
 // LIST, SAVE and EDIT indent the program (FORMAT ON, the default): FOR ...
 // NEXT and WHILE ... WEND bodies, and in a program without line numbers the
-// lines under a label (the label stays at the left). Loading takes the
-// indents off again, so only the look changes.
+// subroutines: the lines under a label GOSUB (or ON ERROR GOTO) goes to, up
+// to the next such label, or another label after the RETURN or RESUME that
+// ends it. Labels stay at the left. Loading takes the indents off again, so
+// only the look changes.
 
 #define INDENT_MAX 40  ///< the deepest indent shown
 
@@ -1072,7 +1074,9 @@ static int format_width = 2;   ///< spaces per level (FORMAT n)
 /// The indent so far as LIST goes through the program.
 typedef struct {
     int depth;  ///< FOR and WHILE blocks open
-    bool labelled;  ///< past a label (a program without line numbers)
+    bool in_sub;  ///< in a subroutine (a program without line numbers)
+    bool ended;  ///< the last line ended with RETURN or RESUME
+    uint8_t *subs;  ///< by line: a label GOSUB or ON ERROR GOTO goes to (or NULL)
 } format_t;
 
 /// How a line's statements close and open FOR and WHILE blocks (NEXT and
@@ -1080,9 +1084,10 @@ typedef struct {
 /// @param s the line's statements
 /// @param closes set to the blocks it closes
 /// @param opens set to the blocks it leaves open
-static void block_counts(const char *s, int *closes, int *opens) {
+/// @return its last statement is RETURN or RESUME
+static bool block_counts(const char *s, int *closes, int *opens) {
     *closes = *opens = 0;
-    bool start = true, in_str = false;
+    bool start = true, in_str = false, ends = false;
     for (; *s; ++s) {
         if (in_str) {
             in_str = *s != '"';
@@ -1096,7 +1101,8 @@ static void block_counts(const char *s, int *closes, int *opens) {
         } else if (start && *s != ' ' && *s != '\t') {
             start = false;
             if (*s == '\'' || !strncmp(s, "REM", 3))
-                return;
+                return ends;
+            ends = !strncmp(s, "RETURN", 6) || !strncmp(s, "RESUME", 6);
             if (!strncmp(s, "FORMAT", 6))
                 continue;
             if (!strncmp(s, "FOR", 3) || !strncmp(s, "WHILE", 5)) {
@@ -1114,6 +1120,7 @@ static void block_counts(const char *s, int *closes, int *opens) {
             }
         }
     }
+    return ends;
 }
 
 /// A line as LIST shows it: indented (FORMAT ON), without its number.
@@ -1126,15 +1133,67 @@ static const char *format_line(int i, format_t *f, char *buf, int room) {
     if (!format_on)
         return lines[i].text;
     int closes, opens;
-    block_counts(line_body(i), &closes, &opens);
+    bool ends = block_counts(line_body(i), &closes, &opens);
     f->depth = f->depth > closes ? f->depth - closes : 0;
     bool label = unnumbered && label_at(lines[i].text);
-    if (label)
-        f->labelled = true;
-    int indent = label ? 0 : (f->labelled + f->depth) * format_width;
+    if (label && f->subs && f->subs[i])
+        f->in_sub = true;
+    else if (label && f->ended)
+        f->in_sub = false;  // past the subroutine's end
+    int indent = label ? 0 : (f->in_sub + f->depth) * format_width;
     snprintf(buf, room, "%*s%s", indent < INDENT_MAX ? indent : INDENT_MAX, "", lines[i].text);
     f->depth += opens;
+    f->ended = ends;
     return buf;
+}
+
+/// Marks the lines GOSUB, ON ... GOSUB, ON KEY(n) GOSUB and the like, and ON
+/// ERROR GOTO go to by label: the subroutines LIST indents.
+/// @param f the format to start (free with format_end)
+static void format_begin(format_t *f) {
+    *f = (format_t){0};
+    if (!format_on || !unnumbered || !line_count)
+        return;
+    f->subs = port_free_mem() >= (size_t)line_count + HEAP_MARGIN ? calloc(line_count, 1) : NULL;
+    if (!f->subs)
+        return;  // (then no subroutine indents)
+    for (int i = 0; i < line_count; ++i) {
+        bool in_str = false;
+        for (const char *s = lines[i].text; *s; ++s) {
+            if (*s == '"')
+                in_str = !in_str;
+            if (in_str)
+                continue;
+            if (*s == '\'' || !strncmp(s, "REM", 3))
+                break;
+            int skip = !strncmp(s, "GOSUB", 5) ? 5 : !strncmp(s, "ERROR GOTO", 10) ? 10 : 0;
+            if (!skip)
+                continue;
+            for (s += skip;; ++s) {  // a label, or a list of them
+                while (*s == ' ')
+                    ++s;
+                const char *name = s;
+                while (is_label_char((unsigned char)*s))
+                    ++s;
+                int len = s - name;
+                for (int j = 0; len && j < line_count; ++j)
+                    if (label_at(lines[j].text) == len && !strncmp(lines[j].text, name, len))
+                        f->subs[j] = 1;
+                while (*s == ' ')
+                    ++s;
+                if (*s != ',')
+                    break;
+            }
+            --s;
+        }
+    }
+}
+
+/// Ends a format_begin.
+/// @param f the format
+static void format_end(format_t *f) {
+    free(f->subs);
+    f->subs = NULL;
 }
 
 /// FORMAT ON | OFF | n: whether LIST, SAVE and EDIT indent the program, and
@@ -3265,7 +3324,8 @@ static void save_file(const char *name) {
     FRESULT r = f_open(&f, name, FA_WRITE | FA_CREATE_ALWAYS);
     if (r != FR_OK)
         error(fresult_error(r));
-    format_t fmt = {0};
+    format_t fmt;
+    format_begin(&fmt);
     for (int i = 0; i < line_count && r == FR_OK; ++i) {
         char buf[LINE_MAX_LEN + INDENT_MAX + 16], text[LINE_MAX_LEN + INDENT_MAX + 2];
         const char *t = format_line(i, &fmt, text, sizeof text);
@@ -3285,6 +3345,7 @@ static void save_file(const char *name) {
         if (r == FR_OK && put != (UINT)n)
             r = FR_DENIED;
     }
+    format_end(&fmt);
     FRESULT rc = f_close(&f);
     if (r == FR_OK)
         r = rc;
@@ -7653,7 +7714,8 @@ static void do_list(void) {
     int first, last;
     line_range(&first, &last);
     int shown = 0;
-    format_t f = {0};
+    format_t f;
+    format_begin(&f);
     char text[LINE_MAX_LEN + INDENT_MAX + 2];
     for (int i = 0; i < first; ++i)
         format_line(i, &f, text, sizeof text);  // the indent at the first line shown
@@ -7679,6 +7741,7 @@ static void do_list(void) {
                 break;
         }
     }
+    format_end(&f);
     out_flush();
 }
 

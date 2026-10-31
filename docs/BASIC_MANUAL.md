@@ -157,17 +157,28 @@ and RUN take a label wherever they take a line number:
 
 LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
 and WHILE ... WEND loops go in two spaces a level, and in a program without
-line numbers the labels stay at the left with the lines under them indented
-(blank lines are kept too):
+line numbers so do the subroutines. Labels stay at the left; blank lines are
+kept:
 
     ' Count to 3, then stop
     I = 0
     again:
-      I = I + 1
-      FOR J = 1 TO I
-        PRINT J;
-      NEXT
-      IF I < 3 THEN again
+    I = I + 1
+    FOR J = 1 TO I
+      PRINT J;
+    NEXT
+    IF I < 3 THEN again
+    GOSUB done
+    END
+
+    done:
+      PRINT "Done"
+      RETURN
+
+- A subroutine is a label that GOSUB, ON ... GOSUB or ON KEY(n) GOSUB calls,
+  or ON ERROR GOTO goes to. Its lines are indented up to the next
+  subroutine, or the next label after the RETURN or RESUME that ends it.
+  Other labels (GOTO's, RESTORE's) don't change the indent.
 
 - Only the look changes: loading a program (and leaving EDIT) takes the
   indents off again, so you can indent as you like or not at all.

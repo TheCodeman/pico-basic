@@ -1125,7 +1125,7 @@ See also: [NEXT](#ref-next), [EXIT FOR](#ref-exit-for), [WHILE](#ref-while)
 
 *Command* · `FORMAT ON | FORMAT OFF | FORMAT n`
 
-Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the lines under each label (the label stays at the left).
+Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the subroutines (the lines under a label GOSUB calls or ON ERROR GOTO goes to; labels stay at the left).
 
 - Only the look changes: loading a program takes the indent off again.
 - On at start-up.
