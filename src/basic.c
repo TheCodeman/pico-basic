@@ -762,6 +762,21 @@ static const char *want_str(value_t v) {
 /// @param n the number
 /// @param out the text
 /// @param size room in out
+/// Takes the trailing zeros (and a bare point) off a number %G made: C's
+/// printf drops them (3.5, not 3.500000), but the Pico SDK's doesn't.
+/// @param buf the number, changed in place
+static void strip_g_zeros(char *buf) {
+    char *e = strchr(buf, 'E'), *dot = strchr(buf, '.');
+    if (!dot || (e && dot > e))
+        return;
+    char *end = e ? e : buf + strlen(buf), *z = end;
+    while (z > dot + 1 && z[-1] == '0')
+        --z;
+    if (z == dot + 1)
+        --z;  // no fraction left: no point either
+    memmove(z, end, strlen(end) + 1);
+}
+
 static void format_number(double n, char *out, int size) {
     char buf[40];
     if (n == 0) {
@@ -774,17 +789,7 @@ static void format_number(double n, char *out, int size) {
         snprintf(buf, sizeof buf, "%.7G", fabs(n));
     else
         snprintf(buf, sizeof buf, "%.9G", fabs(n));
-    // %G drops trailing zeros (3.5, not 3.500000) in C, but not every printf
-    // does (the Pico SDK's doesn't): take them off the mantissa here.
-    char *e = strchr(buf, 'E'), *dot = strchr(buf, '.');
-    if (dot && (!e || dot < e)) {
-        char *end = e ? e : buf + strlen(buf), *z = end;
-        while (z > dot + 1 && z[-1] == '0')
-            --z;
-        if (z == dot + 1)
-            --z;  // no fraction left: no point either
-        memmove(z, end, strlen(end) + 1);
-    }
+    strip_g_zeros(buf);
     const char *b = buf;
     if (b[0] == '0' && b[1] == '.')
         ++b;
@@ -2923,6 +2928,7 @@ static bool load_tokenised(const uint8_t *b, size_t len) {
                 add = tmp;
             } else if (c == 0x1D && i + 3 < len) {
                 snprintf(tmp, sizeof tmp, "%.7G", mbf_to_double(b + i, 4));
+                strip_g_zeros(tmp);
                 i += 4;
                 add = tmp;
             } else if (c == 0x1F && i + 7 < len) {
