@@ -72,7 +72,8 @@ enum {
     E_FILE_NOT_FOUND = 53, E_BAD_FILE_MODE = 54, E_FILE_ALREADY_OPEN = 55,
     E_INPUT_PAST_END = 62, E_BAD_RECORD_NUMBER = 63, E_BAD_FILE_NAME = 64,
     E_TOO_MANY_FILES = 67, E_DEVICE_UNAVAILABLE = 68, E_DEVICE_IO = 57, E_FILE_EXISTS = 58, E_DISK_FULL = 61,
-    E_PERMISSION = 70, E_DISK_NOT_READY = 71, E_NO_FEATURE = 73, E_PATH_ACCESS = 75, E_PATH_NOT_FOUND = 76, E_PROTECTED = 100, E_BREAK = 1000,
+    E_PERMISSION = 70, E_DISK_NOT_READY = 71, E_NO_FEATURE = 73, E_PATH_ACCESS = 75, E_PATH_NOT_FOUND = 76,
+    E_UNDEFINED_LABEL = 80, E_DUPLICATE_LABEL = 81, E_PROTECTED = 100, E_BREAK = 1000,
 };
 
 static const struct {
@@ -83,6 +84,7 @@ static const struct {
     {E_RETURN_WITHOUT_GOSUB, "RETURN without GOSUB"}, {E_OUT_OF_DATA, "Out of DATA"},
     {E_ILLEGAL_CALL, "Illegal function call"}, {E_OVERFLOW, "Overflow"},
     {E_OUT_OF_MEMORY, "Out of memory"}, {E_UNDEFINED_LINE, "Undefined line number"},
+    {E_UNDEFINED_LABEL, "Undefined label"}, {E_DUPLICATE_LABEL, "Duplicate label"},
     {E_SUBSCRIPT, "Subscript out of range"}, {E_DUPLICATE_DEF, "Duplicate Definition"},
     {E_DIV_ZERO, "Division by zero"}, {E_ILLEGAL_DIRECT, "Illegal direct"},
     {E_TYPE_MISMATCH, "Type mismatch"}, {E_STRING_TOO_LONG, "String too long"},
@@ -238,7 +240,8 @@ static void out_char(int c) {
         static const char *const moves[] = {[11] = "\x1b[H", [28] = "\x1b[C", [29] = "\x1b[D",
                                             [30] = "\x1b[A", [31] = "\x1b[B"};
         if (c == 11 || c >= 28) {
-            fputs(moves[c], stdout);
+            for (const char *m = moves[c]; *m; ++m)
+                putchar(*m);  // (not fputs: that waits in the C library's buffer)
             if (c == 11)
                 out_row = out_col = 0;
             else if (c == 28 && out_col < SCREEN_COLS - 1)
@@ -822,6 +825,12 @@ static int line_count, line_cap;
 ///@}
 /// The program's file name, for SAVE.
 static char program_name[64];
+/// The program has no line numbers (it came from a file without them): its
+/// lines' numbers are their lines in the file, and LIST, SAVE and EDIT leave
+/// them out.
+static bool unnumbered;
+/// The labels need finding again (the program changed).
+static bool labels_stale = true;
 
 /// Where a line number is (or would go).
 /// @param num the number
@@ -844,6 +853,7 @@ static int find_line(int num, bool *exact) {
 /// Deletes a line.
 /// @param i its index
 static void delete_line_at(int i) {
+    labels_stale = true;
     free(lines[i].text);
     memmove(&lines[i], &lines[i + 1], (line_count - i - 1) * sizeof *lines);
     --line_count;
@@ -856,6 +866,7 @@ static void clear_program(void) {
     free(lines);
     lines = NULL;
     line_cap = 0;
+    unnumbered = false;
 }
 
 /// Whether a character can start a name.
@@ -913,6 +924,7 @@ static int last_line_num;  ///< the line EDIT . means: the last one typed or tha
 /// @param text its statements
 static void store_line(int num, const char *text) {
     last_line_num = num;
+    labels_stale = true;
     bool exact;
     int i = find_line(num, &exact);
     while (*text == ' ')
@@ -947,6 +959,102 @@ static void store_line(int num, const char *text) {
         lines[i].num = num;
     }
     lines[i].text = copy;
+}
+
+// ---- Labels ---------------------------------------------------------------
+//
+// A label is a name and a colon at the start of a line ("LOOP:"), as GOTO,
+// GOSUB, RESTORE, RESUME, ON ... GOTO and THEN/ELSE can use in place of a
+// line number. A statement keyword alone or with a number after it ("CLS:",
+// "SCREEN0:") is a statement, not a label.
+
+#define LABEL_MAX 40  ///< the longest label
+
+/// Whether a character can be in a label.
+/// @param c it
+/// @return it can
+static bool is_label_char(int c) {
+    return is_ident_char(c) || c == '_';
+}
+
+static bool statement_name(const char *s, int n);
+
+/// The label starting a line's text, if it has one.
+/// @param s the text
+/// @return the label's length (without the colon), or 0
+static int label_at(const char *s) {
+    if (!is_ident_start((unsigned char)*s))
+        return 0;
+    int n = 1;
+    while (is_label_char((unsigned char)s[n]))
+        ++n;
+    if (s[n] != ':' || n > LABEL_MAX || statement_name(s, n))
+        return 0;
+    return n;
+}
+
+/// A line's statements, after its label if it has one.
+/// @param i the line's index
+/// @return them
+static const char *line_body(int i) {
+    const char *s = lines[i].text;
+    int l = label_at(s);
+    if (l)
+        for (s += l + 1; *s == ' '; ++s) {
+        }
+    return s;
+}
+
+/// A label and its line.
+typedef struct {
+    char name[LABEL_MAX + 1];  ///< the name
+    uint16_t num;  ///< the line's number
+} label_t;
+static label_t *labels;  ///< the program's labels
+static int label_count;  ///< how many
+static char error_label[LABEL_MAX + 1];  ///< the label an error is about
+
+static void error_at_line(int i, int code);
+
+/// Finds the program's labels again; Duplicate label (at the second) if two
+/// are the same.
+static void find_labels(void) {
+    free(labels);
+    labels = NULL;
+    label_count = 0;
+    int n = 0;
+    for (int i = 0; i < line_count; ++i)
+        n += label_at(lines[i].text) > 0;
+    if (n)
+        labels = checked_malloc(n * sizeof *labels);
+    for (int i = 0; i < line_count; ++i) {
+        int l = label_at(lines[i].text);
+        if (!l)
+            continue;
+        for (int j = 0; j < label_count; ++j) {
+            if ((int)strlen(labels[j].name) == l && !strncmp(labels[j].name, lines[i].text, l)) {
+                snprintf(error_label, sizeof error_label, "%.*s", l, lines[i].text);
+                labels_stale = true;
+                error_at_line(i, E_DUPLICATE_LABEL);
+            }
+        }
+        snprintf(labels[label_count].name, sizeof labels[0].name, "%.*s", l, lines[i].text);
+        labels[label_count++].num = lines[i].num;
+    }
+    labels_stale = false;
+}
+
+/// A label's line number.
+/// @param name the label
+/// @param len its length
+/// @return the number, or -1 if there is no such label
+static int find_label(const char *name, int len) {
+    if (labels_stale)
+        find_labels();
+    for (int i = 0; i < label_count; ++i)
+        if ((int)strlen(labels[i].name) == len && !strncmp(labels[i].name, name, len))
+            return labels[i].num;
+    return -1;
 }
 
 // ---- Variables ------------------------------------------------------------
@@ -1294,6 +1402,16 @@ static int current_line_number(void) {
     return cur_line >= 0 && cur_line < line_count ? lines[cur_line].num : -1;
 }
 
+/// An error shown as a line's (Duplicate label: the second one's).
+/// @param i the line's index
+/// @param code the error
+static void error_at_line(int i, int code) {
+    cur_line = i;
+    p = lines[i].text;
+    running = true;
+    error(code);
+}
+
 /// GOTO a line, or Undefined line number.
 /// @param num the line
 static void jump_to_line(int num) {
@@ -1348,7 +1466,7 @@ static const char *const statement_words[] = {
     "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "GET",
     "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
     "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MUSIC",
-    "NAME", "NEOPIXEL", "NEW", "NEXT", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
+    "NAME", "NEOPIXEL", "NEW", "NEXT", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
     "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
     "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WINDOW", "WRITE", "XRECV", "XSEND",
@@ -1368,6 +1486,30 @@ typedef struct {
 static word_set_t builtin_set = {.words = builtin_words,
                                  .count = sizeof builtin_words / sizeof *builtin_words};
 /// statement()'s words.
+/// Whether a name is a statement keyword, alone or with a number after it
+/// ("CLS", "SCREEN0"), so "CLS:" is a statement rather than a label.
+/// @param s the name
+/// @param n its length
+/// @return it is
+static bool statement_name(const char *s, int n) {
+    static const char *const r_words[] = {
+        "RANDOMIZE", "READ", "REM", "RENUM", "RESET", "RESTORE", "RESUME", "RETURN", "RMDIR",
+        "RSET", "RUN", "ELSE",
+    };
+    int count = sizeof statement_words / sizeof *statement_words;
+    for (int k = 0; k < count + (int)(sizeof r_words / sizeof *r_words); ++k) {
+        const char *w = k < count ? statement_words[k] : r_words[k - count];
+        int l = strlen(w);
+        if (l > 1 && l <= n && !strncmp(s, w, l)) {  // ("R" stands for the R words)
+            while (l < n && isdigit((unsigned char)s[l]))
+                ++l;
+            if (l == n)
+                return true;
+        }
+    }
+    return false;
+}
+
 static word_set_t statement_set = {.words = statement_words,
                                    .count = sizeof statement_words / sizeof *statement_words};
 
@@ -1547,6 +1689,17 @@ slow:
 /// @return it
 static int read_line_number(void) {
     skip_spaces();
+    if (is_ident_start((unsigned char)*p)) {  // a label
+        const char *s = p;
+        while (is_label_char((unsigned char)*p))
+            ++p;
+        int n = find_label(s, p - s);
+        if (n < 0) {
+            snprintf(error_label, sizeof error_label, "%.*s", (int)(p - s), s);
+            error(E_UNDEFINED_LABEL);
+        }
+        return n;
+    }
     if (!isdigit((unsigned char)*p))
         error(E_SYNTAX);
     long n = strtol(p, (char **)&p, 10);
@@ -2642,7 +2795,7 @@ static bool next_statement(void) {
     if (cur_line < 0 || cur_line + 1 >= line_count)
         return false;
     ++cur_line;
-    p = lines[cur_line].text;
+    p = line_body(cur_line);
     return true;
 }
 
@@ -2686,13 +2839,18 @@ static void print_error(int code) {
             if (error_texts[i].code == code)
                 text = error_texts[i].text;
         out_str(text);
+        if ((code == E_UNDEFINED_LABEL || code == E_DUPLICATE_LABEL) && error_label[0]) {
+            out_str(" ");
+            out_str(error_label);
+        }
     }
+    error_label[0] = 0;
     int ln = running ? current_line_number() : -1;
     if (ln >= 0)
         last_line_num = ln;
     if (ln >= 0) {
         char buf[16];
-        snprintf(buf, sizeof buf, " in %d", ln);
+        snprintf(buf, sizeof buf, unnumbered ? " in line %d" : " in %d", ln);
         out_str(buf);
     }
     out_newline();
@@ -2725,6 +2883,11 @@ static void file_name_arg(char *out, int size, bool add_bas) {
 static bool load_plain_line(char *line);
 static bool load_tokenised(const uint8_t *buf, size_t len);
 
+/// The file's line being loaded, and whether its lines have numbers.
+static int load_line_no;
+/// What the lines loaded so far had: none yet, numbers, or none.
+static enum { LOAD_UNKNOWN, LOAD_NUMBERED, LOAD_UNNUMBERED } load_kind;
+
 /// Reads plain-text programs a chunk at a time, so loading needs no more
 /// memory than the program itself. GW-BASIC tokenised files (first byte 0xFF,
 /// at most 64 KB) are read whole and converted.
@@ -2739,11 +2902,17 @@ static void load_file(const char *name, int flags) {
     FRESULT r = f_open(&f, name, FA_READ);
     if (r != FR_OK)
         error(fresult_error(r));
+    if ((flags & LOAD_MERGE) && unnumbered && line_count) {
+        f_close(&f);
+        error(E_BAD_FILE_MODE);  // MERGE goes by line numbers
+    }
     if (!(flags & LOAD_MERGE))
         clear_program();
     if (!(flags & LOAD_KEEP_VARS))
         clear_vars();
     reset_run_state();
+    load_line_no = 0;
+    load_kind = (flags & LOAD_MERGE) ? LOAD_NUMBERED : LOAD_UNKNOWN;
     static char *whole;
     whole = NULL;
     int err = 0;
@@ -2772,11 +2941,16 @@ static void load_file(const char *name, int flags) {
             char line[LINE_MAX_LEN + 8];
             int n = 0;
             bool done = false;
+            char prev = 0;
             while (got && !done) {
                 for (UINT i = 0; i < got && !done; ++i) {
                     char c = chunk[i];
+                    bool crlf = c == '\n' && prev == '\r';
+                    prev = c;
                     if (c == 0x1a) {
                         done = true;
+                    } else if (crlf) {
+                        // (one line end)
                     } else if (c == '\n' || c == '\r') {
                         line[n] = 0;
                         if (!load_plain_line(line))
@@ -2790,7 +2964,7 @@ static void load_file(const char *name, int flags) {
                     error(fresult_error(r));
             }
             line[n] = 0;
-            if (!load_plain_line(line))
+            if (n && !load_plain_line(line))
                 error(E_BAD_FILE_MODE);
         }
     }
@@ -2802,22 +2976,36 @@ static void load_file(const char *name, int flags) {
             clear_program();  // don't leave half a program behind
         error(err);
     }
-    if (!(flags & LOAD_MERGE))
+    if (!(flags & LOAD_MERGE)) {
         snprintf(program_name, sizeof program_name, "%s", name);
+        unnumbered = load_kind == LOAD_UNNUMBERED;
+    }
     cont_pos.line = -2;
 }
 
-/// One line of a plain-text program; false if it has no line number.
+/// One line of a plain-text program. A file's lines all have numbers or none
+/// do (then each line's number is its line in the file); false if it mixes them.
 /// @param line the line
-/// @return it had a number
+/// @return it was fine
 static bool load_plain_line(char *line) {
+    ++load_line_no;
     char *q = line;
-    while (*q == ' ')
+    while (*q == ' ' || *q == '\t')
         ++q;
     if (!*q)
         return true;
-    if (!isdigit((unsigned char)*q))
-        return false;  // "Direct statement in file"
+    if (!isdigit((unsigned char)*q)) {
+        if (load_kind == LOAD_NUMBERED || load_line_no > 65529)
+            return false;  // "Direct statement in file"
+        load_kind = LOAD_UNNUMBERED;
+        if (strlen(q) > LINE_MAX_LEN)
+            q[LINE_MAX_LEN] = 0;
+        store_line(load_line_no, q);
+        return true;
+    }
+    if (load_kind == LOAD_UNNUMBERED)
+        return false;
+    load_kind = LOAD_NUMBERED;
     long num = strtol(q, &q, 10);
     if (num > 65529)
         return false;
@@ -2995,7 +3183,17 @@ static void save_file(const char *name) {
         error(fresult_error(r));
     for (int i = 0; i < line_count && r == FR_OK; ++i) {
         char buf[LINE_MAX_LEN + 16];
-        int n = snprintf(buf, sizeof buf, "%u %s\r\n", lines[i].num, lines[i].text);
+        int n;
+        if (unnumbered) {
+            // Blank lines where the file had them, so the lines keep their numbers.
+            for (int b = i ? lines[i - 1].num + 1 : 1; b < lines[i].num && r == FR_OK; ++b) {
+                UINT put;
+                r = f_write(&f, "\r\n", 2, &put);
+            }
+            n = snprintf(buf, sizeof buf, "%s\r\n", lines[i].text);
+        } else {
+            n = snprintf(buf, sizeof buf, "%u %s\r\n", lines[i].num, lines[i].text);
+        }
         UINT put;
         r = f_write(&f, buf, n, &put);
         if (r == FR_OK && put != (UINT)n)
@@ -3773,6 +3971,23 @@ static void do_on_event(const char *what) {
 }
 
 
+/// Whether p is at a label after THEN or ELSE: a label's name with nothing
+/// after it but the end of the statement or ELSE (THEN BEEP is a statement).
+/// @return it is
+static bool label_here(void) {
+    const char *s = p, *q = p;
+    while (is_label_char((unsigned char)*q))
+        ++q;
+    if (q == s || !is_ident_start((unsigned char)*s))
+        return false;
+    const char *e = q;
+    while (*e == ' ')
+        ++e;
+    if (*e && *e != ':' && *e != '\'' && strncmp(e, "ELSE", 4))
+        return false;
+    return find_label(s, q - s) >= 0;
+}
+
 /// IF cond THEN ... [ELSE ...].
 static void do_if(void) {
     jumped = true;  // execution carries on from wherever p ends up
@@ -3786,7 +4001,7 @@ static void do_if(void) {
     }
     if (truth) {
         skip_spaces();
-        if (isdigit((unsigned char)*p)) {
+        if (isdigit((unsigned char)*p) || label_here()) {
             jump_to_line(read_line_number());
             return;
         }
@@ -3808,7 +4023,7 @@ static void do_if(void) {
             if (depth == 0) {
                 p += 4;
                 skip_spaces();
-                if (isdigit((unsigned char)*p))
+                if (isdigit((unsigned char)*p) || label_here())
                     jump_to_line(read_line_number());
                 return;
             }
@@ -3845,7 +4060,7 @@ static void do_resume(void) {
     skip_spaces();
     int n = 0;
     bool next = accept_word("NEXT");
-    if (!next && isdigit((unsigned char)*p))
+    if (!next && (isdigit((unsigned char)*p) || is_ident_start((unsigned char)*p)))
         n = read_line_number();
     in_error_handler = false;
     if (n) {
@@ -4211,7 +4426,7 @@ static bool find_data(void) {
     } else {
         if (data_pos.line >= line_count)
             return false;
-        data_pos.p = lines[data_pos.line].text;
+        data_pos.p = line_body(data_pos.line);
     }
     for (;;) {
         bool in_str = false;
@@ -4227,7 +4442,7 @@ static bool find_data(void) {
         }
         if (++data_pos.line >= line_count)
             return false;
-        data_pos.p = lines[data_pos.line].text;
+        data_pos.p = line_body(data_pos.line);
     }
 }
 
@@ -4279,7 +4494,7 @@ static void do_restore(void) {
     data_pos.line = 0;
     data_pos.p = NULL;
     skip_spaces();
-    if (isdigit((unsigned char)*p)) {
+    if (isdigit((unsigned char)*p) || is_ident_start((unsigned char)*p)) {
         bool exact;
         int i = find_line(read_line_number(), &exact);
         if (!exact)
@@ -7355,7 +7570,8 @@ static void do_list(void) {
     for (int i = first; i <= last; ++i) {
         char buf[16];
         snprintf(buf, sizeof buf, "%u ", lines[i].num);
-        out_str(buf);
+        if (!unnumbered)
+            out_str(buf);
         out_str(lines[i].text);
         out_newline();
         poll_keys();
@@ -7386,43 +7602,20 @@ static void do_delete(void) {
     cont_pos.line = -2;
 }
 
-/// A line number's new number.
-/// @param old the number
-/// @param from_index the first line renumbered
-/// @param start the new first number
-/// @param step the step
-/// @return the new number
-static int renum_map(int old, int from_index, int start, int step) {
-    bool exact;
-    int i = find_line(old, &exact);
-    if (!exact || i < from_index)
-        return old;
-    return start + (i - from_index) * step;
-}
+/// What a line-number reference becomes: RENUM's new number, or NUMBERS
+/// OFF's label.
+/// @param num the number
+/// @param out the text for it
+/// @param room room in out
+/// @return the text's length, or -1 to leave the number as it is
+typedef int (*ref_fn)(int num, char *out, int room);
 
-/// RENUM [new][,[old][,step]]: renumbers and fixes GOTO, GOSUB, THEN, ELSE,
-/// RESTORE, RUN and ON ... GOTO/GOSUB references.
-static void do_renum(void) {
-    int start = 10, old = 0, step = 10;
-    skip_spaces();
-    if (isdigit((unsigned char)*p))
-        start = read_line_number();
-    if (accept(",")) {
-        skip_spaces();
-        if (isdigit((unsigned char)*p))
-            old = read_line_number();
-        if (accept(","))
-            step = read_line_number();
-    }
-    if (step <= 0)
-        error(E_ILLEGAL_CALL);
-    int from = find_line(old, NULL);
-    if (from > 0 && lines[from - 1].num >= start)
-        error(E_ILLEGAL_CALL);
-    if (start + (long)(line_count - from - 1) * step > 65529)
-        error(E_ILLEGAL_CALL);
-    // Rewrite references first, while the old numbers still resolve.
-    static const char *const refs[] = {"GOTO", "GOSUB", "THEN", "ELSE", "RESTORE", "RUN"};
+/// Rewrites every line-number reference (after GOTO, GOSUB, THEN, ELSE,
+/// RESTORE, RESUME and RUN, and ON ... GOTO/GOSUB's lists) with `fn`.
+/// @param fn what each becomes
+static void rewrite_refs(ref_fn fn) {
+    static const char *const refs[] = {"GOTO", "GOSUB", "THEN", "ELSE", "RESTORE", "RESUME", "RUN"};
+    labels_stale = true;
     for (int i = 0; i < line_count; ++i) {
         char out[LINE_MAX_LEN * 2];
         int n = 0;
@@ -7457,11 +7650,21 @@ static void do_renum(void) {
             for (;;) {
                 while (*s == ' ')
                     out[n++] = *s++;
-                if (!isdigit((unsigned char)*s))
-                    break;
-                long v = strtol(s, (char **)&s, 10);
-                n += snprintf(out + n, sizeof out - n, "%d", renum_map(v, from, start, step));
-                changed = true;
+                if (!isdigit((unsigned char)*s)) {
+                    while (is_label_char((unsigned char)*s) && n < (int)sizeof out - 8)
+                        out[n++] = *s++;  // a label in the list
+                } else {
+                    const char *num = s;
+                    long v = strtol(s, (char **)&s, 10);
+                    int w = fn(v, out + n, sizeof out - n - 8);
+                    if (w < 0) {
+                        memcpy(out + n, num, s - num);
+                        w = s - num;
+                    } else {
+                        changed = true;
+                    }
+                    n += w;
+                }
                 const char *t = s;
                 while (*t == ' ')
                     ++t;
@@ -7481,8 +7684,130 @@ static void do_renum(void) {
             lines[i].text = copy;
         }
     }
+}
+
+/// RENUM's numbering: the first line renumbered, the new first number, the step.
+static int renum_from, renum_start, renum_step;
+
+/// A line number's new number (RENUM).
+/// @param old the number
+/// @param out its text
+/// @param room room in out
+/// @return the text's length, or -1 if it doesn't change
+static int renum_ref(int old, char *out, int room) {
+    bool exact;
+    int i = find_line(old, &exact);
+    if (!exact || i < renum_from)
+        return -1;
+    return snprintf(out, room, "%d", renum_start + (i - renum_from) * renum_step);
+}
+
+/// "This program has no line numbers" for commands that need them.
+static void need_numbers(void) {
+    if (unnumbered && line_count) {
+        out_str("This program has no line numbers (NUMBERS ON gives it some)");
+        out_newline();
+        error(E_ILLEGAL_CALL);
+    }
+}
+
+/// RENUM [new][,[old][,step]]: renumbers and fixes GOTO, GOSUB, THEN, ELSE,
+/// RESTORE, RESUME, RUN and ON ... GOTO/GOSUB references.
+static void do_renum(void) {
+    need_numbers();
+    int start = 10, old = 0, step = 10;
+    skip_spaces();
+    if (isdigit((unsigned char)*p))
+        start = read_line_number();
+    if (accept(",")) {
+        skip_spaces();
+        if (isdigit((unsigned char)*p))
+            old = read_line_number();
+        if (accept(","))
+            step = read_line_number();
+    }
+    if (step <= 0)
+        error(E_ILLEGAL_CALL);
+    int from = find_line(old, NULL);
+    if (from > 0 && lines[from - 1].num >= start)
+        error(E_ILLEGAL_CALL);
+    if (start + (long)(line_count - from - 1) * step > 65529)
+        error(E_ILLEGAL_CALL);
+    // Rewrite references first, while the old numbers still resolve.
+    renum_from = from;
+    renum_start = start;
+    renum_step = step;
+    rewrite_refs(renum_ref);
     for (int i = from; i < line_count; ++i)
         lines[i].num = start + (i - from) * step;
+    cont_pos.line = -2;
+}
+
+static uint8_t *ref_targets;  ///< NUMBERS OFF: the lines (by index) something jumps to
+
+/// A line number's label (NUMBERS OFF): the line's own, or L and its number.
+/// @param num the number
+/// @param out the label
+/// @param room room in out
+/// @return its length, or -1 if there is no such line
+static int label_ref(int num, char *out, int room) {
+    bool exact;
+    int i = find_line(num, &exact);
+    if (!exact)
+        return -1;
+    ref_targets[i] = 1;
+    int l = label_at(lines[i].text);
+    if (l)
+        return snprintf(out, room, "%.*s", l, lines[i].text);
+    return snprintf(out, room, "L%d", num);
+}
+
+/// NUMBERS OFF: the line numbers go; the lines GOTO, GOSUB and the like jump
+/// to get labels (L and the old number) and the jumps use them.
+/// NUMBERS ON: lines numbered 10, 20, 30... (labels stay).
+static void do_numbers(void) {
+    if (accept_word("ON")) {
+        if (!unnumbered)
+            return;
+        unnumbered = false;
+        renum_from = 0;
+        renum_start = 10;
+        renum_step = 10;
+        if (10 + (long)(line_count - 1) * 10 > 65529)
+            error(E_ILLEGAL_CALL);
+        rewrite_refs(renum_ref);
+        for (int i = 0; i < line_count; ++i)
+            lines[i].num = 10 + i * 10;
+    } else if (accept_word("OFF")) {
+        if (unnumbered)
+            return;
+        ref_targets = checked_malloc(line_count + 1);
+        memset(ref_targets, 0, line_count + 1);
+        rewrite_refs(label_ref);
+        for (int i = 0; i < line_count; ++i) {
+            if (!ref_targets[i] || label_at(lines[i].text))
+                continue;
+            char buf[LINE_MAX_LEN + 16];
+            int n = snprintf(buf, sizeof buf, "L%u: %s", lines[i].num, lines[i].text);
+            if (n > LINE_MAX_LEN) {
+                free(ref_targets);
+                error(23);  // Line buffer overflow
+            }
+            char *copy = checked_malloc(n + 1);
+            memcpy(copy, buf, n + 1);
+            free(lines[i].text);
+            lines[i].text = copy;
+        }
+        free(ref_targets);
+        for (int i = 0; i < line_count; ++i)
+            lines[i].num = i + 1;
+        unnumbered = line_count > 0;
+        labels_stale = true;
+    } else {
+        error(E_SYNTAX);
+    }
+    clear_vars();
+    reset_run_state();
     cont_pos.line = -2;
 }
 
@@ -8193,7 +8518,7 @@ static void do_run(void) {
         return;
     }
     int start = -1;
-    if (isdigit((unsigned char)*p))
+    if (isdigit((unsigned char)*p) || is_ident_start((unsigned char)*p))
         start = read_line_number();
     run_program(start);
 }
@@ -8341,6 +8666,11 @@ static int execute(void) {
             snprintf(buf, sizeof buf, "[%u]", lines[cur_line].num);
             out_str(buf);
         }
+        if (running && cur_line >= 0 && cur_line < line_count && p == lines[cur_line].text) {
+            int l = label_at(p);
+            if (l)
+                p += l + 1;  // a label: nothing to run
+        }
         skip_spaces();
         if (*p == ':') {
             ++p;
@@ -8386,6 +8716,8 @@ static void run_program(int start_line) {
     rnd_state = 0x12345678u;
     if (!line_count)
         return;
+    if (labels_stale)
+        find_labels();
     if (start_line >= 0) {
         jump_to_line(start_line);
     } else {
@@ -8690,6 +9022,11 @@ static int statement(void) {
     } else if (accept("RENUM")) {
         do_renum();
         return S_END;
+    } else if (accept("NUMBERS")) {
+        if (cur_line >= 0)
+            error(E_ILLEGAL_DIRECT);
+        do_numbers();
+        return S_END;
     } else if (accept("TRON")) {
         trace = true;
     } else if (accept("TROFF")) {
@@ -8858,6 +9195,12 @@ static bool try_store_line(int n, const char *text) {
     }
     if (n > 65529)
         error(E_SYNTAX);
+    if (unnumbered && line_count) {
+        out_str("This program has no line numbers: EDIT it (or NUMBERS ON)");
+        out_newline();
+        return false;
+    }
+    unnumbered = false;
     store_line(n, text);
     clear_vars();  // as GW-BASIC does when the program changes
     reset_run_state();
@@ -8869,6 +9212,11 @@ static bool try_store_line(int n, const char *text) {
 /// @param start the first
 /// @param step the step
 static void do_auto(int start, int step) {
+    if (unnumbered && line_count) {
+        out_str("This program has no line numbers: EDIT it (or NUMBERS ON)");
+        out_newline();
+        return;
+    }
     for (int n = start; n <= 65529; n += step) {
         char prefix[16], buf[LINE_MAX_LEN + 1];
         bool exact;
@@ -9022,6 +9370,11 @@ void basic_main(const char *file) {
             const char *q = t + 4;
             while (*q == ' ')
                 ++q;
+            if ((isdigit((unsigned char)*q) || *q == '.') && unnumbered && line_count) {
+                out_str("No line numbers here: EDIT alone opens the program");
+                out_newline();
+                continue;
+            }
             if (isdigit((unsigned char)*q) || *q == '.') {
                 int n = *q == '.' ? last_line_num : (int)strtol(q, NULL, 10);
                 bool exact;

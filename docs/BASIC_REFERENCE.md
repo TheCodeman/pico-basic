@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -1171,12 +1171,12 @@ See also: [PUT](#ref-put), [FIELD](#ref-field)
 
 ### GOSUB {#ref-gosub}
 
-*Statement* · `GOSUB line`
+*Statement* · `GOSUB line | GOSUB label`
 
-Calls the subroutine at `line`; RETURN comes back to the statement after the GOSUB.
+Calls the subroutine at `line` (or `label`); RETURN comes back to the statement after the GOSUB.
 
 - Up to 32 deep.
-- Errors: `Undefined line number` (8).
+- Errors: `Undefined line number` (8), `Undefined label` (80).
 
 Example:
 
@@ -1196,11 +1196,12 @@ See also: [RETURN](#ref-return), [ON...GOSUB](#ref-ongosub)
 
 ### GOTO {#ref-goto}
 
-*Statement* · `GOTO line`
+*Statement* · `GOTO line | GOTO label`
 
-Goes on at `line`.
+Goes on at `line`, or at the line that starts with `label:` (a name and a colon).
 
-- Errors: `Undefined line number` (8).
+- Labels: letters, digits, `.` and `_`, up to 40, any case; a program can have them with line numbers or without.
+- Errors: `Undefined line number` (8), `Undefined label` (80), `Duplicate label` (81, at RUN).
 
 Example:
 
@@ -1296,7 +1297,7 @@ See also: [I2CREAD](#ref-i2cread)
 
 *Statement* · `IF cond THEN statements [ELSE statements] | IF cond THEN line | IF cond GOTO line`
 
-Runs the statements after THEN when `cond` is not 0 (true), else those after ELSE. A line number after THEN or ELSE jumps there.
+Runs the statements after THEN when `cond` is not 0 (true), else those after ELSE. A line number or label after THEN or ELSE jumps there (a label when nothing else follows it).
 
 - Comparisons give -1 (true) or 0 (false); any number not 0 counts as true.
 - Everything to the end of the line belongs to THEN or ELSE.
@@ -1938,6 +1939,31 @@ Shows:
 
 See also: [AND](#ref-and)
 
+### NUMBERS {#ref-numbers}
+
+*Command* · `NUMBERS OFF | NUMBERS ON`
+
+`NUMBERS OFF` takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (`L100:`), and those use the label. `NUMBERS ON` numbers the lines 10, 20, 30... again, keeping the labels.
+
+- A program without numbers is listed, saved and edited without them; its lines' numbers (in errors, ERL, TRON) are their lines in the file.
+- Numbers compared with ERL (`IF ERL = 100`) aren't changed.
+
+Example:
+
+```
+10 PRINT "HI": GOTO 10
+NUMBERS OFF
+LIST
+```
+
+Shows:
+
+```
+L10: PRINT "HI": GOTO L10
+```
+
+See also: [RENUM](#ref-renum), [GOTO](#ref-goto), [EDIT](#ref-edit)
+
 ### OCT$ {#ref-oct}
 
 *Function* · `OCT$(n)`
@@ -1968,7 +1994,7 @@ See also: [COM(1)](#ref-com1), [OPEN](#ref-open)
 
 ### ON ERROR GOTO {#ref-on-error-goto}
 
-*Statement* · `ON ERROR GOTO line | ON ERROR GOTO 0`
+*Statement* · `ON ERROR GOTO line | ON ERROR GOTO label | ON ERROR GOTO 0`
 
 Sends errors in a running program to an error handler at `line`. `ON ERROR GOTO 0` turns that off; inside a handler it reports the error and stops.
 
@@ -2053,7 +2079,7 @@ See also: [TIMER ON](#ref-timer-on)
 
 ### ON...GOSUB {#ref-ongosub}
 
-*Statement* · `ON n GOSUB line1[, line2...]`
+*Statement* · `ON n GOSUB line1[, line2...] (lines or labels)`
 
 Calls the n-th subroutine in the list. If `n` is 0 or past the list, it goes on with the next statement.
 
@@ -2076,7 +2102,7 @@ See also: [ON...GOTO](#ref-ongoto), [GOSUB](#ref-gosub)
 
 ### ON...GOTO {#ref-ongoto}
 
-*Statement* · `ON n GOTO line1[, line2...]`
+*Statement* · `ON n GOTO line1[, line2...] (lines or labels)`
 
 Goes to the n-th line in the list; with `n` 0 or past the list, goes on.
 
@@ -2466,7 +2492,9 @@ Example:
 
 *Command* · `RENUM [new][, [old][, step]]`
 
-Renumbers program lines from line `old` (default the first) as `new`, `new+step`... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE and RUN to match.
+Renumbers program lines from line `old` (default the first) as `new`, `new+step`... (default 10 and 10), and changes the line numbers after GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME and RUN to match.
+
+- Not for a program without line numbers (NUMBERS ON first).
 
 Example:
 
@@ -2486,9 +2514,9 @@ See also: [CLOSE](#ref-close)
 
 ### RESTORE {#ref-restore}
 
-*Statement* · `RESTORE [line]`
+*Statement* · `RESTORE [line | label]`
 
-Makes READ start again from the first DATA (or from `line`).
+Makes READ start again from the first DATA (or from `line` or `label`).
 
 Example:
 
@@ -2500,7 +2528,7 @@ See also: [READ](#ref-read), [DATA](#ref-data)
 
 ### RESUME {#ref-resume}
 
-*Statement* · `RESUME | RESUME NEXT | RESUME line`
+*Statement* · `RESUME | RESUME NEXT | RESUME line | RESUME label`
 
 Ends an error handler: `RESUME` retries the statement that failed, `RESUME NEXT` goes on after it, `RESUME line` goes to the line.
 
@@ -2598,7 +2626,7 @@ See also: [LSET](#ref-lset)
 
 ### RUN {#ref-run}
 
-*Command* · `RUN [line] | RUN file$`
+*Command* · `RUN [line | label] | RUN file$`
 
 Runs the program from the start (or from `line`), after clearing the variables, closing files and resetting DATA; `RUN file$` loads the file first.
 

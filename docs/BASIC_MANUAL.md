@@ -110,6 +110,49 @@ runs straight away:
 - `SYSTEM` (or `BYE`) clears everything and starts BASIC afresh, as after a
   reset (files on the disk stay).
 
+### Programs without line numbers
+
+Line numbers are optional. A program written in the full-screen editor
+(`EDIT`, below), or in a text file on the PC, can leave them out and use
+**labels** instead: a name and a colon starting a line. GOTO, GOSUB, ON ...
+GOTO/GOSUB, IF ... THEN/ELSE, RESTORE, RESUME, ON ERROR GOTO, ON KEY(n) GOSUB
+and RUN take a label wherever they take a line number:
+
+    ' Count to 3, then stop
+    I = 0
+    again:
+      I = I + 1
+      PRINT "HELLO"; I
+      IF I < 3 THEN again
+    GOSUB done
+    END
+
+    done: PRINT "Done"
+    RETURN
+
+- A label is letters, digits, `.` and `_`, starting with a letter, up to 40
+  characters; any case (BASIC shows it in capitals, as it does names). It can
+  have statements after it on its line (`done: PRINT "Done"`). Two of the
+  same name stop RUN with `Duplicate label`; a jump to one that isn't there
+  is `Undefined label`.
+- A statement keyword alone or with a number after it is a statement, not a
+  label: `CLS:` and `SCREEN0:` are statements, `ENDGAME:` is a label.
+- After THEN or ELSE a label jumps when nothing else follows it (`THEN
+  again`); `THEN GOTO again` always works.
+- A file's lines all have numbers or none do (LOAD says `Bad file mode`
+  if it mixes them). Without numbers, each line's number is its line in the
+  file, blank lines too: errors say `Syntax error in line 12` (Ctrl-G 12 in
+  the editor goes there), and ERL and TRON give these numbers. LIST, SAVE and
+  EDIT show the program without them.
+- Labels work in numbered programs too.
+- Typing a numbered line, AUTO, `EDIT n`, RENUM and MERGE need line numbers;
+  with a program without them, use `EDIT`.
+- `NUMBERS OFF` takes the numbers off a program: each line something jumps
+  to gets a label `L` and its old number (`L100:`), and the jumps use it.
+  `NUMBERS ON` numbers the lines 10, 20, 30... (labels stay). Numbers in
+  `ERL` comparisons (`IF ERL = 100`) aren't changed.
+- `examples/LABELS.BAS` is a menu program with labels.
+
 ### AUTORUN.BAS
 
 At power-up (and after a reset, but not after `SYSTEM`) BASIC runs
@@ -196,7 +239,7 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).
 | Command | What it does |
 |---|---|
 | `RUN` | Runs the program from the start (clears variables first). |
-| `RUN line` | Runs from that line. |
+| `RUN line` | Runs from that line (or label). |
 | `RUN "file"` | Loads `file` and runs it. |
 | `LIST [range]` | Lists the program, pausing every 28 lines (any key goes on, Q stops). A range is `n`, `n-`, `-n` or `n-m`. |
 | `LLIST [range]` | Same as LIST (there's no printer). |
@@ -211,7 +254,8 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).
 | `KILL "file"` | Deletes a file. |
 | `NAME "old" AS "new"` | Renames a file. |
 | `DELETE range` | Deletes program lines. |
-| `RENUM [new][,[old][,step]]` | Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RUN targets with them. |
+| `RENUM [new][,[old][,step]]` | Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RESUME/RUN targets with them. |
+| `NUMBERS OFF` / `NUMBERS ON` | Takes a program's line numbers off (the lines jumped to get labels such as `L100:`), or numbers it 10, 20, 30... (section 1). |
 | `AUTO [start][,step]` | Numbers new lines for you (default 10,10). A `*` after the number means that line exists: Enter keeps it. An empty line where none exists, or Ctrl-C, stops. |
 | `EDIT n` / `EDIT .` | Puts line `n` on the input line to edit. |
 | `CONT` | Continues after Ctrl-C or STOP. |
@@ -276,7 +320,7 @@ The logical operators work bit by bit on integers, as in GW-BASIC.
 
 | Statement | Notes |
 |---|---|
-| `GOTO line` | `GOTO 100` |
+| `GOTO line` | `GOTO 100`, or a label: `GOTO again` (section 1) |
 | `GOSUB line` ... `RETURN` | RETURN ends the FOR and WHILE loops the subroutine started. |
 | `ON n GOTO l1, l2, ...` / `ON n GOSUB ...` | Goes to the n-th line; past the end, carries on. |
 | `IF cond THEN statements [ELSE statements]` | `THEN 100` and `ELSE 200` jump to lines; `IF X GOTO 100` works too. `IF A > 0 THEN PRINT "+" ELSE PRINT "-"` |
@@ -821,8 +865,8 @@ BASIC's defaults fit this carrier board:
 
 ## 9. Errors
 
-Errors print as `<message> in <line>` (or just the message in direct mode),
-and `ERR` gives the code:
+Errors print as `<message> in <line>` (`in line <n>` for a program without
+line numbers; just the message in direct mode), and `ERR` gives the code:
 
 | Code | Message | Code | Message |
 |---|---|---|---|
@@ -853,6 +897,8 @@ and `ERR` gives the code:
 | | | 74 | Rename across disks |
 | | | 75 | Path/File Access Error |
 | | | 76 | Path not found |
+| | | 80 | Undefined label |
+| | | 81 | Duplicate label |
 
 Codes BASIC itself never raises can still be raised with `ERROR n`; unknown
 codes print `Unprintable error`. Ctrl-C prints `Break in <line>`.
@@ -877,6 +923,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | Program | What it does |
 |---|---|
 | PRIMES.BAS | prints the primes below 1000 |
+| LABELS.BAS | a menu program without line numbers: GOSUB, ON GOSUB, RESTORE, ON ERROR GOTO and RESUME with labels |
 | GUESS.BAS | a guess-the-number game |
 | BOXES.BAS | coloured boxes drawn with the PC line-drawing characters |
 | FILES.BAS | writes, appends and reads back a text file, and stores and reads records (MKI$/CVI) in a random-access file |

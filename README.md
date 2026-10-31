@@ -78,7 +78,9 @@ Maker Pi Pico's RGB LED on GP28, or strips on any pin); `PIN`, `PWM`, `SERVO`, `
 `TEMP()`; `I2C` and `SPI`; COM1; and `TIMER`, `DATE$` and `TIME$`. Line
 editing has history, `EDIT n` puts a line on the input line, and `EDIT`
 opens the program (or `EDIT "file"` any text file) in a full-screen editor
-on the terminal (`src/term_editor.c`).
+on the terminal (`src/term_editor.c`). Line numbers are optional: a program
+can use labels instead (`again:` ... `GOTO again`), and `NUMBERS OFF`/`ON`
+converts between the two (`examples/LABELS.BAS`).
 
 ## AUTORUN.BAS
 
