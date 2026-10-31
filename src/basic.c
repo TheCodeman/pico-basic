@@ -8906,6 +8906,19 @@ static void basic_ram_free(void) {
     edit_initial_p = NULL;
 }
 
+void basic_print_free(void) {
+    char buf[48];
+    size_t free_mem = port_free_mem();
+    snprintf(buf, sizeof buf, "%u Bytes free",
+             (unsigned)(free_mem > HEAP_MARGIN ? free_mem - HEAP_MARGIN : 0));
+    out_str(buf);
+    out_newline();
+}
+
+bool basic_program_running(void) {
+    return running;
+}
+
 void basic_main(const char *file) {
     if (!basic_ram_alloc()) {
         printf("basic: not enough memory\n");
@@ -8942,14 +8955,7 @@ void basic_main(const char *file) {
     out_str("Pico BASIC (GW-BASIC style). SYSTEM returns to the shell.");
 #endif
     out_newline();
-    {
-        char buf[48];
-        size_t free_mem = port_free_mem();
-        snprintf(buf, sizeof buf, "%u Bytes free",
-                 (unsigned)(free_mem > HEAP_MARGIN ? free_mem - HEAP_MARGIN : 0));
-        out_str(buf);
-        out_newline();
-    }
+    basic_print_free();
     if (file && *file) {
         char cmd[96];
         snprintf(cmd, sizeof cmd, "RUN \"%s\"", file);

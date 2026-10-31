@@ -16,6 +16,7 @@
  */
 
 #include "basic_port.h"
+#include "basic.h"
 
 #include <malloc.h>
 #include <unistd.h>
@@ -69,7 +70,9 @@ int port_key(uint32_t timeout_us) {
             sleep_ms(50);  // some terminals miss what comes right after they connect
         printf("\n");
         board_banner();
-        printf("Ok\n");
+        fflush(stdout);
+        basic_print_free();
+        printf(basic_program_running() ? "A program is running (Ctrl-C stops it)\n" : "Ok\n");
     }
     was_connected = connected;
     return c;
