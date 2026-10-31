@@ -8294,14 +8294,29 @@ static void do_chain(void) {
 
 /// EDIT line.
 static void do_edit(void) {
+#if !BASIC_NO_SCREEN || PICO_BASIC_EDITOR
+    // EDIT "file": any text file.
+    skip_spaces();
+    if (!at_end_of_statement()) {
+        char name[96];
+        file_name_arg(name, sizeof name, false);
+        out_flush();
+        port_edit_file(name);
+        out_row = out_col = 0;
+        return;
+    }
+#else
     need_screen();
+#endif
     // The program goes to a scratch file, the editor opens it, and whatever
     // is in the file afterwards becomes the program.
     const char *tmp = "~basic.tmp";
     save_file(tmp);
     char saved_name[sizeof program_name];
     strcpy(saved_name, program_name);
+    out_flush();
     port_edit(tmp);
+    out_row = out_col = 0;  // the editor left the cursor at the top
     load_file(tmp, 0);
     f_unlink(tmp);
     strcpy(program_name, saved_name);

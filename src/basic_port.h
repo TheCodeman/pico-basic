@@ -153,6 +153,9 @@ bool port_stack_low(void);
 /// Opens `path` in the full-screen editor and returns when it is closed.
 /// @param path the file
 void port_edit(const char *path);
+/// The same for a text file that isn't the program (EDIT "file").
+/// @param path the file
+void port_edit_file(const char *path);
 
 // ---- GPIO (PINMODE, PIN, PWM, SERVO, ADC(), TEMP(), PINS) -------------------
 

@@ -21,6 +21,7 @@ add_executable(pico_basic
     src/diskio.c
     src/sd_card.c
     src/stack_switch.c
+    src/term_editor.c
     src/xfer.c
     src/fatfs/ff.c
     src/fatfs/ffunicode.c
@@ -59,6 +60,8 @@ set(SOUND_PIN 18 CACHE STRING "GPIO for the speaker")
 
 target_compile_definitions(pico_basic PRIVATE
     BASIC_NO_SCREEN=1
+    # EDIT: the full-screen editor on the terminal (term_editor.c).
+    PICO_BASIC_EDITOR=1
     FLASH_DISK_OFFSET=${FLASH_DISK_OFFSET}
     SOUND_PIN=${SOUND_PIN}
     PICO_BASIC_BOARD="${PICO_BOARD}"

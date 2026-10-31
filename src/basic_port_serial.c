@@ -33,6 +33,7 @@
 #include "psram_heap.h"
 #include "spr.h"
 #include "stack_switch.h"
+#include "term_editor.h"
 #include "usb_console.h"
 #if PICO_BASIC_SD
 #include "sd_card.h"
@@ -162,14 +163,28 @@ static const uint16_t cp437_high[129] = {
     0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248, 0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0,
 };
 
-void port_put_glyph(int c) {
+int port_glyph_utf8(int c, char *out) {
     // The terminal has no PC character set: send the character's picture as
     // UTF-8 (most terminals are), so CHR$(1) is a smiley and CHR$(219) a block.
     unsigned u = c >= 0 && c < 32 ? cp437_low[c] : c >= 127 && c < 256 ? cp437_high[c - 127] : '?';
-    if (u < 0x800)
-        printf("%c%c", 0xC0 | u >> 6, 0x80 | (u & 0x3F));
-    else
-        printf("%c%c%c", 0xE0 | u >> 12, 0x80 | (u >> 6 & 0x3F), 0x80 | (u & 0x3F));
+    if (u < 0x80) {
+        out[0] = (char)u;
+        return 1;
+    }
+    if (u < 0x800) {
+        out[0] = (char)(0xC0 | u >> 6);
+        out[1] = (char)(0x80 | (u & 0x3F));
+        return 2;
+    }
+    out[0] = (char)(0xE0 | u >> 12);
+    out[1] = (char)(0x80 | (u >> 6 & 0x3F));
+    out[2] = (char)(0x80 | (u & 0x3F));
+    return 3;
+}
+
+void port_put_glyph(int c) {
+    char buf[3];
+    fwrite(buf, 1, port_glyph_utf8(c, buf), stdout);
 }
 
 // ---- Sound: a square wave on SOUND_PIN ------------------------------------------
@@ -288,7 +303,11 @@ bool port_shell(const char *command) {
 }
 
 void port_edit(const char *path) {
-    (void)path;
+    term_edit(path, true);
+}
+
+void port_edit_file(const char *path) {
+    term_edit(path, false);
 }
 
 const char *port_set_pages(int active, int visual) {

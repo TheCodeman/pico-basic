@@ -1,0 +1,804 @@
+/**
+ * @file term_editor.c
+ * @brief Implementation of term_editor.h: a nano-like editor drawn with ANSI
+ * codes, for a terminal on the USB port.
+ *
+ * The text is an array of lines (big arrays go to PSRAM where there is
+ * some, through port_alloc). Only what changed is sent again: a line being
+ * typed in, or the rows below an inserted or deleted line; scrolling and
+ * Ctrl-L redraw it all. Lines longer than the terminal scroll sideways.
+ *
+ * @author Ken Segler
+ * @copyright Copyright (c) 2026 Ken Segler
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "term_editor.h"
+
+#include <ctype.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+#include "basic_port.h"
+#include "ff.h"
+#include "pico/stdlib.h"
+
+#define MAX_LINE   1024  ///< the longest line kept
+#define BASIC_LINE 255   ///< the longest program line BASIC takes
+#define TAB_WIDTH  4     ///< Tab inserts spaces to the next multiple of this
+
+/// Keys beyond the bytes a terminal sends as they are.
+enum {
+    K_ESC = 0x100, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_HOME, K_END, K_PGUP, K_PGDN,
+    K_INS, K_DEL, K_TOP, K_BOTTOM, K_F1, K_F3,
+};
+
+/// A line of text (not 0-terminated).
+typedef struct {
+    char *s;  ///< its characters
+    int len;  ///< how many
+    int cap;  ///< room
+} line_t;
+
+static line_t *lines;  ///< the text
+static int nlines, lines_cap;  ///< lines in it, and room
+static line_t *clip;  ///< lines cut with Ctrl-Y / Ctrl-K, for Ctrl-U
+static int nclip, clip_cap;  ///< lines in the cut buffer, and room
+static bool cutting;  ///< the last key cut a line (another adds to the buffer)
+
+static int cx, cy;  ///< the cursor: column in the line, line
+static int want_x;  ///< the column Up and Down aim for
+static int rowoff, coloff;  ///< the first line and column on the screen
+static int rows = 24, cols = 80, textrows = 23;  ///< the terminal, and the rows of text
+static bool modified, overwrite, is_program, out_of_memory;
+static char msg[120];  ///< shown on the status line until the next key
+static char find_text[64];  ///< the last thing searched for
+static int dirty_lo, dirty_hi;  ///< lines to send again (dirty_lo > dirty_hi: none)
+static bool full;  ///< send the whole screen again
+static int pending = -1;  ///< a byte read too far while decoding a key
+
+// ---- Output: a buffer sent in one go ------------------------------------------------
+
+static char ob[2048];  ///< what goes to the terminal next
+static int on;  ///< bytes in it
+
+/// Sends the buffer.
+static void flush(void) {
+    fwrite(ob, 1, on, stdout);
+    fflush(stdout);
+    on = 0;
+}
+
+/// Adds bytes.
+/// @param s the bytes
+/// @param n how many
+static void put(const char *s, int n) {
+    if (on + n > (int)sizeof ob)
+        flush();
+    memcpy(ob + on, s, n);
+    on += n;
+}
+
+/// Adds text, printf style.
+/// @param fmt the format
+static void putf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+static void putf(const char *fmt, ...) {
+    char buf[160];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    put(buf, n < (int)sizeof buf ? n : (int)sizeof buf - 1);
+}
+
+// ---- The text --------------------------------------------------------------------------
+
+/// Makes room for `n` characters in a line; false if there's no memory.
+/// @param l the line
+/// @param n the characters
+/// @return there's room
+static bool line_room(line_t *l, int n) {
+    if (n <= l->cap)
+        return true;
+    int cap = n < 16 ? 16 : n + n / 2;
+    char *s = port_realloc(l->s, cap);
+    if (!s) {
+        out_of_memory = true;
+        return false;
+    }
+    l->s = s;
+    l->cap = cap;
+    return true;
+}
+
+/// Puts a new line at `at` holding `n` characters of `s`.
+/// @param at where
+/// @param s its text
+/// @param n how many characters
+/// @return done (false: out of memory)
+static bool insert_line(int at, const char *s, int n) {
+    if (nlines == lines_cap) {
+        int cap = lines_cap ? lines_cap * 2 : 64;
+        line_t *nl = port_realloc(lines, cap * sizeof *nl);
+        if (!nl) {
+            out_of_memory = true;
+            return false;
+        }
+        lines = nl;
+        lines_cap = cap;
+    }
+    line_t l = {0};
+    if (!line_room(&l, n))
+        return false;
+    memcpy(l.s, s, n);
+    l.len = n;
+    memmove(&lines[at + 1], &lines[at], (nlines - at) * sizeof *lines);
+    lines[at] = l;
+    ++nlines;
+    return true;
+}
+
+/// Removes line `at`.
+/// @param at which
+static void delete_line(int at) {
+    port_release(lines[at].s);
+    memmove(&lines[at], &lines[at + 1], (nlines - at - 1) * sizeof *lines);
+    --nlines;
+}
+
+/// Frees the text and the cut buffer.
+static void free_all(void) {
+    for (int i = 0; i < nlines; ++i)
+        port_release(lines[i].s);
+    for (int i = 0; i < nclip; ++i)
+        port_release(clip[i].s);
+    port_release(lines);
+    port_release(clip);
+    lines = clip = NULL;
+    nlines = lines_cap = nclip = clip_cap = 0;
+}
+
+/// Reads the file (none yet: one empty line). CR LF or LF lines; a ^Z at the
+/// end (GW-BASIC's) is left off.
+/// @param path the file
+/// @return read (false: out of memory or a read error)
+static bool load(const char *path) {
+    FIL f;
+    char *cur = port_alloc(MAX_LINE);
+    if (!cur)
+        return false;
+    int n = 0;
+    bool ok = true;
+    if (f_open(&f, path, FA_READ) == FR_OK) {
+        char buf[512];
+        UINT got;
+        while (ok && f_read(&f, buf, sizeof buf, &got) == FR_OK && got) {
+            for (UINT i = 0; i < got; ++i) {
+                char c = buf[i];
+                if (c == '\n') {
+                    if (n && cur[n - 1] == '\r')
+                        --n;
+                    ok = insert_line(nlines, cur, n);
+                    n = 0;
+                } else if (c != 0x1a && n < MAX_LINE) {
+                    cur[n++] = c;
+                }
+            }
+        }
+        f_close(&f);
+    }
+    if (ok && (n || !nlines))
+        ok = insert_line(nlines, cur, n);
+    port_release(cur);
+    return ok;
+}
+
+/// Writes the text back, lines ending in CR LF.
+/// @param path the file
+/// @return written
+static bool save(const char *path) {
+    FIL f;
+    if (f_open(&f, path, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK)
+        return false;
+    bool ok = true;
+    UINT w;
+    int last = nlines;
+    while (last > 0 && !lines[last - 1].len)  // blank lines at the end
+        --last;
+    for (int i = 0; ok && i < last; ++i)
+        ok = f_write(&f, lines[i].s, lines[i].len, &w) == FR_OK && w == (UINT)lines[i].len &&
+             f_write(&f, "\r\n", 2, &w) == FR_OK && w == 2;
+    ok = f_close(&f) == FR_OK && ok;
+    return ok;
+}
+
+/// For a program: the first line BASIC wouldn't take (no line number, a
+/// number over 65529, or longer than 255), with why; -1 if all are fine.
+/// Blank lines are fine (they are left out).
+/// @param why set to the reason
+/// @return the bad line, or -1
+static int check_program(const char **why) {
+    for (int i = 0; i < nlines; ++i) {
+        const char *s = lines[i].s;
+        int n = lines[i].len, k = 0;
+        while (k < n && s[k] == ' ')
+            ++k;
+        if (k == n)
+            continue;
+        if (!isdigit((unsigned char)s[k])) {
+            *why = "this line has no line number";
+            return i;
+        }
+        long num = 0;
+        while (k < n && isdigit((unsigned char)s[k]) && num <= 65529)
+            num = num * 10 + (s[k++] - '0');
+        if (num > 65529) {
+            *why = "line numbers go up to 65529";
+            return i;
+        }
+        if (n > BASIC_LINE) {
+            *why = "a program line can be 255 characters at most";
+            return i;
+        }
+    }
+    return -1;
+}
+
+// ---- Keys ---------------------------------------------------------------------------------
+
+/// The next byte, waiting up to `us` (forever if 0); -1 if none came.
+/// @param us how long
+/// @return the byte, or -1
+static int byte_in(uint32_t us) {
+    if (pending >= 0) {
+        int c = pending;
+        pending = -1;
+        return c;
+    }
+    if (!us) {
+        int c;
+        while ((c = port_key(100000)) < 0)
+            ;
+        return c;
+    }
+    return port_key(us);
+}
+
+/// The next key, with the terminal's escape sequences decoded (xterm, VT100,
+/// Linux console).
+/// @return a byte, or a K_ code
+static int key_in(void) {
+    static bool after_cr;
+    int c = byte_in(0);
+    if (c == '\n' && after_cr) {  // a CR LF terminal: the LF is the same Enter
+        after_cr = false;
+        c = byte_in(0);
+    }
+    after_cr = c == '\r';
+    if (c == '\n')
+        return '\r';
+    if (c != 27)
+        return c;
+    int c1 = byte_in(30000);
+    if (c1 < 0)
+        return K_ESC;
+    if (c1 == 'O') {  // SS3: F1-F4, and keys in application mode
+        int c2 = byte_in(30000);
+        switch (c2) {
+        case 'A': return K_UP;
+        case 'B': return K_DOWN;
+        case 'C': return K_RIGHT;
+        case 'D': return K_LEFT;
+        case 'H': return K_HOME;
+        case 'F': return K_END;
+        case 'P': return K_F1;
+        case 'R': return K_F3;
+        default: return 0;
+        }
+    }
+    if (c1 != '[') {
+        pending = c1;  // Esc, then a key of its own
+        return K_ESC;
+    }
+    int p[2] = {0, 0}, np = 0, f;
+    while ((f = byte_in(30000)) >= 0 && (isdigit(f) || f == ';')) {
+        if (f == ';')
+            np = np < 1 ? np + 1 : 1;
+        else
+            p[np] = p[np] * 10 + (f - '0');
+    }
+    bool ctrl = p[1] == 5;  // xterm's modifier 5: Ctrl
+    switch (f) {
+    case 'A': return K_UP;
+    case 'B': return K_DOWN;
+    case 'C': return K_RIGHT;
+    case 'D': return K_LEFT;
+    case 'H': return ctrl ? K_TOP : K_HOME;
+    case 'F': return ctrl ? K_BOTTOM : K_END;
+    case '~':
+        switch (p[0]) {
+        case 1: case 7: return ctrl ? K_TOP : K_HOME;
+        case 4: case 8: return ctrl ? K_BOTTOM : K_END;
+        case 2: return K_INS;
+        case 3: return K_DEL;
+        case 5: return K_PGUP;
+        case 6: return K_PGDN;
+        case 11: return K_F1;
+        case 13: return K_F3;
+        }
+        return 0;
+    case '[':  // the Linux console's F1-F5: Esc [ [ A...
+        f = byte_in(30000);
+        return f == 'A' ? K_F1 : f == 'C' ? K_F3 : 0;
+    }
+    return 0;
+}
+
+/// Asks the terminal its size (by moving the cursor far away and asking
+/// where it is); 80 x 24 if it doesn't say.
+static void get_size(void) {
+    put("\x1b[999;999H\x1b[6n", 15);
+    flush();
+    int r = 0, c = 0, ch, state = 0;
+    absolute_time_t until = make_timeout_time_ms(300);
+    while (state < 4 && !time_reached(until)) {
+        if ((ch = port_key(20000)) < 0)
+            continue;
+        if (state == 0 && ch == 27)
+            state = 1;
+        else if (state == 1 && ch == '[')
+            state = 2;
+        else if (state == 2 && isdigit(ch))
+            r = r * 10 + ch - '0';
+        else if (state == 2 && ch == ';')
+            state = 3;
+        else if (state == 3 && isdigit(ch))
+            c = c * 10 + ch - '0';
+        else if (state == 3 && ch == 'R')
+            state = 4;
+    }
+    rows = state == 4 && r >= 5 ? (r > 100 ? 100 : r) : 24;
+    cols = state == 4 && c >= 20 ? (c > 250 ? 250 : c) : 80;
+    textrows = rows - 1;
+}
+
+// ---- Drawing ----------------------------------------------------------------------------
+
+/// Marks lines a..b to be sent again.
+/// @param a the first
+/// @param b the last
+static void dirty(int a, int b) {
+    if (a < dirty_lo)
+        dirty_lo = a;
+    if (b > dirty_hi)
+        dirty_hi = b;
+}
+
+/// Sends screen row `r`.
+/// @param r the row (0 the top)
+static void draw_row(int r) {
+    int i = rowoff + r;
+    putf("\x1b[%d;1H", r + 1);
+    if (i < nlines) {
+        const line_t *l = &lines[i];
+        for (int k = coloff; k < l->len && k < coloff + cols; ++k) {
+            unsigned char c = (unsigned char)l->s[k];
+            if (c < 32 || c >= 127) {
+                char g[3];
+                put(g, port_glyph_utf8(c, g));
+            } else {
+                put((const char *)&c, 1);
+            }
+        }
+    } else {
+        put("\x1b[2m~\x1b[0m", 9);
+    }
+    put("\x1b[K", 3);
+}
+
+/// Sends the status line: the message if there is one, else where you are
+/// and the keys.
+static void draw_status(const char *name) {
+    char buf[260];
+    int n;
+    if (msg[0])
+        n = snprintf(buf, sizeof buf, " %s", msg);
+    else
+        n = snprintf(buf, sizeof buf, " %s%s  Ln %d/%d Col %d  %s   ^S save  Esc quit  F1 help",
+                     name, modified ? " *" : "", cy + 1, nlines, cx + 1, overwrite ? "OVR" : "INS");
+    if (n > cols)
+        n = cols;
+    while (n < cols && n < (int)sizeof buf - 1)
+        buf[n++] = ' ';
+    putf("\x1b[%d;1H\x1b[7m", rows);
+    put(buf, n);
+    put("\x1b[0m", 4);
+}
+
+/// Brings the cursor into view, scrolling if need be.
+static void scroll(void) {
+    if (cy < rowoff) {
+        rowoff = cy;
+        full = true;
+    } else if (cy >= rowoff + textrows) {
+        rowoff = cy - textrows + 1;
+        full = true;
+    }
+    if (cx < coloff) {
+        coloff = cx;
+        full = true;
+    } else if (cx >= coloff + cols) {
+        coloff = cx - cols + 1;
+        full = true;
+    }
+}
+
+/// Sends what changed, the status line and the cursor.
+/// @param name the name on the status line
+static void refresh(const char *name) {
+    scroll();
+    put("\x1b[?25l", 6);
+    for (int r = 0; r < textrows; ++r)
+        if (full || (rowoff + r >= dirty_lo && rowoff + r <= dirty_hi))
+            draw_row(r);
+    full = false;
+    dirty_lo = INT_MAX;
+    dirty_hi = -1;
+    draw_status(name);
+    putf("\x1b[%d;%dH\x1b[?25h", cy - rowoff + 1, cx - coloff + 1);
+    flush();
+}
+
+/// Reads a reply on the status line (Backspace edits, Enter takes it, Esc
+/// gives up).
+/// @param label what is asked
+/// @param buf the reply (it starts with what is there)
+/// @param size its room
+/// @return Enter (false: Esc)
+static bool ask(const char *label, char *buf, int size) {
+    int n = strlen(buf);
+    for (;;) {
+        putf("\x1b[%d;1H\x1b[7m %s%s\x1b[K\x1b[0m", rows, label, buf);
+        flush();
+        int k = key_in();
+        if (k == '\r')
+            return true;
+        if (k == K_ESC || k == 3 || k == 7)
+            return false;
+        if ((k == 8 || k == 127) && n)
+            buf[--n] = 0;
+        else if (k >= 32 && k < 127 && n < size - 1) {
+            buf[n++] = (char)k;
+            buf[n] = 0;
+        }
+    }
+}
+
+/// F1: the keys, until a key is pressed.
+static void help(void) {
+    static const char *const text[] = {
+        "EDIT: the full-screen editor",
+        "",
+        "  Arrows, Home, End, PgUp, PgDn     move",
+        "  Ctrl-Home, Ctrl-End               the top, the bottom",
+        "  Backspace, Delete                 delete (joining lines at their ends)",
+        "  Enter                             split the line",
+        "  Insert                            insert or overwrite",
+        "  Tab                               spaces to the next column of 4",
+        "  Ctrl-Y or Ctrl-K                  cut the line (again: add the next one)",
+        "  Ctrl-U                            paste the cut lines",
+        "  Ctrl-F, F3                        find, find the next",
+        "  Ctrl-G                            go to a line (a program: a line number)",
+        "  Ctrl-S                            save (a program: BASIC takes it on leaving)",
+        "  Esc or Ctrl-Q                     leave (asks if there are changes)",
+        "  Ctrl-L                            draw the screen again",
+        "",
+        "A program's lines each need a line number; blank lines are left out.",
+        "",
+        "Any key goes back.",
+    };
+    put("\x1b[2J", 4);
+    for (unsigned i = 0; i < sizeof text / sizeof *text && (int)i < rows; ++i)
+        putf("\x1b[%u;1H%s", i + 1, text[i]);
+    flush();
+    key_in();
+    full = true;
+}
+
+// ---- Editing ----------------------------------------------------------------------------
+
+/// Puts the cursor on line `y`, column `x`, within the text.
+/// @param x the column
+/// @param y the line
+static void go(int x, int y) {
+    cy = y < 0 ? 0 : y >= nlines ? nlines - 1 : y;
+    cx = x < 0 ? 0 : x > lines[cy].len ? lines[cy].len : x;
+}
+
+/// Types a character at the cursor (or over the one there).
+/// @param c the character
+static void type(char c) {
+    line_t *l = &lines[cy];
+    if (overwrite && cx < l->len) {
+        l->s[cx++] = c;
+    } else {
+        if (l->len >= MAX_LINE) {
+            snprintf(msg, sizeof msg, "Lines can be %d characters at most", MAX_LINE);
+            return;
+        }
+        if (!line_room(l, l->len + 1))
+            return;
+        memmove(l->s + cx + 1, l->s + cx, l->len - cx);
+        l->s[cx++] = c;
+        ++l->len;
+    }
+    modified = true;
+    dirty(cy, cy);
+}
+
+/// Joins line `y + 1` onto the end of line `y`.
+/// @param y the line
+static void join(int y) {
+    line_t *a = &lines[y], *b = &lines[y + 1];
+    if (a->len + b->len > MAX_LINE) {
+        snprintf(msg, sizeof msg, "The joined line would be too long");
+        return;
+    }
+    if (!line_room(a, a->len + b->len))
+        return;
+    memcpy(a->s + a->len, b->s, b->len);
+    a->len += b->len;
+    delete_line(y + 1);
+    modified = true;
+    dirty(y, INT_MAX);
+}
+
+/// Enter: the rest of the line becomes a new line below.
+static void split(void) {
+    line_t *l = &lines[cy];
+    if (!insert_line(cy + 1, l->s + cx, l->len - cx))
+        return;
+    lines[cy].len = cx;  // (the array may have moved)
+    dirty(cy, INT_MAX);
+    go(0, cy + 1);
+    modified = true;
+}
+
+/// Ctrl-Y / Ctrl-K: cuts the line into the cut buffer (added to it if the
+/// last key cut too).
+static void cut_line(void) {
+    if (!cutting) {
+        for (int i = 0; i < nclip; ++i)
+            port_release(clip[i].s);
+        nclip = 0;
+    }
+    if (nclip == clip_cap) {
+        int cap = clip_cap ? clip_cap * 2 : 16;
+        line_t *nc = port_realloc(clip, cap * sizeof *nc);
+        if (!nc) {
+            out_of_memory = true;
+            return;
+        }
+        clip = nc;
+        clip_cap = cap;
+    }
+    clip[nclip++] = lines[cy];  // the line itself moves to the cut buffer
+    memmove(&lines[cy], &lines[cy + 1], (nlines - cy - 1) * sizeof *lines);
+    if (--nlines == 0)
+        insert_line(0, "", 0);
+    go(0, cy);
+    modified = true;
+    dirty(cy, INT_MAX);
+}
+
+/// Ctrl-U: puts the cut lines in above the cursor's line.
+static void paste(void) {
+    for (int i = 0; i < nclip; ++i)
+        if (!insert_line(cy + i, clip[i].s, clip[i].len))
+            break;
+    if (nclip) {
+        modified = true;
+        dirty(cy, INT_MAX);
+        go(0, cy + nclip);
+    }
+}
+
+/// Finds `find_text` after the cursor (round to the top at the end).
+static void find_next(void) {
+    int n = strlen(find_text);
+    if (!n)
+        return;
+    for (int step = 0; step <= nlines; ++step) {
+        int y = (cy + step) % nlines;
+        const line_t *l = &lines[y];
+        for (int x = step ? 0 : cx + 1; x + n <= l->len; ++x)
+            if (!strncasecmp(l->s + x, find_text, n)) {
+                go(x, y);
+                return;
+            }
+    }
+    snprintf(msg, sizeof msg, "\"%s\" isn't there", find_text);
+}
+
+/// Ctrl-G: a program's line number, else a line of the file.
+static void go_to_line(void) {
+    char buf[12] = "";
+    if (!ask(is_program ? "Go to BASIC line: " : "Go to line: ", buf, sizeof buf) || !buf[0])
+        return;
+    long n = strtol(buf, NULL, 10);
+    if (is_program) {
+        for (int i = 0; i < nlines; ++i) {
+            const char *s = lines[i].s;
+            int k = 0;
+            while (k < lines[i].len && s[k] == ' ')
+                ++k;
+            if (k < lines[i].len && isdigit((unsigned char)s[k]) && strtol(s + k, NULL, 10) >= n) {
+                go(0, i);
+                return;
+            }
+        }
+        go(0, nlines - 1);
+    } else {
+        go(0, (int)n - 1);
+    }
+}
+
+/// Ctrl-S: checks a program, then writes the file.
+/// @param path the file
+/// @return saved
+static bool do_save(const char *path) {
+    if (is_program) {
+        const char *why;
+        int bad = check_program(&why);
+        if (bad >= 0) {
+            go(0, bad);
+            snprintf(msg, sizeof msg, "Not saved: line %d: %s", bad + 1, why);
+            return false;
+        }
+    }
+    if (!save(path)) {
+        snprintf(msg, sizeof msg, "Couldn't write %s (disk full?)", path);
+        return false;
+    }
+    modified = false;
+    snprintf(msg, sizeof msg, "Saved%s", is_program ? ": BASIC takes it when you leave" : "");
+    return true;
+}
+
+void term_edit(const char *path, bool program) {
+    is_program = program;
+    modified = overwrite = out_of_memory = cutting = false;
+    cx = cy = want_x = rowoff = coloff = 0;
+    msg[0] = 0;
+    if (!load(path)) {
+        free_all();
+        printf("Not enough memory to edit %s\n", path);
+        return;
+    }
+    const char *name = is_program ? "Program" : path;
+    get_size();
+    put("\x1b[0m\x1b[2J", 8);
+    full = true;
+    dirty_lo = INT_MAX;
+    dirty_hi = -1;
+    for (;;) {
+        if (out_of_memory) {
+            snprintf(msg, sizeof msg, "Out of memory: save what you have");
+            out_of_memory = false;
+        }
+        refresh(name);
+        int k = key_in();
+        bool was_cutting = cutting;
+        cutting = false;
+        if (msg[0]) {
+            msg[0] = 0;
+            draw_status(name);
+        }
+        bool vertical = false;
+        switch (k) {
+        case K_UP: go(want_x, cy - 1); vertical = true; break;
+        case K_DOWN: go(want_x, cy + 1); vertical = true; break;
+        case K_PGUP: go(want_x, cy - textrows); vertical = true; break;
+        case K_PGDN: go(want_x, cy + textrows); vertical = true; break;
+        case K_LEFT:
+            if (cx)
+                --cx;
+            else if (cy)
+                go(INT_MAX, cy - 1);
+            break;
+        case K_RIGHT:
+            if (cx < lines[cy].len)
+                ++cx;
+            else if (cy < nlines - 1)
+                go(0, cy + 1);
+            break;
+        case K_HOME: cx = 0; break;
+        case K_END: cx = lines[cy].len; break;
+        case K_TOP: go(0, 0); break;
+        case K_BOTTOM: go(INT_MAX, nlines - 1); break;
+        case K_INS: overwrite = !overwrite; break;
+        case K_DEL:
+            if (cx < lines[cy].len) {
+                line_t *l = &lines[cy];
+                memmove(l->s + cx, l->s + cx + 1, l->len - cx - 1);
+                --l->len;
+                modified = true;
+                dirty(cy, cy);
+            } else if (cy < nlines - 1) {
+                join(cy);
+            }
+            break;
+        case 8:
+        case 127:
+            if (cx) {
+                --cx;
+                line_t *l = &lines[cy];
+                memmove(l->s + cx, l->s + cx + 1, l->len - cx - 1);
+                --l->len;
+                modified = true;
+                dirty(cy, cy);
+            } else if (cy) {
+                int x = lines[cy - 1].len;
+                join(cy - 1);
+                go(x, cy - 1);
+            }
+            break;
+        case '\r': split(); break;
+        case '\t':
+            do
+                type(' ');
+            while (cx % TAB_WIDTH);
+            break;
+        case 25:  // Ctrl-Y
+        case 11:  // Ctrl-K
+            cutting = was_cutting;
+            cut_line();
+            cutting = true;
+            break;
+        case 21: paste(); break;  // Ctrl-U
+        case 6: {  // Ctrl-F
+            char buf[sizeof find_text];
+            snprintf(buf, sizeof buf, "%s", find_text);
+            if (ask("Find: ", buf, sizeof buf) && buf[0]) {
+                snprintf(find_text, sizeof find_text, "%s", buf);
+                find_next();
+            }
+            full = true;
+            break;
+        }
+        case K_F3: find_next(); break;
+        case 7: go_to_line(); full = true; break;  // Ctrl-G
+        case 19: do_save(path); break;  // Ctrl-S
+        case 12: get_size(); put("\x1b[2J", 4); full = true; break;  // Ctrl-L
+        case K_F1: help(); break;
+        case 3: snprintf(msg, sizeof msg, "Esc or Ctrl-Q leaves the editor"); break;
+        case K_ESC:
+        case 17: {  // Ctrl-Q
+            if (modified) {
+                char buf[4] = "";
+                if (!ask("Save the changes (Y/N)? ", buf, sizeof buf)) {
+                    full = true;
+                    break;  // Esc: back to editing
+                }
+                if ((buf[0] == 'Y' || buf[0] == 'y') && !do_save(path)) {
+                    full = true;
+                    break;  // not saved (a bad line): stay
+                }
+            }
+            put("\x1b[0m\x1b[2J\x1b[H\x1b[?25h", 15);
+            flush();
+            free_all();
+            return;
+        }
+        default:
+            if (k >= 32 && k < 256 && k != 127)
+                type((char)k);
+        }
+        if (!vertical)
+            want_x = cx;
+    }
+}
