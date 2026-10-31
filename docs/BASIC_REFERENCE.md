@@ -797,7 +797,7 @@ See also: [FILES](#ref-files)
 
 `EDIT` opens the program in the full-screen editor (see the manual's Full-screen editor section); `EDIT file$` edits any text file there. `EDIT n` (or `.`, the last line typed or the one that failed) puts program line `n` on the input line to change; Enter stores it.
 
-- In the full-screen editor Ctrl-S saves and Esc leaves. A program is only taken if every non-blank line starts with a line number (0-65529, 255 characters at most): otherwise nothing is saved and the cursor goes to the bad line.
+- In the full-screen editor Ctrl-X/C/V cut, copy and paste lines, Ctrl-Z/R undo and redo, Ctrl-S saves and Esc leaves. A program is only taken if every non-blank line starts with a line number (0-65529, 255 characters at most): otherwise nothing is saved and the cursor goes to the bad line.
 - Leaving without saving keeps the program as it was. Blank lines are left out.
 
 Example:

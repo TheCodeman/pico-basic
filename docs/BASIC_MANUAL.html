@@ -514,12 +514,24 @@ bottom line shows where you are: <code>Program *  Ln 3/12 Col 5  INS</code>.</p>
 <td>spaces to the next column of 4</td>
 </tr>
 <tr>
-<td>Ctrl-Y or Ctrl-K</td>
-<td>cut the line (pressed again, the next one is added)</td>
+<td>Shift+Up, Shift+Down</td>
+<td>mark lines (shown in reverse)</td>
 </tr>
 <tr>
-<td>Ctrl-U</td>
-<td>paste the cut lines above the cursor</td>
+<td>Ctrl-X</td>
+<td>cut the marked lines, or the cursor's line (pressed again, the next line is added)</td>
+</tr>
+<tr>
+<td>Ctrl-C</td>
+<td>copy them (the cursor moves down, so pressing again adds the next line)</td>
+</tr>
+<tr>
+<td>Ctrl-V</td>
+<td>paste above the cursor's line</td>
+</tr>
+<tr>
+<td>Ctrl-Z, Ctrl-R</td>
+<td>undo, redo (typing or deleting in a row is one step; up to 100 steps)</td>
 </tr>
 <tr>
 <td>Ctrl-F, F3</td>
@@ -553,7 +565,9 @@ the cursor goes to the line, and the bottom line says why. The lines are
 then taken as if typed: in any order, blank ones left out. Leaving without
 saving keeps the program as it was. Ctrl-S needs the terminal's flow
 control off (XON/XOFF would swallow it): gtkterm, minicom and picocom have
-it off unless set.</p>
+it off unless set. In the editor Ctrl-C copies; it stops programs only at
+the Ok prompt and while they run. gtkterm keeps Ctrl-C and Ctrl-V for the
+editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 <h2 id="2-program-and-direct-commands">2. Program and direct commands</h2>
 <table>
 <thead>
@@ -2455,7 +2469,7 @@ NEODEMO.BAS
 <p><em>Command</em> · <code>EDIT | EDIT file$ | EDIT n | EDIT .</code></p>
 <p><code>EDIT</code> opens the program in the full-screen editor (see the manual's Full-screen editor section); <code>EDIT file$</code> edits any text file there. <code>EDIT n</code> (or <code>.</code>, the last line typed or the one that failed) puts program line <code>n</code> on the input line to change; Enter stores it.</p>
 <ul>
-<li>In the full-screen editor Ctrl-S saves and Esc leaves. A program is only taken if every non-blank line starts with a line number (0-65529, 255 characters at most): otherwise nothing is saved and the cursor goes to the bad line.</li>
+<li>In the full-screen editor Ctrl-X/C/V cut, copy and paste lines, Ctrl-Z/R undo and redo, Ctrl-S saves and Esc leaves. A program is only taken if every non-blank line starts with a line number (0-65529, 255 characters at most): otherwise nothing is saved and the cursor goes to the bad line.</li>
 <li>Leaving without saving keeps the program as it was. Blank lines are left out.</li>
 </ul>
 <p>Example:</p>

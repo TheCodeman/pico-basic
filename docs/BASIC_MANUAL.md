@@ -169,8 +169,11 @@ bottom line shows where you are: `Program *  Ln 3/12 Col 5  INS`.
 | Enter | split the line |
 | Insert | insert or overwrite |
 | Tab | spaces to the next column of 4 |
-| Ctrl-Y or Ctrl-K | cut the line (pressed again, the next one is added) |
-| Ctrl-U | paste the cut lines above the cursor |
+| Shift+Up, Shift+Down | mark lines (shown in reverse) |
+| Ctrl-X | cut the marked lines, or the cursor's line (pressed again, the next line is added) |
+| Ctrl-C | copy them (the cursor moves down, so pressing again adds the next line) |
+| Ctrl-V | paste above the cursor's line |
+| Ctrl-Z, Ctrl-R | undo, redo (typing or deleting in a row is one step; up to 100 steps) |
 | Ctrl-F, F3 | find, find the next (any case) |
 | Ctrl-G | go to a line (in a program: a BASIC line number) |
 | Ctrl-S | save |
@@ -184,7 +187,9 @@ the cursor goes to the line, and the bottom line says why. The lines are
 then taken as if typed: in any order, blank ones left out. Leaving without
 saving keeps the program as it was. Ctrl-S needs the terminal's flow
 control off (XON/XOFF would swallow it): gtkterm, minicom and picocom have
-it off unless set.
+it off unless set. In the editor Ctrl-C copies; it stops programs only at
+the Ok prompt and while they run. gtkterm keeps Ctrl-C and Ctrl-V for the
+editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).
 
 ## 2. Program and direct commands
 
