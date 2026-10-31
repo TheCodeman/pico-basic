@@ -115,9 +115,11 @@ runs straight away:
 
 At power-up (and after a reset, but not after `SYSTEM`) BASIC runs
 `AUTORUN.BAS` if there is one: on the SD card first, so a card can override,
-else on the flash disk. It starts straight away, without waiting for a
-terminal, so a board on its own (on a USB charger, say) runs it too; what
-it prints is lost until a terminal connects. When it ends, or stops with an
+else on the flash disk. BASIC waits up to 3 seconds for a terminal to
+connect first, so a terminal that is open sees everything the program
+prints; a board on its own (on a USB charger, say) runs it after those 3
+seconds, and what it prints goes nowhere until a terminal connects (which
+then gets the banner, Bytes free and "A program is running"). When it ends, or stops with an
 error or Ctrl-C, the `Ok` prompt follows as usual.
 
     NEW

@@ -88,7 +88,8 @@ back.
 ## AUTORUN.BAS
 
 At power-up BASIC runs `AUTORUN.BAS` if there is one, from the SD card first,
-else from the flash disk, without waiting for a terminal. Holding GP20 low at
+else from the flash disk, after waiting up to 3 seconds for a terminal (so an
+open one sees its output; a board on its own runs it anyway). Holding GP20 low at
 power-up (the Maker Pi Pico's first button), or Esc / Ctrl-C within a second
 from an open terminal, skips it; Ctrl-C stops it. `-DAUTORUN_SKIP_PIN=-1`
 (or another pin) at build time changes the skip pin.

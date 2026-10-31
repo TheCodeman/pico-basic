@@ -220,12 +220,12 @@ int main(void) {
 #if PICO_BASIC_SD
     sd_error = sd_card_mount();
 #endif
-    // At power-up (not after SYSTEM) AUTORUN.BAS runs, if there is one. Then
-    // there's no waiting for a terminal: the board may be on its own.
+    // At power-up (not after SYSTEM) AUTORUN.BAS runs, if there is one.
     const char *first = autorun();
     // A terminal already open on the USB port connects within a second or
-    // so of the board appearing; without one, BASIC starts anyway.
-    for (int ms = 0; !first && ms < CONNECT_WAIT_MS && !stdio_usb_connected(); ms += 10)
+    // so of the board appearing (so AUTORUN.BAS's output isn't lost);
+    // without one, BASIC starts anyway (a board on its own runs it too).
+    for (int ms = 0; ms < CONNECT_WAIT_MS && !stdio_usb_connected(); ms += 10)
         sleep_ms(10);
     sleep_ms(50);  // some terminals miss what comes right after they connect
     printf("\x1b[0m\x1b[2J\x1b[H");
