@@ -88,6 +88,10 @@ e('MKDIR', 'Statement', 'MKDIR path$', 'Makes a folder.',
   ['Errors: `Path/File Access Error` (75) if it exists.'], 'MKDIR "SD:/GAMES"', '', ['CHDIR', 'RMDIR'], P)
 e('NAME', 'Statement', 'NAME old$ AS new$', 'Renames a file (or moves it to another folder on the same drive).',
   ['Errors: `File not found` (53), `File already exists` (58).'], 'NAME "A.BAS" AS "B.BAS"', '', ['KILL'], P)
+e('FORMAT', 'Command', 'FORMAT ON | FORMAT OFF | FORMAT n',
+  'Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the lines under each label (the label stays at the left).',
+  ['Only the look changes: loading a program takes the indent off again.', 'On at start-up.'],
+  '10 FOR I = 1 TO 2\n20 PRINT I\n30 NEXT\nLIST', '10 FOR I = 1 TO 2\n20   PRINT I\n30 NEXT', ['LIST', 'EDIT', 'SAVE'], P)
 e('NUMBERS', 'Command', 'NUMBERS OFF | NUMBERS ON',
   '`NUMBERS OFF` takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (`L100:`), and those use the label. `NUMBERS ON` numbers the lines 10, 20, 30... again, keeping the labels.',
   ['A program without numbers is listed, saved and edited without them; its lines\' numbers (in errors, ERL, TRON) are their lines in the file.',

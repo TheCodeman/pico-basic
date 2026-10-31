@@ -1057,6 +1057,90 @@ static int find_label(const char *name, int len) {
     return -1;
 }
 
+// ---- Formatting -----------------------------------------------------------
+//
+// LIST, SAVE and EDIT indent the program (FORMAT ON, the default): FOR ...
+// NEXT and WHILE ... WEND bodies, and in a program without line numbers the
+// lines under a label (the label stays at the left). Loading takes the
+// indents off again, so only the look changes.
+
+#define INDENT_MAX 40  ///< the deepest indent shown
+
+static bool format_on = true;  ///< FORMAT ON
+static int format_width = 2;   ///< spaces per level (FORMAT n)
+
+/// The indent so far as LIST goes through the program.
+typedef struct {
+    int depth;  ///< FOR and WHILE blocks open
+    bool labelled;  ///< past a label (a program without line numbers)
+} format_t;
+
+/// How a line's statements close and open FOR and WHILE blocks (NEXT and
+/// WEND before any FOR or WHILE on the line close outer ones).
+/// @param s the line's statements
+/// @param closes set to the blocks it closes
+/// @param opens set to the blocks it leaves open
+static void block_counts(const char *s, int *closes, int *opens) {
+    *closes = *opens = 0;
+    bool start = true, in_str = false;
+    for (; *s; ++s) {
+        if (in_str) {
+            in_str = *s != '"';
+            continue;
+        }
+        if (*s == '"') {
+            in_str = true;
+            start = false;
+        } else if (*s == ':') {
+            start = true;
+        } else if (start && *s != ' ' && *s != '\t') {
+            start = false;
+            if (*s == '\'' || !strncmp(s, "REM", 3))
+                return;
+            if (!strncmp(s, "FORMAT", 6))
+                continue;
+            if (!strncmp(s, "FOR", 3) || !strncmp(s, "WHILE", 5)) {
+                ++*opens;
+            } else if (!strncmp(s, "NEXT", 4) || !strncmp(s, "WEND", 4)) {
+                int n = 1;  // NEXT J, I closes two
+                for (const char *q = s + 4; s[0] == 'N' && *q && *q != ':' && *q != '\''; ++q)
+                    n += *q == ',';
+                while (n--) {
+                    if (*opens)
+                        --*opens;
+                    else
+                        ++*closes;
+                }
+            }
+        }
+    }
+}
+
+/// A line as LIST shows it: indented (FORMAT ON), without its number.
+/// @param i the line's index
+/// @param f the indent so far (from the first line)
+/// @param buf room for the indented line
+/// @param room its size
+/// @return the text
+static const char *format_line(int i, format_t *f, char *buf, int room) {
+    if (!format_on)
+        return lines[i].text;
+    int closes, opens;
+    block_counts(line_body(i), &closes, &opens);
+    f->depth = f->depth > closes ? f->depth - closes : 0;
+    bool label = unnumbered && label_at(lines[i].text);
+    if (label)
+        f->labelled = true;
+    int indent = label ? 0 : (f->labelled + f->depth) * format_width;
+    snprintf(buf, room, "%*s%s", indent < INDENT_MAX ? indent : INDENT_MAX, "", lines[i].text);
+    f->depth += opens;
+    return buf;
+}
+
+/// FORMAT ON | OFF | n: whether LIST, SAVE and EDIT indent the program, and
+/// by how many spaces a level (1-8).
+static void do_format(void);
+
 // ---- Variables ------------------------------------------------------------
 
 /// A variable.
@@ -1463,7 +1547,7 @@ static const char *const builtin_words[] = {
 static const char *const statement_words[] = {
     "BASE", "BEEP", "BLOAD", "BSAVE", "BYE", "CALL", "CHAIN", "CHDIR", "CIRCLE", "CLEAR",
     "CLOSE", "CLS", "COLOR", "COM", "CONT", "DATA", "DATE", "DEF", "DELETE", "DIM", "DRAW",
-    "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "GET",
+    "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "GET",
     "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
     "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MUSIC",
     "NAME", "NEOPIXEL", "NEW", "NEXT", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
@@ -2938,7 +3022,7 @@ static void load_file(const char *name, int flags) {
             if (!load_tokenised((const uint8_t *)whole, got + more))
                 error(E_BAD_FILE_MODE);
         } else {
-            char line[LINE_MAX_LEN + 8];
+            char line[LINE_MAX_LEN + INDENT_MAX + 16];  // (an indent and the number too)
             int n = 0;
             bool done = false;
             char prev = 0;
@@ -3181,8 +3265,10 @@ static void save_file(const char *name) {
     FRESULT r = f_open(&f, name, FA_WRITE | FA_CREATE_ALWAYS);
     if (r != FR_OK)
         error(fresult_error(r));
+    format_t fmt = {0};
     for (int i = 0; i < line_count && r == FR_OK; ++i) {
-        char buf[LINE_MAX_LEN + 16];
+        char buf[LINE_MAX_LEN + INDENT_MAX + 16], text[LINE_MAX_LEN + INDENT_MAX + 2];
+        const char *t = format_line(i, &fmt, text, sizeof text);
         int n;
         if (unnumbered) {
             // Blank lines where the file had them, so the lines keep their numbers.
@@ -3190,9 +3276,9 @@ static void save_file(const char *name) {
                 UINT put;
                 r = f_write(&f, "\r\n", 2, &put);
             }
-            n = snprintf(buf, sizeof buf, "%s\r\n", lines[i].text);
+            n = snprintf(buf, sizeof buf, "%s\r\n", t);
         } else {
-            n = snprintf(buf, sizeof buf, "%u %s\r\n", lines[i].num, lines[i].text);
+            n = snprintf(buf, sizeof buf, "%u %s\r\n", lines[i].num, t);
         }
         UINT put;
         r = f_write(&f, buf, n, &put);
@@ -7567,12 +7653,20 @@ static void do_list(void) {
     int first, last;
     line_range(&first, &last);
     int shown = 0;
+    format_t f = {0};
+    char text[LINE_MAX_LEN + INDENT_MAX + 2];
+    for (int i = 0; i < first; ++i)
+        format_line(i, &f, text, sizeof text);  // the indent at the first line shown
     for (int i = first; i <= last; ++i) {
+        if (unnumbered && format_on && i > first && lines[i].num > lines[i - 1].num + 1) {
+            out_newline();  // the file's blank lines (one for any number)
+            ++shown;
+        }
         char buf[16];
         snprintf(buf, sizeof buf, "%u ", lines[i].num);
         if (!unnumbered)
             out_str(buf);
-        out_str(lines[i].text);
+        out_str(format_line(i, &f, text, sizeof text));
         out_newline();
         poll_keys();
         if (break_pending) {
@@ -7586,6 +7680,20 @@ static void do_list(void) {
         }
     }
     out_flush();
+}
+
+static void do_format(void) {
+    if (accept_word("ON")) {
+        format_on = true;
+    } else if (accept_word("OFF")) {
+        format_on = false;
+    } else {
+        int n = (int)lround(num_expr());
+        if (n < 1 || n > 8)
+            error(E_ILLEGAL_CALL);
+        format_width = n;
+        format_on = true;
+    }
 }
 
 /// DELETE range.
@@ -8770,6 +8878,8 @@ static int statement(void) {
         cur_line = g->ret.line;
         p = g->ret.p;
         jumped = true;
+    } else if (accept("FORMAT")) {
+        do_format();
     } else if (accept("FOR")) {
         do_for();
     } else if (accept_word("EXIT")) {

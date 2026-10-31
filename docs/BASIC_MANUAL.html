@@ -39,6 +39,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#the-terminal">The terminal</a></li>
 <li><a href="#first-program">First program</a></li>
 <li><a href="#programs-without-line-numbers">Programs without line numbers</a></li>
+<li><a href="#formatted-listings">Formatted listings</a></li>
 <li><a href="#autorunbas">AUTORUN.BAS</a></li>
 <li><a href="#editing-a-line">Editing a line</a></li>
 <li><a href="#full-screen-editor">Full-screen editor</a></li>
@@ -145,6 +146,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-files">FILES</a></li>
 <li><a href="#ref-fix">FIX</a></li>
 <li><a href="#ref-for">FOR</a></li>
+<li><a href="#ref-format">FORMAT</a></li>
 <li><a href="#ref-fre">FRE</a></li>
 <li><a href="#ref-freefile">FREEFILE</a></li>
 <li><a href="#ref-get">GET</a></li>
@@ -454,6 +456,28 @@ RETURN
   <code>ERL</code> comparisons (<code>IF ERL = 100</code>) aren't changed.</li>
 <li><code>examples/LABELS.BAS</code> is a menu program with labels.</li>
 </ul>
+<h3 id="formatted-listings">Formatted listings</h3>
+<p>LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
+and WHILE ... WEND loops go in two spaces a level, and in a program without
+line numbers the labels stay at the left with the lines under them indented
+(blank lines are kept too):</p>
+<pre><code>' Count to 3, then stop
+I = 0
+again:
+  I = I + 1
+  FOR J = 1 TO I
+    PRINT J;
+  NEXT
+  IF I &lt; 3 THEN again
+</code></pre>
+<ul>
+<li>Only the look changes: loading a program (and leaving EDIT) takes the
+  indents off again, so you can indent as you like or not at all.</li>
+<li>In a numbered program the indent goes after the number (<code>20   PRINT J;</code>).</li>
+<li><code>FORMAT OFF</code> shows the lines as stored, <code>FORMAT ON</code> indents again, and
+  <code>FORMAT n</code> sets the spaces a level (1-8).</li>
+<li>NEXT and WEND that close more blocks than are open just stop at the left.</li>
+</ul>
 <h3 id="autorunbas">AUTORUN.BAS</h3>
 <p>At power-up (and after a reset, but not after <code>SYSTEM</code>) BASIC runs
 <code>AUTORUN.BAS</code> if there is one: on the SD card first, so a card can override,
@@ -688,6 +712,10 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 <tr>
 <td><code>RENUM [new][,[old][,step]]</code></td>
 <td>Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RESUME/RUN targets with them.</td>
+</tr>
+<tr>
+<td><code>FORMAT ON</code> / <code>FORMAT OFF</code> / <code>FORMAT n</code></td>
+<td>LIST, EDIT and SAVE indent loop bodies and the lines under labels (on at start-up; <code>n</code>: spaces a level, 1-8).</td>
 </tr>
 <tr>
 <td><code>NUMBERS OFF</code> / <code>NUMBERS ON</code></td>
@@ -2092,7 +2120,7 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
 <p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
@@ -2712,6 +2740,25 @@ RUN
 <pre><code> 10  7  4  1
 </code></pre>
 <p>See also: <a href="#ref-next">NEXT</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-while">WHILE</a></p>
+<h3 id="ref-format">FORMAT</h3>
+<p><em>Command</em> · <code>FORMAT ON | FORMAT OFF | FORMAT n</code></p>
+<p>Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by <code>n</code> spaces a level (2 to start with, 1-8), and in a program without line numbers the lines under each label (the label stays at the left).</p>
+<ul>
+<li>Only the look changes: loading a program takes the indent off again.</li>
+<li>On at start-up.</li>
+</ul>
+<p>Example:</p>
+<pre><code>10 FOR I = 1 TO 2
+20 PRINT I
+30 NEXT
+LIST
+</code></pre>
+<p>Shows:</p>
+<pre><code>10 FOR I = 1 TO 2
+20   PRINT I
+30 NEXT
+</code></pre>
+<p>See also: <a href="#ref-list">LIST</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-save">SAVE</a></p>
 <h3 id="ref-fre">FRE</h3>
 <p><em>Function</em> · <code>FRE(x)</code></p>
 <p>The memory free for programs and data, in bytes (<code>x</code> is ignored).</p>

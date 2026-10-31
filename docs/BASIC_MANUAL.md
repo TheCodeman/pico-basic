@@ -153,6 +153,29 @@ and RUN take a label wherever they take a line number:
   `ERL` comparisons (`IF ERL = 100`) aren't changed.
 - `examples/LABELS.BAS` is a menu program with labels.
 
+### Formatted listings
+
+LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
+and WHILE ... WEND loops go in two spaces a level, and in a program without
+line numbers the labels stay at the left with the lines under them indented
+(blank lines are kept too):
+
+    ' Count to 3, then stop
+    I = 0
+    again:
+      I = I + 1
+      FOR J = 1 TO I
+        PRINT J;
+      NEXT
+      IF I < 3 THEN again
+
+- Only the look changes: loading a program (and leaving EDIT) takes the
+  indents off again, so you can indent as you like or not at all.
+- In a numbered program the indent goes after the number (`20   PRINT J;`).
+- `FORMAT OFF` shows the lines as stored, `FORMAT ON` indents again, and
+  `FORMAT n` sets the spaces a level (1-8).
+- NEXT and WEND that close more blocks than are open just stop at the left.
+
 ### AUTORUN.BAS
 
 At power-up (and after a reset, but not after `SYSTEM`) BASIC runs
@@ -255,6 +278,7 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).
 | `NAME "old" AS "new"` | Renames a file. |
 | `DELETE range` | Deletes program lines. |
 | `RENUM [new][,[old][,step]]` | Renumbers lines (default 10, first, 10), and the GOTO/GOSUB/THEN/ELSE/RESTORE/RESUME/RUN targets with them. |
+| `FORMAT ON` / `FORMAT OFF` / `FORMAT n` | LIST, EDIT and SAVE indent loop bodies and the lines under labels (on at start-up; `n`: spaces a level, 1-8). |
 | `NUMBERS OFF` / `NUMBERS ON` | Takes a program's line numbers off (the lines jumped to get labels such as `L100:`), or numbers it 10, 20, 30... (section 1). |
 | `AUTO [start][,step]` | Numbers new lines for you (default 10,10). A `*` after the number means that line exists: Enter keeps it. An empty line where none exists, or Ctrl-C, stops. |
 | `EDIT n` / `EDIT .` | Puts line `n` on the input line to edit. |

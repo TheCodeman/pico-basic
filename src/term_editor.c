@@ -397,7 +397,7 @@ static int check_program(const char **why) {
             ++k;
         if (k == n)
             continue;
-        if (n > BASIC_LINE) {
+        if (n - k > BASIC_LINE) {  // (its indent doesn't count)
             *why = "a program line can be 255 characters at most";
             return i;
         }
