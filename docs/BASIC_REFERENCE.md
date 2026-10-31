@@ -635,12 +635,14 @@ See also: [TIME$](#ref-time)
 
 Defines a one-line function, called as FNname(...). String functions end in $.
 
+- Only in a program line: in direct mode it is `Illegal direct` (12).
 - Errors: `Undefined user function` (18) for one not defined.
 
 Example:
 
 ```
-DEF FNSQ(X) = X * X: PRINT FNSQ(7)
+10 DEF FNSQ(X) = X * X: PRINT FNSQ(7)
+RUN
 ```
 
 Shows:
@@ -841,6 +843,7 @@ Example:
 
 ```
 10 PRINT "DONE": END
+RUN
 ```
 
 Shows:
@@ -2377,7 +2380,7 @@ See also: [ON PLAY](#ref-on-play)
 
 *Function* · `PLAY(n)`
 
-The number of notes still waiting in the background queue (`n` is ignored).
+How much is still waiting in the background queue (`n` is ignored): each note counts twice, as the note and the short gap after it (MN, normal style).
 
 Example:
 
@@ -2388,7 +2391,7 @@ PLAY "MB CDE": PRINT PLAY(0)
 Shows:
 
 ```
- 3
+ 6
 ```
 
 See also: [PLAY](#ref-play), [ON PLAY](#ref-on-play)

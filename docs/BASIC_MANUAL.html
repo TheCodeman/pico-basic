@@ -2349,10 +2349,12 @@ RUN
 <p><em>Statement</em> · <code>DEF FNname[(arg[, arg...])] = expr</code></p>
 <p>Defines a one-line function, called as FNname(...). String functions end in $.</p>
 <ul>
+<li>Only in a program line: in direct mode it is <code>Illegal direct</code> (12).</li>
 <li>Errors: <code>Undefined user function</code> (18) for one not defined.</li>
 </ul>
 <p>Example:</p>
-<pre><code>DEF FNSQ(X) = X * X: PRINT FNSQ(7)
+<pre><code>10 DEF FNSQ(X) = X * X: PRINT FNSQ(7)
+RUN
 </code></pre>
 <p>Shows:</p>
 <pre><code> 49
@@ -2463,6 +2465,7 @@ NEODEMO.BAS
 <p>Ends the program and closes its files.</p>
 <p>Example:</p>
 <pre><code>10 PRINT &quot;DONE&quot;: END
+RUN
 </code></pre>
 <p>Shows:</p>
 <pre><code>DONE
@@ -3318,12 +3321,12 @@ RUN
 <p>See also: <a href="#ref-on-play">ON PLAY</a></p>
 <h3 id="ref-playn">PLAY(n)</h3>
 <p><em>Function</em> · <code>PLAY(n)</code></p>
-<p>The number of notes still waiting in the background queue (<code>n</code> is ignored).</p>
+<p>How much is still waiting in the background queue (<code>n</code> is ignored): each note counts twice, as the note and the short gap after it (MN, normal style).</p>
 <p>Example:</p>
 <pre><code>PLAY &quot;MB CDE&quot;: PRINT PLAY(0)
 </code></pre>
 <p>Shows:</p>
-<pre><code> 3
+<pre><code> 6
 </code></pre>
 <p>See also: <a href="#ref-play">PLAY</a>, <a href="#ref-on-play">ON PLAY</a></p>
 <h3 id="ref-pmap">PMAP</h3>

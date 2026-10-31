@@ -121,7 +121,7 @@ e('XSEND', 'Statement', 'XSEND file$',
 
 # ---- Flow of control --------------------------------------------------------------
 F = 'Flow of control and errors'
-e('END', 'Statement', 'END', 'Ends the program and closes its files.', [], '10 PRINT "DONE": END', 'DONE', ['STOP'], F)
+e('END', 'Statement', 'END', 'Ends the program and closes its files.', [], '10 PRINT "DONE": END\nRUN', 'DONE', ['STOP'], F)
 e('ERL', 'Function', 'ERL', 'The line number where the last error happened (0 in direct mode).', [],
   '100 PRINT "Error"; ERR; "in"; ERL: RESUME NEXT', '', ['ERR', 'ON ERROR GOTO'], F)
 e('ERR', 'Function', 'ERR', 'The code of the last error (see Error codes).', [],
@@ -169,7 +169,7 @@ V = 'Variables and data'
 e('DATA', 'Statement', 'DATA item[, item...]', 'Holds numbers and strings for READ. Strings may be quoted (needed if they hold commas or start with spaces).',
   [], '10 DATA 3, "RED", 2.5', '', ['READ', 'RESTORE'], V)
 e('DEF FN', 'Statement', 'DEF FNname[(arg[, arg...])] = expr', 'Defines a one-line function, called as FNname(...). String functions end in $.',
-  ['Errors: `Undefined user function` (18) for one not defined.'], 'DEF FNSQ(X) = X * X: PRINT FNSQ(7)', ' 49', ['GOSUB'], V)
+  ['Only in a program line: in direct mode it is `Illegal direct` (12).', 'Errors: `Undefined user function` (18) for one not defined.'], '10 DEF FNSQ(X) = X * X: PRINT FNSQ(7)\nRUN', ' 49', ['GOSUB'], V)
 e('DEF SEG', 'Statement', 'DEF SEG [= segment]', 'Chooses the memory segment PEEK, POKE, BSAVE and BLOAD use: only `&HB800` (the text screen) and `0` (BIOS data) are emulated.',
   [], 'DEF SEG = 0: PRINT PEEK(&H44A)', ' 80', ['PEEK', 'POKE'], V)
 e('DEFDBL', 'Statement', 'DEFDBL letters', 'Names starting with these letters (and no type character) are double precision: `DEFDBL A-C, X`.', ['RUN, NEW and CLEAR reset it.'], 'DEFDBL D: D = 1 / 3: PRINT D', ' .333333333', ['DEFINT', 'DEFSNG', 'DEFSTR'], V)
@@ -306,7 +306,7 @@ e('BEEP', 'Statement', 'BEEP', 'A short beep: 800 Hz for a quarter of a second, 
 e('PLAY', 'Statement', 'PLAY music$', 'Plays notes in GW-BASIC\'s music language (see the manual\'s Sound section: A-G, O, L, T, P, MF/MB...).',
   ['After `MB` the notes play in the background (up to 32 queued) while the program goes on.', '`X` substrings aren\'t supported; `=variable;` is.'],
   'PLAY "T160 O3 L8 CDEFGAB > C"', '', ['SOUND', 'PLAY(n)', 'ON PLAY'], N)
-e('PLAY(n)', 'Function', 'PLAY(n)', 'The number of notes still waiting in the background queue (`n` is ignored).', [], 'PLAY "MB CDE": PRINT PLAY(0)', ' 3', ['PLAY', 'ON PLAY'], N)
+e('PLAY(n)', 'Function', 'PLAY(n)', 'How much is still waiting in the background queue (`n` is ignored): each note counts twice, as the note and the short gap after it (MN, normal style).', [], 'PLAY "MB CDE": PRINT PLAY(0)', ' 6', ['PLAY', 'ON PLAY'], N)
 e('SOUND', 'Statement', 'SOUND freq, ticks', 'A tone of `freq` Hz (37-32767; 32767 is silence) for `ticks` (18.2 make a second). After PLAY "MB" it joins the background queue; ticks 0 stops the sound.',
   ['Errors: `Illegal function call` (5) out of range.'], 'SOUND 440, 18', '', ['BEEP', 'PLAY'], N)
 

@@ -30,4 +30,4 @@
 300 PRINT "Records in the file:"; LOF(2) / 22
 310 CLOSE #2
 320 KILL "PEOPLE.DAT"
-330 PRINT "Done. NOTES.TXT is left on the drive: TYPE it from the shell."
+330 PRINT "Done. NOTES.TXT is left on the disk: KILL it to remove it."
