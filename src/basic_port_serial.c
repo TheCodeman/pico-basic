@@ -7,7 +7,7 @@
  * is no screen of its own: graphics, pictures, fonts, the mouse, MUSIC, the
  * editor and SHELL give "Feature not available" (basic.c checks that before
  * it gets here, built with BASIC_NO_SCREEN). BEEP, SOUND and PLAY are square
- * waves on SOUND_PIN for a piezo or small speaker. Files are on the flash
+ * waves on SPEAKER_PIN for a piezo or small speaker. Files are on the flash
  * disk (flash_disk.c).
  *
  * @author Ken Segler
@@ -33,15 +33,16 @@
 #include "psram_heap.h"
 #include "spr.h"
 #include "stack_switch.h"
+#include "config.h"
 #include "term_editor.h"
 #include "usb_console.h"
 #if PICO_BASIC_SD
 #include "sd_card.h"
 #endif
 
-#ifndef SOUND_PIN
-#define SOUND_PIN 18  ///< BEEP, SOUND and PLAY: a piezo or speaker (through a resistor) to ground
-#endif
+/// BEEP, SOUND and PLAY's pin: a piezo or speaker (through a resistor) to
+/// ground. CONFIG.TXT's SPEAKER, else the build's (-1: none).
+#define SPEAKER_PIN (config.speaker)
 
 /// What the screen-only features say if asked anyway.
 #define NO_SCREEN "not available on a serial terminal"
@@ -187,7 +188,7 @@ void port_put_glyph(int c) {
     fwrite(buf, 1, port_glyph_utf8(c, buf), stdout);
 }
 
-// ---- Sound: a square wave on SOUND_PIN ------------------------------------------
+// ---- Sound: a square wave on SPEAKER_PIN ------------------------------------------
 // PLAY's notes queue up and play in the background, one alarm per note.
 
 #include "hardware/clocks.h"
@@ -209,9 +210,11 @@ static volatile alarm_id_t note_alarm;
 /// Starts or stops the tone (0 Hz: silence).
 /// @param freq_hz the frequency
 static void tone(unsigned freq_hz) {
-    uint slice = pwm_gpio_to_slice_num(SOUND_PIN);
+    if (SPEAKER_PIN < 0)
+        return;  // no speaker
+    uint slice = pwm_gpio_to_slice_num(SPEAKER_PIN);
     if (!freq_hz || freq_hz < 20 || freq_hz > 20000) {
-        pwm_set_gpio_level(SOUND_PIN, 0);
+        pwm_set_gpio_level(SPEAKER_PIN, 0);
         return;
     }
     float clk = (float)clock_get_hz(clk_sys);
@@ -223,8 +226,8 @@ static void tone(unsigned freq_hz) {
         top = 65535;
     pwm_set_clkdiv(slice, div);
     pwm_set_wrap(slice, top);
-    pwm_set_gpio_level(SOUND_PIN, (top + 1) / 2);
-    gpio_set_function(SOUND_PIN, GPIO_FUNC_PWM);
+    pwm_set_gpio_level(SPEAKER_PIN, (top + 1) / 2);
+    gpio_set_function(SPEAKER_PIN, GPIO_FUNC_PWM);
     pwm_set_enabled(slice, true);
 }
 
@@ -593,7 +596,7 @@ const char *port_pin_reserved(int pin) {
         return "I2C (I2C CLOSE first)";
     if (pin >= 0 && (pin == spi_pins[0] || pin == spi_pins[1] || pin == spi_pins[2]))
         return "SPI (SPI CLOSE first)";
-    if (pin == SOUND_PIN)
+    if (pin >= 0 && pin == SPEAKER_PIN)
         return "the speaker (BEEP, SOUND, PLAY)";
 #ifdef PICO_PSRAM_CS_PIN
     if (pin == PICO_PSRAM_CS_PIN)
@@ -731,7 +734,7 @@ void port_pins_list(void) {
             else if (pin == pixel_pin)
                 snprintf(what, sizeof what, "NeoPixel x%d", port_pixels_count());
             else if (why)
-                snprintf(what, sizeof what, "%s", pin == SOUND_PIN ? "speaker"
+                snprintf(what, sizeof what, "%s", pin == SPEAKER_PIN ? "speaker"
 #if PICO_BASIC_SD
                                                   : sd_card_pin(pin) ? "SD card"
 #endif
@@ -1311,4 +1314,12 @@ void port_pixels_close(void) {
     pixels = NULL;
     pixel_count = 0;
     pixel_pin = -1;
+}
+
+int port_neopixel_pin(void) {
+    return config.neopixel;
+}
+
+void port_config_show(void) {
+    config_print();
 }

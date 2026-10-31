@@ -17,6 +17,7 @@ add_executable(pico_basic
     src/main.c
     src/basic.c
     src/basic_port_serial.c
+    src/config.c
     src/flash_disk.c
     src/diskio.c
     src/sd_card.c

@@ -9,6 +9,8 @@
 
 #include "sd_card.h"
 
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -16,33 +18,12 @@
 #include "hardware/spi.h"
 #include "pico/stdlib.h"
 
-#ifndef SD_SPI
-#define SD_SPI  1   ///< the SPI controller: 0 or 1
-#endif
-#ifndef SD_MISO
-#define SD_MISO 12  ///< card SDO / DO (data out)
-#endif
-#ifndef SD_CS
-#define SD_CS   15  ///< card CS
-#endif
-#ifndef SD_SCK
-#define SD_SCK  10  ///< card CLK
-#endif
-#ifndef SD_MOSI
-#define SD_MOSI 11  ///< card SDI / DI (data in)
-#endif
-#ifndef SD_DAT1
-#define SD_DAT1 13  ///< card DAT1: unused in SPI mode, held up (-1: not wired)
-#endif
-#ifndef SD_DAT2
-#define SD_DAT2 14  ///< card DAT2: likewise
-#endif
 #ifndef SD_SPI_KHZ
 #define SD_SPI_KHZ 25000  ///< the clock once the card is set up
 #endif
 
 /// The controller.
-#define SPI (SD_SPI ? spi1 : spi0)
+#define SPI (config.sd_spi ? spi1 : spi0)
 
 /// The card's state.
 static enum { NONE, READY } state;
@@ -70,13 +51,13 @@ static uint8_t xfer(uint8_t b) {
 
 /// Selects the card (CS low).
 static void select(void) {
-    gpio_put(SD_CS, 0);
+    gpio_put(config.sd_cs, 0);
     xfer(0xff);
 }
 
 /// Deselects it (CS high, then a byte so it lets go of DO).
 static void deselect(void) {
-    gpio_put(SD_CS, 1);
+    gpio_put(config.sd_cs, 1);
     xfer(0xff);
 }
 
@@ -170,35 +151,30 @@ static void pins(bool on) {
         // Mode 3 (clock idle high, sampled on the rising edge): cards take
         // modes 0 and 3, and on the Maker Pi Pico (an indicator LED on each
         // line) only mode 3 reads cleanly.
-        spi_set_format(SPI, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
-        gpio_set_function(SD_SCK, GPIO_FUNC_SPI);
-        gpio_set_function(SD_MOSI, GPIO_FUNC_SPI);
-        gpio_set_function(SD_MISO, GPIO_FUNC_SPI);
-        gpio_pull_up(SD_MISO);  // DO floats while the card is deselected
-        gpio_init(SD_CS);
-        gpio_put(SD_CS, 1);
-        gpio_set_dir(SD_CS, GPIO_OUT);
+        spi_set_format(SPI, 8, config.sd_mode & 2 ? SPI_CPOL_1 : SPI_CPOL_0,
+                       config.sd_mode & 1 ? SPI_CPHA_1 : SPI_CPHA_0, SPI_MSB_FIRST);
+        gpio_set_function(config.sd_sck, GPIO_FUNC_SPI);
+        gpio_set_function(config.sd_mosi, GPIO_FUNC_SPI);
+        gpio_set_function(config.sd_miso, GPIO_FUNC_SPI);
+        gpio_pull_up(config.sd_miso);  // DO floats while the card is deselected
+        gpio_init(config.sd_cs);
+        gpio_put(config.sd_cs, 1);
+        gpio_set_dir(config.sd_cs, GPIO_OUT);
         // The card's other data lines aren't used in SPI mode, but left
         // floating some cards won't answer: hold them up.
-        if (SD_DAT1 >= 0) {
-            gpio_init(SD_DAT1);
-            gpio_pull_up(SD_DAT1);
-        }
-        if (SD_DAT2 >= 0) {
-            gpio_init(SD_DAT2);
-            gpio_pull_up(SD_DAT2);
+        for (int i = 0; i < config.sd_npullups; ++i) {
+            gpio_init(config.sd_pullups[i]);
+            gpio_pull_up(config.sd_pullups[i]);
         }
     } else {
         spi_deinit(SPI);
-        gpio_init(SD_SCK);
-        gpio_init(SD_MOSI);
-        gpio_init(SD_MISO);
-        gpio_init(SD_CS);
-        gpio_set_pulls(SD_MISO, false, false);
-        if (SD_DAT1 >= 0)
-            gpio_set_pulls(SD_DAT1, false, false);
-        if (SD_DAT2 >= 0)
-            gpio_set_pulls(SD_DAT2, false, false);
+        gpio_init(config.sd_sck);
+        gpio_init(config.sd_mosi);
+        gpio_init(config.sd_miso);
+        gpio_init(config.sd_cs);
+        gpio_set_pulls(config.sd_miso, false, false);
+        for (int i = 0; i < config.sd_npullups; ++i)
+            gpio_set_pulls(config.sd_pullups[i], false, false);
     }
     pins_on = on;
 }
@@ -209,16 +185,19 @@ static bool card_init(void) {
     state = NONE;
     pins(true);
     spi_set_baudrate(SPI, 400 * 1000);
-    gpio_put(SD_CS, 1);
+    gpio_put(config.sd_cs, 1);
     for (int i = 0; i < 10; ++i)  // 80 clocks with CS high: into SPI mode
         xfer(0xff);
     // GO_IDLE_STATE, until it answers: a card still busy with something it
     // was doing (a transfer cut short by a reset) takes a while to listen.
     uint8_t r = 0xff;
-    absolute_time_t give_up = make_timeout_time_ms(1000);
+    absolute_time_t give_up = make_timeout_time_ms(1000), nobody = make_timeout_time_ms(100);
+    bool answered = false;  // anything but FF (a card there, if busy)
     for (;;) {
         r = command(0, 0);
-        if (r == 0x01 || time_reached(give_up))
+        answered |= r != 0xff;
+        // Nothing at all for 100 ms (the data line just floats high): no card.
+        if (r == 0x01 || time_reached(give_up) || (!answered && time_reached(nobody)))
             break;
         deselect();
         for (int i = 0; i < 10; ++i)  // more clocks with CS high
@@ -278,6 +257,8 @@ DSTATUS sd_status(void) {
 }
 
 DSTATUS sd_initialize(void) {
+    if (!config.sd)
+        return STA_NOINIT;  // SD = OFF in CONFIG.TXT
     return card_init() ? 0 : STA_NOINIT;
 }
 
@@ -403,15 +384,21 @@ bool sd_card_in_use(void) {
 }
 
 bool sd_card_pin(int pin) {
-    return pin == SD_SCK || pin == SD_MOSI || pin == SD_MISO || pin == SD_CS || pin == SD_DAT1 ||
-           pin == SD_DAT2;
+    if (pin == config.sd_sck || pin == config.sd_mosi || pin == config.sd_miso || pin == config.sd_cs)
+        return true;
+    for (int i = 0; i < config.sd_npullups; ++i)
+        if (pin == config.sd_pullups[i])
+            return true;
+    return false;
 }
 
 int sd_card_spi(void) {
-    return SD_SPI;
+    return config.sd_spi;
 }
 
 const char *sd_card_mount(void) {
+    if (!config.sd)
+        return config.sd_bad ? "off (its pins in CONFIG.TXT are wrong: see below)" : "off (SD = OFF in CONFIG.TXT)";
     FRESULT r = f_mount(&fs, "1:", 1);
     if (r == FR_OK)
         return NULL;

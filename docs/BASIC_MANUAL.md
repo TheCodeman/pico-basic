@@ -60,7 +60,7 @@ The only other wiring is optional:
 | Board pin | Connect to |
 |---|---|
 | GP18 (pin 24) | a piezo buzzer or small speaker (through about 100 Ω) to GND, for BEEP, SOUND and PLAY (the Maker Pi Pico's own buzzer) |
-| GP10-15, 3V3, GND | a microSD card slot, as drive `SD:` (section 4; the Maker Pi Pico has one) |
+| GP10-15, 3V3, GND | a microSD card slot, as drive `SD:` (section 4; the Maker Pi Pico has one; other pins: CONFIG.TXT) |
 | SWD (the debug pins) | a Raspberry Pi Debug Probe, for loading programs with OpenOCD (its UART isn't used) |
 
 **3.3 V levels only** on every pin: never connect RS-232 or 5 V signals
@@ -499,6 +499,37 @@ or `SD card (SD:): none`.
 - While a card is in, its pins (GP10-15) and SPI1 are BASIC's: `PIN`, `PWM` and
   `SPI OPEN` on SPI1 refuse them (`SPI OPEN` on SPI0, its default, is fine).
   Without a card they are free.
+
+### Settings: CONFIG.TXT
+
+`FLASH:/CONFIG.TXT`, if there is one, sets the board's pins at power-up
+(and after a reset; `SYSTEM` doesn't read it again). Without it the build's
+defaults hold: the SD card on, on the Maker Pi Pico's pins. Make or change
+it with `EDIT "FLASH:CONFIG.TXT"`, then reset the board; `CONFIG` shows the
+settings in force and any problems the file has (the banner shows those
+too).
+
+    # Pico BASIC settings (# ' or ; start a comment)
+    SD = ON            # OFF: no SD card at all (and no start-up delay)
+    SD_SCK = 10        # the card's pins: one SPI's SCK, MOSI and MISO,
+    SD_MOSI = 11       #   CS any other pin
+    SD_MISO = 12
+    SD_CS = 15
+    SD_MODE = 3        # SPI mode 0-3 (3 suits most slots; 0 is the usual default)
+    SD_PULLUPS = 13, 14   # pins held up while the card is used (DAT1, DAT2); none
+    SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
+    NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
+
+- Keys and values are any case, with or without spaces; pins can be `18`
+  or `GP18`. Lines it doesn't know are reported and left out.
+- The SD card's SPI (SPI0 or SPI1) follows from its pins: SCK on GP2, 6, 10,
+  14, 18, 22 (26...), MOSI and MISO on the same SPI's pins (MOSI 3, 7, 11,
+  15..., MISO 0, 4, 8, 12...). Pins that don't fit turn the card off, with
+  the reason in the banner.
+- On a board without a card slot, `SD = OFF` saves the moment start-up
+  spends looking for one (BASIC gives up after a tenth of a second when
+  nothing answers at all).
+- `examples/CONFIG.TXT` is a copy to start from.
 
 ### Files from programs
 

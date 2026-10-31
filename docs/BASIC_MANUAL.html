@@ -61,6 +61,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#4-the-flash-disk-and-data-files">4. The flash disk and data files</a><ul>
 <li><a href="#the-disk">The disk</a></li>
 <li><a href="#the-sd-card-drive-sd">The SD card (drive SD:)</a></li>
+<li><a href="#settings-configtxt">Settings: CONFIG.TXT</a></li>
 <li><a href="#files-from-programs">Files from programs</a></li>
 </ul>
 </li>
@@ -108,6 +109,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-color">COLOR</a></li>
 <li><a href="#ref-com1">COM(1)</a></li>
 <li><a href="#ref-common">COMMON</a></li>
+<li><a href="#ref-config">CONFIG</a></li>
 <li><a href="#ref-cont">CONT</a></li>
 <li><a href="#ref-cos">COS</a></li>
 <li><a href="#ref-csng">CSNG</a></li>
@@ -362,7 +364,7 @@ it as <code>usb-Raspberry_Pi_Pico_...</code>.</p>
 </tr>
 <tr>
 <td>GP10-15, 3V3, GND</td>
-<td>a microSD card slot, as drive <code>SD:</code> (section 4; the Maker Pi Pico has one)</td>
+<td>a microSD card slot, as drive <code>SD:</code> (section 4; the Maker Pi Pico has one; other pins: CONFIG.TXT)</td>
 </tr>
 <tr>
 <td>SWD (the debug pins)</td>
@@ -1226,6 +1228,36 @@ or <code>SD card (SD:): none</code>.</p>
   <code>SPI OPEN</code> on SPI1 refuse them (<code>SPI OPEN</code> on SPI0, its default, is fine).
   Without a card they are free.</li>
 </ul>
+<h3 id="settings-configtxt">Settings: CONFIG.TXT</h3>
+<p><code>FLASH:/CONFIG.TXT</code>, if there is one, sets the board's pins at power-up
+(and after a reset; <code>SYSTEM</code> doesn't read it again). Without it the build's
+defaults hold: the SD card on, on the Maker Pi Pico's pins. Make or change
+it with <code>EDIT "FLASH:CONFIG.TXT"</code>, then reset the board; <code>CONFIG</code> shows the
+settings in force and any problems the file has (the banner shows those
+too).</p>
+<pre><code># Pico BASIC settings (# ' or ; start a comment)
+SD = ON            # OFF: no SD card at all (and no start-up delay)
+SD_SCK = 10        # the card's pins: one SPI's SCK, MOSI and MISO,
+SD_MOSI = 11       #   CS any other pin
+SD_MISO = 12
+SD_CS = 15
+SD_MODE = 3        # SPI mode 0-3 (3 suits most slots; 0 is the usual default)
+SD_PULLUPS = 13, 14   # pins held up while the card is used (DAT1, DAT2); none
+SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
+NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
+</code></pre>
+<ul>
+<li>Keys and values are any case, with or without spaces; pins can be <code>18</code>
+  or <code>GP18</code>. Lines it doesn't know are reported and left out.</li>
+<li>The SD card's SPI (SPI0 or SPI1) follows from its pins: SCK on GP2, 6, 10,
+  14, 18, 22 (26...), MOSI and MISO on the same SPI's pins (MOSI 3, 7, 11,
+  15..., MISO 0, 4, 8, 12...). Pins that don't fit turn the card off, with
+  the reason in the banner.</li>
+<li>On a board without a card slot, <code>SD = OFF</code> saves the moment start-up
+  spends looking for one (BASIC gives up after a tenth of a second when
+  nothing answers at all).</li>
+<li><code>examples/CONFIG.TXT</code> is a copy to start from.</li>
+</ul>
 <h3 id="files-from-programs">Files from programs</h3>
 <p>Up to 4 files can be open at once, numbered #1 to #4. File names are
 relative to the current folder; no extension is added. Each open file uses
@@ -2028,7 +2060,7 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
 <p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
@@ -2285,6 +2317,22 @@ RUN
 <pre><code>COMMON SCORE, NAME$
 </code></pre>
 <p>See also: <a href="#ref-chain">CHAIN</a></p>
+<h3 id="ref-config">CONFIG</h3>
+<p><em>Command</em> · <code>CONFIG</code></p>
+<p>Shows the board's settings: whether the SD card is used and its pins, the speaker's pin and NEOPIXEL's default pin, from FLASH:/CONFIG.TXT or the build's defaults, and any problems CONFIG.TXT has.</p>
+<ul>
+<li>Change them with <code>EDIT "FLASH:CONFIG.TXT"</code>; they take effect at the next power-up or reset (see the manual's Settings section).</li>
+</ul>
+<p>Example:</p>
+<pre><code>CONFIG
+</code></pre>
+<p>Shows:</p>
+<pre><code>Settings (FLASH:/CONFIG.TXT):
+  SD = OFF
+  SPEAKER = GP18
+  NEOPIXEL = GP28 (NEOPIXEL OPEN's default)
+</code></pre>
+<p>See also: <a href="#ref-edit">EDIT</a>, <a href="#ref-neopixel">NEOPIXEL</a>, <a href="#ref-beep">BEEP</a></p>
 <h3 id="ref-cont">CONT</h3>
 <p><em>Command</em> · <code>CONT</code></p>
 <p>Carries on with the program after Ctrl-C or STOP, from where it stopped.</p>
