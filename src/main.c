@@ -217,6 +217,7 @@ int main(void) {
     disk_error = flash_disk_mount();
     stdio_init_all();
 #endif
+    console_backlog_start();
 #if PICO_BASIC_SD
     sd_error = sd_card_mount();
 #endif

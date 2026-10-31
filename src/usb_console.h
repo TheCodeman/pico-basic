@@ -11,3 +11,7 @@
 /// Prints the board's banner: the version, the PSRAM and the flash disk.
 /// Shown at start-up, and again when a terminal connects later.
 void board_banner(void);
+
+/// Starts keeping what is printed while no terminal is connected (shown when
+/// one connects). After stdio_init_all.
+void console_backlog_start(void);

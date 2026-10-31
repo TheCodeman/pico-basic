@@ -118,8 +118,10 @@ At power-up (and after a reset, but not after `SYSTEM`) BASIC runs
 else on the flash disk. BASIC waits up to 3 seconds for a terminal to
 connect first, so a terminal that is open sees everything the program
 prints; a board on its own (on a USB charger, say) runs it after those 3
-seconds, and what it prints goes nowhere until a terminal connects (which
-then gets the banner, Bytes free and "A program is running"). When it ends, or stops with an
+seconds. What it prints while no terminal is connected is kept (the last
+8 KB, 4 KB on the RP2040) and shown when one connects, after the banner and
+Bytes free, between "--- printed while no terminal was connected ---" and
+"---", then "A program is running" (or Ok). When it ends, or stops with an
 error or Ctrl-C, the `Ok` prompt follows as usual.
 
     NEW

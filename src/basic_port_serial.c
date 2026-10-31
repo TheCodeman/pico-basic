@@ -49,6 +49,69 @@
 /// banner if one was).
 static bool was_connected = true;
 
+// ---- The console's backlog: what is printed while no terminal is connected ----------
+// (an AUTORUN.BAS on a board on its own, say) is kept, the newest of it, and
+// shown when one connects, after the banner.
+
+#ifndef CONSOLE_BACKLOG
+#if PICO_RP2040
+#define CONSOLE_BACKLOG 4096  ///< bytes kept (SRAM is short on the RP2040)
+#else
+#define CONSOLE_BACKLOG 8192  ///< bytes kept
+#endif
+#endif
+
+static char backlog[CONSOLE_BACKLOG];  ///< a ring
+static uint32_t backlog_start, backlog_len;  ///< where the oldest byte is, and how many
+static bool backlog_lost;  ///< older output was overwritten
+
+/// stdio output (after its CR LF translation) while no terminal is there.
+/// @param buf the bytes
+/// @param len how many
+static void backlog_out(const char *buf, int len) {
+    if (stdio_usb_connected())
+        return;  // the USB driver has it
+    for (int i = 0; i < len; ++i) {
+        backlog[(backlog_start + backlog_len) % CONSOLE_BACKLOG] = buf[i];
+        if (backlog_len < CONSOLE_BACKLOG) {
+            ++backlog_len;
+        } else {
+            backlog_start = (backlog_start + 1) % CONSOLE_BACKLOG;
+            backlog_lost = true;
+        }
+    }
+}
+
+/// The backlog as a stdio driver of its own, next to the USB one.
+static stdio_driver_t backlog_driver = {
+    .out_chars = backlog_out,
+#if PICO_STDIO_ENABLE_CRLF_SUPPORT
+    .crlf_enabled = PICO_STDIO_DEFAULT_CRLF,
+#endif
+};
+
+void console_backlog_start(void) {
+    stdio_set_driver_enabled(&backlog_driver, true);
+}
+
+/// Sends the backlog to the terminal that has just connected, and empties it.
+static void backlog_replay(void) {
+    if (!backlog_len)
+        return;
+    printf("--- printed while no terminal was connected%s ---\n",
+           backlog_lost ? " (the oldest is lost)" : "");
+    stdio_flush();
+    uint32_t first = CONSOLE_BACKLOG - backlog_start;  // up to the end of the ring
+    if (first > backlog_len)
+        first = backlog_len;
+    stdio_usb.out_chars(backlog + backlog_start, (int)first);  // translated already
+    if (backlog_len > first)
+        stdio_usb.out_chars(backlog, (int)(backlog_len - first));
+    backlog_start = backlog_len = 0;
+    backlog_lost = false;
+    printf("---\n");
+}
+
 int port_key(uint32_t timeout_us) {
     // A running program asks every statement: look at the USB at most every
     // 200 us (a key waits that long at worst).
@@ -72,6 +135,7 @@ int port_key(uint32_t timeout_us) {
         board_banner();
         fflush(stdout);
         basic_print_free();
+        backlog_replay();
         printf(basic_program_running() ? "A program is running (Ctrl-C stops it)\n" : "Ok\n");
     }
     was_connected = connected;
