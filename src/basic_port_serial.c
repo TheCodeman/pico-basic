@@ -183,8 +183,11 @@ int port_glyph_utf8(int c, char *out) {
 }
 
 void port_put_glyph(int c) {
+    // putchar, not fwrite: the SDK's putchar goes straight to the console,
+    // while fwrite would wait in the C library's buffer behind later text.
     char buf[3];
-    fwrite(buf, 1, port_glyph_utf8(c, buf), stdout);
+    for (int i = 0, n = port_glyph_utf8(c, buf); i < n; ++i)
+        putchar((unsigned char)buf[i]);
 }
 
 // ---- Sound: a square wave on SOUND_PIN ------------------------------------------
