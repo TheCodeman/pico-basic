@@ -7,9 +7,8 @@ speaker pin, and drives the chip's GPIO, PWM, ADC, I2C, SPI and a second
 UART. It needs no HDMI, no keyboard and no USB drive: just the board and a
 USB cable to the PC, where it appears as a serial port.
 
-It is the BASIC of the Pico 2 mini OS, built on its own. The features that
-need a screen of their own (graphics, sprites, pictures, fonts, the mouse,
-MOD music) aren't in this build; section 10 lists them.
+It is the BASIC of the Pico 2 mini OS, built on its own for a serial
+terminal.
 
 ## 1. Getting started
 
@@ -336,7 +335,6 @@ A number too big for its field is printed in full after a `%`. Also
 | Sound | `PLAY(0)`: notes still waiting in the background queue |
 | Files | `EOF(n)` `LOF(n)` `LOC(n)` `INPUT$(count, [#]n)` `FREEFILE` `DIR$(pattern$[, n])` `MKI$` `MKS$` `MKD$` `CVI` `CVS` `CVD` (section 4) |
 | Hardware | `PIN(pin)`, `ADC(pin)`, `TEMP()`, `I2CREAD(...)`, `I2CREAD$(...)`, `SPI$(...)` (section 6) |
-| Old or PC-only | `LPOS(0)`, `STICK(n)`, `STRIG(n)`, `PEN(n)` give 0; `INP`, `USR`, `VARPTR`, `VARPTR$`, `IOCTL$` are an Illegal function call |
 
 Examples:
 
@@ -813,7 +811,7 @@ and `ERR` gives the code:
 | 22 | Missing operand | 70 | Permission denied |
 | 23 | Line buffer overflow | 71 | Disk not ready |
 | 24 | Device Timeout | 72 | Disk Media Error |
-| 25 | Device Fault | 73 | **Feature not available** (section 10) |
+| 25 | Device Fault | 73 | Feature not available |
 | | | 74 | Rename across disks |
 | | | 75 | Path/File Access Error |
 | | | 76 | Path not found |
@@ -821,38 +819,7 @@ and `ERR` gives the code:
 Codes BASIC itself never raises can still be raised with `ERROR n`; unknown
 codes print `Unprintable error`. Ctrl-C prints `Break in <line>`.
 
-## 10. Not in this build
-
-A terminal has no pixels, so these give **Feature not available** (error
-73):
-
-- **Graphics:** `SCREEN` 1 and up (`SCREEN 0` is fine), `PSET`, `PRESET`,
-  `LINE (x,y)-(x,y)`, `CIRCLE`, `PAINT`, `DRAW`, `PALETTE`, `VIEW (...)`,
-  `WINDOW`, graphics `GET (x,y)-(x,y)` / `PUT (x,y)`, `PCOPY`, and the
-  functions `POINT` and `PMAP`.
-- **Sprites, fonts and pictures:** `SPRITE`, `SPRITEHIT`, `SPRITEX`,
-  `SPRITEY`, `SPRITEON`, `FONT`, `GPRINT`, `GWIDTH`, `FONTW`, `FONTH`,
-  `IMAGE`, `SAVEIMAGE`.
-- **MOD/XM music and the mouse:** `MUSIC` (the functions `MUSIC(n)`,
-  `MOUSEX`, `MOUSEY`, `MOUSEB` and `MOUSEW` just give 0), `MOUSE ON/OFF`.
-- **The full-screen editor** (`EDIT` with no line number) and `SHELL`: there
-  is no editor or shell; `EDIT n` works.
-
-Also:
-
-- `KEYDOWN(n)` is always 0: a terminal sends key presses, not whether a key
-  is held.
-- `SCREEN(row, col)` and PEEK of the text screen give spaces (section 3,
-  Memory).
-- Machine code and PC hardware: `CALL`, `USR`, `DEF USR`, `VARPTR`,
-  `VARPTR$`, `INP`, `OUT`, `WAIT`, `IOCTL` are an Illegal function call.
-- Joystick and light pen (`STICK`, `STRIG`, `PEN` give 0), the printer
-  (LPRINT and LLIST go to the screen), COM ports other than COM1, 40-column
-  text, and `LOCK`, `UNLOCK` and `MOTOR` (accepted, they do nothing).
-- GW-BASIC's full-screen editing of any line on the screen: lines are
-  edited on the input line instead (`EDIT n`).
-
-## 11. Limits
+## 10. Limits
 
 - **Lines and strings:** program lines and strings are up to 255
   characters.
@@ -864,7 +831,7 @@ Also:
 - **The screen:** 80 x 30 as far as BASIC knows (LOCATE, CSRLIN, the KEY
   line); a bigger terminal window is fine.
 
-## 12. Example programs
+## 11. Example programs
 
 The source's `examples` folder has these; send them over with `XRECV`
 (section 5) or paste them in.

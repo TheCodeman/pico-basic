@@ -78,16 +78,6 @@ Maker Pi Pico's RGB LED on GP28, or strips on any pin); `PIN`, `PWM`, `SERVO`, `
 `TEMP()`; `I2C` and `SPI`; COM1; and `TIMER`, `DATE$` and `TIME$`. Line
 editing has history, and `EDIT n` puts a line on the input line.
 
-## What doesn't (Feature not available)
-
-- `SCREEN` 1 and up, and every graphics statement.
-- `SPRITE`, `FONT`, `GPRINT`, `IMAGE` and `SAVEIMAGE`.
-- `MUSIC`, `MOUSE`, the full-screen `EDIT` and `SHELL`.
-
-`MOUSEX`, `MOUSEY`, `MOUSEB`, `KEYDOWN()` and `MUSIC()` give 0. `SCREEN(r, c)`
-and `PEEK` of the text screen give spaces, because a terminal can't be read
-back.
-
 ## AUTORUN.BAS
 
 At power-up BASIC runs `AUTORUN.BAS` if there is one, from the SD card first,

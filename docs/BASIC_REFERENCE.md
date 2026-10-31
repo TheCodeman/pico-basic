@@ -1,6 +1,6 @@
 # Pico BASIC Command Reference
 
-## 13. Command reference
+## 12. Command reference
 
 Every statement, command, function and operator, A to Z. Each entry gives its form (`[...]` is optional, `|` separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a `-`) and one after.
 
@@ -29,8 +29,6 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 **System:** [BLOAD](#ref-bload), [BSAVE](#ref-bsave), [DATE$](#ref-date), [ENVIRON](#ref-environ), [ENVIRON$](#ref-environ-1), [ERDEV](#ref-erdev), [EXTERR](#ref-exterr), [FRE](#ref-fre), [PEEK](#ref-peek), [POKE](#ref-poke), [SCREEN(r, c)](#ref-screenr-c), [TIME$](#ref-time), [TIMER](#ref-timer)
 
 **Operators:** [+ - * / ^](#ref--), [= <> < > <= >=](#ref-op), [AND](#ref-and), [EQV](#ref-eqv), [IMP](#ref-imp), [NOT](#ref-not), [OR](#ref-or), [XOR](#ref-xor), [\ and MOD](#ref-and-mod)
-
-**Not in this build:** [CALL](#ref-call), [CIRCLE](#ref-circle), [DRAW](#ref-draw), [FONT](#ref-font), [FONTW](#ref-fontw), [GPRINT](#ref-gprint), [IMAGE](#ref-image), [KEYDOWN](#ref-keydown), [LINE](#ref-line), [LOCK](#ref-lock), [LPOS](#ref-lpos), [MOUSE](#ref-mouse), [MOUSEX](#ref-mousex), [MUSIC](#ref-music), [MUSIC(n)](#ref-musicn), [PAINT](#ref-paint), [PALETTE](#ref-palette), [PCOPY](#ref-pcopy), [PMAP](#ref-pmap), [POINT](#ref-point), [PRESET](#ref-preset), [PSET](#ref-pset), [RGB](#ref-rgb), [SAVEIMAGE](#ref-saveimage), [SCREEN](#ref-screen), [SHELL](#ref-shell), [SPRITE](#ref-sprite), [SPRITEHIT](#ref-spritehit), [VIEW](#ref-view), [WINDOW](#ref-window)
 
 ### + - * / ^ {#ref--}
 
@@ -260,12 +258,6 @@ The same as SYSTEM.
 
 See also: [SYSTEM](#ref-system)
 
-### CALL {#ref-call}
-
-*Function / statement* · `CALL | DEF USR | USR | VARPTR | VARPTR$ | INP(port) | OUT port, b | WAIT port, m | IOCTL | IOCTL$`
-
-Machine code and PC I/O ports: `Illegal function call` (5).
-
 ### CDBL {#ref-cdbl}
 
 *Function* · `CDBL(x)`
@@ -375,12 +367,6 @@ Shows:
 ```
 
 See also: [INT](#ref-int), [FIX](#ref-fix)
-
-### CIRCLE {#ref-circle}
-
-*Not available* · `CIRCLE (x, y), r[, colour...]`
-
-Draws a circle. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### CLEAR {#ref-clear}
 
@@ -805,19 +791,11 @@ NEODEMO.BAS
 
 See also: [FILES](#ref-files)
 
-### DRAW {#ref-draw}
-
-*Not available* · `DRAW cmd$`
-
-Turtle graphics. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
 ### EDIT {#ref-edit}
 
 *Command* · `EDIT n | EDIT .`
 
 Puts program line `n` (or `.`, the last line typed or the one that failed) on the input line to change; Enter stores it.
-
-- `EDIT` alone (the full-screen editor) is not available in this build: Feature not available.
 
 Example:
 
@@ -1117,18 +1095,6 @@ Shows:
 
 See also: [INT](#ref-int), [CINT](#ref-cint)
 
-### FONT {#ref-font}
-
-*Not available* · `FONT LOAD n, file$... | FONT n`
-
-Font sheets for GPRINT. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### FONTW {#ref-fontw}
-
-*Function / statement* · `FONTW(n) | FONTH(n) | GWIDTH(s$)`
-
-Font cell sizes: font 0 is 8 x 16 (FONTW(0) 8, FONTH(0) 16, GWIDTH 8 a character); other fonts give 0.
-
 ### FOR {#ref-for}
 
 *Statement* · `FOR v = a TO b [STEP s] ... NEXT [v]`
@@ -1190,7 +1156,6 @@ See also: [OPEN](#ref-open)
 
 Reads record `record` (from 1; default the next) of random file `n` into its buffer and FIELD variables.
 
-- `GET (x1,y1)-(x2,y2), a` (graphics) is not available: Feature not available.
 - Errors: `Bad record number` (63).
 
 Example:
@@ -1250,12 +1215,6 @@ HI
 ```
 
 See also: [GOSUB](#ref-gosub), [IF](#ref-if)
-
-### GPRINT {#ref-gprint}
-
-*Not available* · `GPRINT x, y, items`
-
-Text drawn with a font sheet. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### HEX$ {#ref-hex}
 
@@ -1352,12 +1311,6 @@ BIG
 ```
 
 See also: [WHILE](#ref-while), [ON...GOTO](#ref-ongoto)
-
-### IMAGE {#ref-image}
-
-*Not available* · `IMAGE file$[, x, y[, w, h]]`
-
-Draws a picture. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### IMP {#ref-imp}
 
@@ -1524,12 +1477,6 @@ KEY(1) ON
 
 See also: [ON KEY](#ref-on-key)
 
-### KEYDOWN {#ref-keydown}
-
-*Function / statement* · `KEYDOWN(n)`
-
-Whether a key is held: a terminal sends key presses, not that, so it is always 0.
-
 ### KILL {#ref-kill}
 
 *Statement* · `KILL file$`
@@ -1619,12 +1566,6 @@ LET A = 5: B$ = "X"
 ```
 
 See also: [SWAP](#ref-swap)
-
-### LINE {#ref-line}
-
-*Not available* · `LINE (x1, y1)-(x2, y2)[, colour[, B | BF]]`
-
-Draws a line or box (LINE INPUT works). Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### LINE INPUT {#ref-line-input}
 
@@ -1737,12 +1678,6 @@ LOCATE 12, 35: PRINT "MIDDLE"
 
 See also: [CSRLIN](#ref-csrlin), [POS](#ref-pos)
 
-### LOCK {#ref-lock}
-
-*Function / statement* · `LOCK | UNLOCK | MOTOR`
-
-Accepted for old programs; they do nothing.
-
 ### LOF {#ref-lof}
 
 *Function* · `LOF(n)`
@@ -1784,12 +1719,6 @@ Shows:
 ```
 
 See also: [EXP](#ref-exp)
-
-### LPOS {#ref-lpos}
-
-*Function / statement* · `LPOS(n) | STICK(n) | STRIG(n) | PEN(n)`
-
-Printer column, joystick, light pen: always 0. STRIG and PEN statements are accepted and do nothing.
 
 ### LPRINT {#ref-lprint}
 
@@ -1922,30 +1851,6 @@ See also: [CVI](#ref-cvi)
 The number `x` as a 4-byte single-precision string (GW-BASIC's format).
 
 See also: [CVS](#ref-cvs)
-
-### MOUSE {#ref-mouse}
-
-*Not available* · `MOUSE ON | OFF`
-
-The mouse pointer. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### MOUSEX {#ref-mousex}
-
-*Function / statement* · `MOUSEX | MOUSEY | MOUSEB | MOUSEW`
-
-The mouse: there is none, so they give 0.
-
-### MUSIC {#ref-music}
-
-*Not available* · `MUSIC file$ | MUSIC STOP...`
-
-MOD and XM songs in the background. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### MUSIC(n) {#ref-musicn}
-
-*Function / statement* · `MUSIC(n)`
-
-The song's state: always 0 (MUSIC isn't available).
 
 ### NAME {#ref-name}
 
@@ -2232,18 +2137,6 @@ Shows:
 
 See also: [AND](#ref-and), [XOR](#ref-xor)
 
-### PAINT {#ref-paint}
-
-*Not available* · `PAINT (x, y)[, colour[, border]]`
-
-Flood fill. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### PALETTE {#ref-palette}
-
-*Not available* · `PALETTE [attr, colour]`
-
-Changes colours. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
 ### PAUSE {#ref-pause}
 
 *Statement* · `PAUSE ms`
@@ -2257,12 +2150,6 @@ PAUSE 500
 ```
 
 See also: [TIMER](#ref-timer)
-
-### PCOPY {#ref-pcopy}
-
-*Not available* · `PCOPY from, to`
-
-Copies screen pages. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### PEEK {#ref-peek}
 
@@ -2396,18 +2283,6 @@ Shows:
 
 See also: [PLAY](#ref-play), [ON PLAY](#ref-on-play)
 
-### PMAP {#ref-pmap}
-
-*Not available* · `PMAP(v, n)`
-
-Converts WINDOW coordinates. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### POINT {#ref-point}
-
-*Not available* · `POINT(x, y) | POINT(n)`
-
-A pixel's colour, or the graphics cursor. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
 ### POKE {#ref-poke}
 
 *Statement* · `POKE offset, byte`
@@ -2435,12 +2310,6 @@ ABC 4
 ```
 
 See also: [CSRLIN](#ref-csrlin)
-
-### PRESET {#ref-preset}
-
-*Not available* · `PRESET (x, y)[, colour]`
-
-Plots a point in the background colour. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### PRINT {#ref-print}
 
@@ -2503,19 +2372,11 @@ Shows:
 
 See also: [PRINT](#ref-print)
 
-### PSET {#ref-pset}
-
-*Not available* · `PSET (x, y)[, colour]`
-
-Plots a point. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
 ### PUT {#ref-put}
 
 *Statement* · `PUT [#]n[, record]`
 
 Writes random file `n`'s buffer as record `record` (from 1; default the one after the last).
-
-- `PUT (x, y), a` (graphics) is not available: Feature not available.
 
 Example:
 
@@ -2660,12 +2521,6 @@ Returns from a GOSUB (or an event subroutine) to the statement after the call. I
 
 See also: [GOSUB](#ref-gosub)
 
-### RGB {#ref-rgb}
-
-*Function / statement* · `RGB(r, g, b)`
-
-A colour for the graphics statements (256 + an RGB332 value): it works, but nothing here draws with it.
-
 ### RIGHT$ {#ref-right}
 
 *Function* · `RIGHT$(s$, n)`
@@ -2776,18 +2631,6 @@ SAVE "HELLO"
 
 See also: [LOAD](#ref-load), [FILES](#ref-files)
 
-### SAVEIMAGE {#ref-saveimage}
-
-*Not available* · `SAVEIMAGE file$`
-
-Saves the screen as a BMP. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### SCREEN {#ref-screen}
-
-*Not available* · `SCREEN mode[, , apage[, vpage]]`
-
-Graphics modes (SCREEN 0 is accepted). Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
 ### SCREEN(r, c) {#ref-screenr-c}
 
 *Function* · `SCREEN(row, col[, 1])`
@@ -2841,12 +2684,6 @@ Shows:
 ```
 
 See also: [ABS](#ref-abs)
-
-### SHELL {#ref-shell}
-
-*Not available* · `SHELL command$`
-
-Runs a pico-os shell command. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### SIN {#ref-sin}
 
@@ -2954,18 +2791,6 @@ R$ = SPI$(STRING$(4, 0))
 ```
 
 See also: [SPI](#ref-spi)
-
-### SPRITE {#ref-sprite}
-
-*Not available* · `SPRITE n, x, y... | SPRITE UPDATE...`
-
-Moving pictures. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
-### SPRITEHIT {#ref-spritehit}
-
-*Function / statement* · `SPRITEHIT(n[, first, last]) | SPRITEX(n) | SPRITEY(n) | SPRITEON(n)`
-
-Sprites' positions and collisions: there are none (SPRITEHIT gives -1, the rest 0).
 
 ### SQR {#ref-sqr}
 
@@ -3241,12 +3066,6 @@ Shows:
 
 See also: [STR$](#ref-str)
 
-### VIEW {#ref-view}
-
-*Not available* · `VIEW (x1, y1)-(x2, y2)...`
-
-A graphics viewport (VIEW PRINT works). Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
-
 ### VIEW PRINT {#ref-view-print}
 
 *Statement* · `VIEW PRINT [top TO bottom]`
@@ -3299,12 +3118,6 @@ See also: [FOR](#ref-for), [IF](#ref-if)
 *Statement* · `WIDTH n`
 
 Accepted for old programs; the screen stays 80 columns.
-
-### WINDOW {#ref-window}
-
-*Not available* · `WINDOW (x1, y1)-(x2, y2)`
-
-Graphics coordinates. Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.
 
 ### WRITE {#ref-write}
 

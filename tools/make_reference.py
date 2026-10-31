@@ -10,7 +10,6 @@ import markdown.extensions.toc as toc
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 
-NA = 'Not available in this build: it gives **Feature not available** (error 73), as there is no screen of its own.'
 
 # (heading, kind, syntax, explanation, [details], example, output, [see also], topic)
 # An example's output is what the terminal shows (numbers print with a space
@@ -59,7 +58,7 @@ e('DELETE', 'Command', 'DELETE range',
   'DELETE 100-190', '', ['NEW', 'AUTO'], P)
 e('EDIT', 'Command', 'EDIT n | EDIT .',
   'Puts program line `n` (or `.`, the last line typed or the one that failed) on the input line to change; Enter stores it.',
-  ['`EDIT` alone (the full-screen editor) is not available in this build: Feature not available.'],
+  [],
   'EDIT 20', '20 PRINT "HELLO"', ['LIST', 'AUTO'], P)
 e('FILES', 'Command', 'FILES [pattern$]',
   'Lists files, four to a line (folders marked `<DIR>`), then the free space on that drive.',
@@ -270,7 +269,7 @@ e('FIELD', 'Statement', 'FIELD #n, width AS var$[, width AS var$...]', 'Divides 
   ['Errors: `FIELD overflow` (50).'], 'FIELD #1, 20 AS NM$, 2 AS AGE$', '', ['GET', 'PUT', 'LSET'], D)
 e('FREEFILE', 'Function', 'FREEFILE', 'The lowest file number (1-4) not in use.', [], 'F = FREEFILE: OPEN "LOG.TXT" FOR APPEND AS #F', '', ['OPEN'], D)
 e('GET', 'Statement', 'GET [#]n[, record]', 'Reads record `record` (from 1; default the next) of random file `n` into its buffer and FIELD variables.',
-  ['`GET (x1,y1)-(x2,y2), a` (graphics) is not available: Feature not available.', 'Errors: `Bad record number` (63).'], 'GET #1, 3: PRINT NM$', '', ['PUT', 'FIELD'], D)
+  ['Errors: `Bad record number` (63).'], 'GET #1, 3: PRINT NM$', '', ['PUT', 'FIELD'], D)
 e('INPUT #', 'Statement', 'INPUT #n, var[, var...]', 'Reads items from file `n`: quoted strings, or text up to a comma or the end of the line (numbers stop at a space too).', ['Errors: `Input past end` (62).'], 'INPUT #1, N$, S', '', ['WRITE #', 'LINE INPUT #'], D)
 e('LINE INPUT #', 'Statement', 'LINE INPUT #n, var$', 'Reads a whole line of file `n` into a string.', [], 'LINE INPUT #1, L$', '', ['INPUT #'], D)
 e('LOC', 'Function', 'LOC(n)', 'For a random file: the last record read or written. For COM1: the bytes waiting. Otherwise the position in 128-byte blocks.', [], '', '', ['LOF', 'EOF'], D)
@@ -285,7 +284,7 @@ e('OPEN', 'Statement', 'OPEN file$ FOR INPUT | OUTPUT | APPEND | RANDOM AS [#]n 
   'OPEN "SCORES.TXT" FOR OUTPUT AS #1: PRINT #1, "Ann", 120: CLOSE #1', '', ['CLOSE', 'PRINT #', 'INPUT #'], D)
 e('PRINT #', 'Statement', 'PRINT #n, [USING fmt$;] items', 'Like PRINT, into file `n`. Lines end in CR LF (CR alone on COM1 unless LF was asked for), and there is no 80-column wrap.', [], 'PRINT #1, "TOTAL"; 42', '', ['WRITE #', 'PRINT'], D)
 e('PUT', 'Statement', 'PUT [#]n[, record]', 'Writes random file `n`\'s buffer as record `record` (from 1; default the one after the last).',
-  ['`PUT (x, y), a` (graphics) is not available: Feature not available.'], 'LSET NM$ = "Ada": PUT #1, 1', '', ['GET', 'FIELD'], D)
+  [], 'LSET NM$ = "Ada": PUT #1, 1', '', ['GET', 'FIELD'], D)
 e('RSET', 'Statement', 'RSET var$ = s$', 'Like LSET, right-aligned.', [], 'RSET N$ = STR$(42)', '', ['LSET'], D)
 e('WRITE #', 'Statement', 'WRITE #n, items', 'Writes the items to file `n` separated by commas, strings in quotes: INPUT # reads them back exactly.', [], 'WRITE #1, "Ann", 120', '', ['INPUT #'], D)
 
@@ -368,33 +367,6 @@ e('NOT', 'Operator', 'NOT a', 'Bitwise NOT: -1 becomes 0 and 0 becomes -1 (NOT x
 e('OR', 'Operator', 'a OR b', 'Bitwise OR: true if either is.', [], 'PRINT 12 OR 3', ' 15', ['AND', 'XOR'], O)
 e('XOR', 'Operator', 'a XOR b', 'Bitwise exclusive OR: true if just one is.', [], 'PRINT 12 XOR 10', ' 6', ['OR'], O)
 
-# ---- Not in this build (and PC hardware) ---------------------------------------------------
-Z = 'Not in this build'
-for name, syn, what in [
-    ('CIRCLE', 'CIRCLE (x, y), r[, colour...]', 'Draws a circle'), ('DRAW', 'DRAW cmd$', 'Turtle graphics'),
-    ('FONT', 'FONT LOAD n, file$... | FONT n', 'Font sheets for GPRINT'), ('GPRINT', 'GPRINT x, y, items', 'Text drawn with a font sheet'),
-    ('IMAGE', 'IMAGE file$[, x, y[, w, h]]', 'Draws a picture'), ('SAVEIMAGE', 'SAVEIMAGE file$', 'Saves the screen as a BMP'),
-    ('LINE', 'LINE (x1, y1)-(x2, y2)[, colour[, B | BF]]', 'Draws a line or box (LINE INPUT works)'),
-    ('MOUSE', 'MOUSE ON | OFF', 'The mouse pointer'), ('MUSIC', 'MUSIC file$ | MUSIC STOP...', 'MOD and XM songs in the background'),
-    ('PAINT', 'PAINT (x, y)[, colour[, border]]', 'Flood fill'), ('PALETTE', 'PALETTE [attr, colour]', 'Changes colours'),
-    ('PCOPY', 'PCOPY from, to', 'Copies screen pages'), ('PRESET', 'PRESET (x, y)[, colour]', 'Plots a point in the background colour'),
-    ('PSET', 'PSET (x, y)[, colour]', 'Plots a point'), ('SCREEN', 'SCREEN mode[, , apage[, vpage]]', 'Graphics modes (SCREEN 0 is accepted)'),
-    ('SHELL', 'SHELL command$', 'Runs a pico-os shell command'), ('SPRITE', 'SPRITE n, x, y... | SPRITE UPDATE...', 'Moving pictures'),
-    ('VIEW', 'VIEW (x1, y1)-(x2, y2)...', 'A graphics viewport (VIEW PRINT works)'), ('WINDOW', 'WINDOW (x1, y1)-(x2, y2)', 'Graphics coordinates'),
-    ('POINT', 'POINT(x, y) | POINT(n)', 'A pixel\'s colour, or the graphics cursor'), ('PMAP', 'PMAP(v, n)', 'Converts WINDOW coordinates')]:
-    e(name, 'Not available', syn, what + '. ' + NA, [], '', '', [], Z)
-for name, syn, what in [
-    ('MOUSEX', 'MOUSEX | MOUSEY | MOUSEB | MOUSEW', 'The mouse: there is none, so they give 0.'),
-    ('KEYDOWN', 'KEYDOWN(n)', 'Whether a key is held: a terminal sends key presses, not that, so it is always 0.'),
-    ('MUSIC(n)', 'MUSIC(n)', 'The song\'s state: always 0 (MUSIC isn\'t available).'),
-    ('SPRITEHIT', 'SPRITEHIT(n[, first, last]) | SPRITEX(n) | SPRITEY(n) | SPRITEON(n)', 'Sprites\' positions and collisions: there are none (SPRITEHIT gives -1, the rest 0).'),
-    ('FONTW', 'FONTW(n) | FONTH(n) | GWIDTH(s$)', 'Font cell sizes: font 0 is 8 x 16 (FONTW(0) 8, FONTH(0) 16, GWIDTH 8 a character); other fonts give 0.'),
-    ('RGB', 'RGB(r, g, b)', 'A colour for the graphics statements (256 + an RGB332 value): it works, but nothing here draws with it.'),
-    ('LOCK', 'LOCK | UNLOCK | MOTOR', 'Accepted for old programs; they do nothing.'),
-    ('LPOS', 'LPOS(n) | STICK(n) | STRIG(n) | PEN(n)', 'Printer column, joystick, light pen: always 0. STRIG and PEN statements are accepted and do nothing.'),
-    ('CALL', 'CALL | DEF USR | USR | VARPTR | VARPTR$ | INP(port) | OUT port, b | WAIT port, m | IOCTL | IOCTL$', 'Machine code and PC I/O ports: `Illegal function call` (5).')]:
-    e(name, 'Function / statement', syn, what, [], '', '', [], Z)
-
 # ---- Writing it ---------------------------------------------------------------------------
 
 def slug(s):
@@ -433,7 +405,7 @@ def main():
             used[s] = 0
         x['anchor'] = s
         anchors[x['name']] = s
-    md = ['# Pico BASIC Command Reference', '', '## 13. Command reference', '',
+    md = ['# Pico BASIC Command Reference', '', '## 12. Command reference', '',
           'Every statement, command, function and operator, A to Z. Each entry gives its form '
           '(`[...]` is optional, `|` separates choices), what it does, its limits and errors, an '
           'example and what the terminal then shows. Numbers print with a space before them (or '
@@ -533,6 +505,12 @@ BASIC uses the IBM PC character set (code page 437) and sends each character to 
 The console is the board's USB port, so GP0 and GP1 are free. PINS lists what each pin is doing.
 '''.split('\n')
 
+NOT_HERE = {'CIRCLE', 'DRAW', 'FONT', 'GPRINT', 'IMAGE', 'SAVEIMAGE', 'MOUSE', 'MUSIC', 'PAINT',
+            'PALETTE', 'PCOPY', 'PRESET', 'PSET', 'SHELL', 'SPRITE', 'WINDOW', 'POINT', 'PMAP',
+            'MOUSEX', 'MOUSEY', 'MOUSEB', 'MOUSEW', 'KEYDOWN', 'SPRITEHIT', 'SPRITEX', 'SPRITEY',
+            'SPRITEON', 'FONTW', 'FONTH', 'GWIDTH', 'RGB', 'LOCK', 'UNLOCK', 'MOTOR', 'LPOS', 'STICK',
+            'STRIG', 'PEN', 'CALL', 'USR', 'VARPTR', 'INP', 'OUT', 'WAIT', 'IOCTL'}
+
 def coverage(entries):
     src = open(os.path.join(ROOT, 'src', 'basic.c'), encoding='utf-8').read()
     words = set()
@@ -542,6 +520,10 @@ def coverage(entries):
     m = re.search(r'static const char \*const names\[\] = \{(.*?)\};', src, re.S)
     words |= {w.rstrip('(').rstrip('$') for w in re.findall(r'"([A-Z$]+)\(?"', m.group(1))}
     words.discard('R')  # LOAD's ,R
+    # Left out on purpose: graphics, sprites, fonts, pictures, music, the
+    # mouse and PC hardware, which a terminal build can't have (they give
+    # Feature not available, a dummy value, or Illegal function call).
+    words -= NOT_HERE
     covered = set()
     for x in entries:
         for part in re.split(r'[\s|,()=;\[\]]+', x['name'] + ' ' + x['syntax']):
