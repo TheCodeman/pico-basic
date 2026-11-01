@@ -15,6 +15,8 @@
 
 #include "term_editor.h"
 
+#include "board_watchdog.h"
+
 #include <ctype.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -316,7 +318,7 @@ static void free_all(void) {
 }
 
 /// Reads the file (none yet: one empty line). CR LF or LF lines; a ^Z at the
-/// end (GW-BASIC's) is left off.
+/// end is left off.
 /// @param path the file
 /// @return read (false: out of memory or a read error)
 static bool load(const char *path) {
@@ -437,7 +439,7 @@ static int byte_in(uint32_t us) {
     if (!us) {
         int c;
         while ((c = port_key(100000)) < 0)
-            ;
+            board_watchdog_feed();  // someone is editing
         return c;
     }
     return port_key(us);

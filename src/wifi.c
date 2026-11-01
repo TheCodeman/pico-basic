@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "board_watchdog.h"
 #include "config.h"
 #include "hardware/clocks.h"
 #include "lwip/apps/sntp.h"
@@ -305,8 +306,10 @@ void wifi_scan(void) {
         return;
     }
     absolute_time_t until = make_timeout_time_ms(10000);
-    while (cyw43_wifi_scan_active(&cyw43_state) && !time_reached(until))
+    while (cyw43_wifi_scan_active(&cyw43_state) && !time_reached(until)) {
+        board_watchdog_feed();
         sleep_ms(50);
+    }
     qsort(found, found_count, sizeof found[0], by_signal);
     printf("%-32s  Signal   Ch  Security\n", "Network");
     for (int i = 0; i < found_count; ++i) {
@@ -329,8 +332,10 @@ void wifi_ntp(void) {
     sntp_follow(true);
     cyw43_arch_lwip_end();
     absolute_time_t until = make_timeout_time_ms(5000);
-    while (synced == before && !time_reached(until))
+    while (synced == before && !time_reached(until)) {
+        board_watchdog_feed();
         sleep_ms(20);
+    }
     char t[40];
     local_text(time(NULL), t, sizeof t);
     if (synced == before)

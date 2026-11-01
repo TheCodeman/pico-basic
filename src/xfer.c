@@ -9,6 +9,8 @@
 
 #include "xfer.h"
 
+#include "board_watchdog.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -90,6 +92,7 @@ static uint32_t crc32(uint32_t crc, const uint8_t *p, int n) {
 /// @param ms how long to wait
 /// @return the byte, or a negative R_ value
 static int rd(xs_t *s, unsigned ms) {
+    board_watchdog_feed();  // a transfer under way isn't a hang
     return s->io->getc(s->io->ctx, ms);
 }
 

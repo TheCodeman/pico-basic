@@ -1,9 +1,9 @@
 /**
  * @file basic.h
- * @brief A GW-BASIC style interpreter.
+ * @brief The BASIC interpreter.
  *
  * Programs are kept as text lines in SRAM and interpreted directly; LOAD
- * reads plain-text and GW-BASIC tokenised files, SAVE writes plain text.
+ * reads plain-text and tokenised (binary) BASIC files, SAVE writes plain text.
  *
  * @author Ken Segler
  * @copyright Copyright (c) 2026 Ken Segler

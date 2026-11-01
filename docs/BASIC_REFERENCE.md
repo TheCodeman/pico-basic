@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WATCHDOG](#ref-watchdog), [WDRESET](#ref-wdreset), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -238,7 +238,7 @@ See also: [SOUND](#ref-sound), [PLAY](#ref-play)
 
 *Statement* · `BLOAD file$[, offset]`
 
-Loads a file saved by BSAVE (GW-BASIC's 7-byte header) into the emulated memory (DEF SEG).
+Loads a file saved by BSAVE (a 7-byte header) into the emulated memory (DEF SEG).
 
 See also: [BSAVE](#ref-bsave), [DEF SEG](#ref-def-seg)
 
@@ -374,7 +374,7 @@ See also: [INT](#ref-int), [FIX](#ref-fix)
 
 Deletes every variable and array, closes every file, and forgets DATA, FOR, GOSUB and WHILE positions and event traps. The program stays.
 
-- Any numbers after it (GW-BASIC's memory sizes) are accepted and ignored.
+- Any numbers after it (memory sizes, for older programs) are accepted and ignored.
 
 Example:
 
@@ -561,7 +561,7 @@ See also: [POS](#ref-pos), [LOCATE](#ref-locate)
 
 *Function* · `CVD(s$)`
 
-The double-precision number in an 8-byte string made by MKD$ (GW-BASIC's format).
+The double-precision number in an 8-byte string made by MKD$ (Microsoft Binary Format).
 
 - Errors: `Illegal function call` (5) for a string shorter than 8.
 
@@ -947,7 +947,7 @@ See also: [DIM](#ref-dim)
 
 *Function* · `ERDEV | ERDEV$`
 
-GW-BASIC's device error details: always 0 and "" here.
+Device error details: always 0 and "" here.
 
 See also: [ERR](#ref-err)
 
@@ -1695,7 +1695,7 @@ See also: [LIST](#ref-list)
 Loads a program, replacing the one in memory; with `,R` runs it too.
 
 - `.BAS` is added if the name has no extension.
-- Plain text (CR LF or LF lines) and GW-BASIC tokenised files are read.
+- Plain text (CR LF or LF lines) and tokenised (binary) BASIC files from a PC are read.
 - Errors: `File not found` (53).
 
 Example:
@@ -1906,7 +1906,7 @@ See also: [CVI](#ref-cvi)
 
 *Function* · `MKS$(x)`
 
-The number `x` as a 4-byte single-precision string (GW-BASIC's format).
+The number `x` as a 4-byte single-precision string (Microsoft Binary Format).
 
 See also: [CVS](#ref-cvs)
 
@@ -2347,7 +2347,7 @@ See also: [PIN](#ref-pin)
 
 *Statement* · `PLAY music$`
 
-Plays notes in GW-BASIC's music language (see the manual's Sound section: A-G, O, L, T, P, MF/MB...).
+Plays notes in the music language (see the manual's Sound section: A-G, O, L, T, P, MF/MB...).
 
 - After `MB` the notes play in the background (up to 32 queued) while the program goes on.
 - `X` substrings aren't supported; `=variable;` is.
@@ -3003,7 +3003,7 @@ See also: [NEW](#ref-new)
 
 In PRINT, moves to column `n` (1-80); to the next line first if the cursor is already past it.
 
-- As in GW-BASIC: at column `n` already, it does nothing; past it, it goes to column `n` of the next line. So `PRINT T; TAB(4); "hello"` stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).
+- At column `n` already, it does nothing; past it, it goes to column `n` of the next line. So `PRINT T; TAB(4); "hello"` stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).
 - Give TAB room for the widest number (`TAB(6)` for up to 999), or a fixed width: `PRINT USING "### "; T;: PRINT "hello"`.
 
 Example:
@@ -3193,6 +3193,47 @@ VIEW PRINT 5 TO 20
 ```
 
 See also: [LOCATE](#ref-locate), [CLS](#ref-cls)
+
+### WATCHDOG {#ref-watchdog}
+
+*Statement* · `WATCHDOG ms | WATCHDOG FEED | WATCHDOG OFF | WATCHDOG`
+
+The chip's watchdog: `WATCHDOG ms` arms it, and the board resets unless `WATCHDOG FEED` comes within `ms` milliseconds (100 up to 8388 on the RP2040, 16777 on the RP2350); `WATCHDOG OFF` disarms it; `WATCHDOG` alone says how it is.
+
+- A break (Ctrl-C or STOP) turns it off, as someone is there; an error or END leaves it on, so a board on its own resets and runs AUTORUN.BAS again.
+- Disk reads and writes, XMODEM, Wi-Fi waits and the full-screen editor feed it themselves; INPUT and PAUSE don't, so a program waiting longer than `ms` resets the board.
+- `WATCHDOG = ms` in CONFIG.TXT arms it just before AUTORUN.BAS runs.
+- Errors: `Illegal function call` (5) for a time out of range.
+
+Example:
+
+```
+WATCHDOG 2000: PAUSE 500: WATCHDOG FEED: WATCHDOG OFF: PRINT "OK"
+```
+
+Shows:
+
+```
+OK
+```
+
+See also: [WDRESET](#ref-wdreset)
+
+### WDRESET {#ref-wdreset}
+
+*Function* · `WDRESET`
+
+-1 (true) if the last reset was the watchdog's (it ran out), else 0.
+
+- The banner says `Reset by the watchdog` then too.
+
+Example:
+
+```
+IF WDRESET THEN PRINT "Restarted by the watchdog"
+```
+
+See also: [WATCHDOG](#ref-watchdog)
 
 ### WEND {#ref-wend}
 
@@ -3428,7 +3469,7 @@ See also: [+ - * / ^](#ref--)
 | 24 | Device Timeout | 75 | Path/File Access Error |
 | 25 | Device Fault | 76 | Path not found |
 
-(Other GW-BASIC codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print `Unprintable error`.)
+(Other codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print `Unprintable error`.)
 
 ## Appendix B: PRINT USING formats
 

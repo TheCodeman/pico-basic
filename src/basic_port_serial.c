@@ -36,6 +36,8 @@
 #include "config.h"
 #include "term_editor.h"
 #include "usb_console.h"
+#include "board_watchdog.h"
+#include "hardware/watchdog.h"
 #if PICO_BASIC_WIFI
 #include "wifi.h"
 #endif
@@ -1382,6 +1384,49 @@ const char *port_wifi_text(int n) {
 #else
     (void)n;
     return "";
+#endif
+}
+
+// ---- Watchdog ---------------------------------------------------------------------
+
+static int watchdog_timeout;  ///< ms while armed, 0 off
+static int watchdog_fired = -1;  ///< the last reset was the watchdog's (-1: not looked yet)
+
+bool port_watchdog_reset(void) {
+    if (watchdog_fired < 0)  // (main looks at start-up, before anything arms it)
+        watchdog_fired = watchdog_enable_caused_reboot();
+    return watchdog_fired;
+}
+
+void port_watchdog_set(int ms) {
+    port_watchdog_reset();
+    if (ms > 0) {
+        watchdog_enable((uint32_t)ms, true);  // paused while a debugger halts the chip
+        watchdog_timeout = ms;
+    } else {
+        watchdog_disable();
+        watchdog_timeout = 0;
+    }
+}
+
+void port_watchdog_feed(void) {
+    if (watchdog_timeout)
+        watchdog_update();
+}
+
+void board_watchdog_feed(void) {
+    port_watchdog_feed();
+}
+
+int port_watchdog_ms(void) {
+    return watchdog_timeout;
+}
+
+int port_watchdog_max(void) {
+#if PICO_RP2040
+    return 0xffffff / 2000;  // the RP2040's counter runs at 2 ticks a microsecond
+#else
+    return 0xffffff / 1000;
 #endif
 }
 
