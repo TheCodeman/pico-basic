@@ -51,7 +51,7 @@ e('COMMON', 'Statement', 'COMMON var[, var...]',
 e('CONFIG', 'Command', 'CONFIG',
   'Shows the board\'s settings: whether the SD card is used and its pins, the speaker\'s pin and NEOPIXEL\'s default pin, from FLASH:/CONFIG.TXT or the build\'s defaults, and any problems CONFIG.TXT has.',
   ['Change them with `EDIT "FLASH:CONFIG.TXT"`; they take effect at the next power-up or reset (see the manual\'s Settings section).'],
-  'CONFIG', 'Settings (FLASH:/CONFIG.TXT):\n  SD = OFF\n  SPEAKER = GP18\n  NEOPIXEL = GP28 (NEOPIXEL OPEN\'s default)', ['EDIT', 'NEOPIXEL', 'BEEP'], P)
+  'CONFIG', 'Settings (FLASH:/CONFIG.TXT):\n  SD = OFF\n  SPEAKER = GP18\n  NEOPIXEL = GP28 (NEOPIXEL OPEN\'s default)\n  TZ = UTC (none set)', ['EDIT', 'NEOPIXEL', 'BEEP'], P)
 e('CONT', 'Command', 'CONT',
   'Carries on with the program after Ctrl-C or STOP, from where it stopped.',
   ['Errors: `Can\'t continue` (17) after the program has been changed or after an error.'],
@@ -96,6 +96,13 @@ e('FORMAT', 'Command', 'FORMAT ON | FORMAT OFF | FORMAT n',
   'Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the subroutines (the lines under a label GOSUB calls or ON ERROR GOTO goes to; labels stay at the left).',
   ['Only the look changes: loading a program takes the indent off again.', 'On at start-up.'],
   '10 FOR I = 1 TO 2\n20 PRINT I\n30 NEXT\nLIST', '10 FOR I = 1 TO 2\n20   PRINT I\n30 NEXT', ['LIST', 'EDIT', 'SAVE'], P)
+e('WIFI', 'Command', 'WIFI | WIFI ON | WIFI OFF | WIFI SCAN',
+  'Wi-Fi (on a Pico 2 W, a Pico W, or a Pico Plus 2 with an RM2 breakout): `WIFI` shows the connection (the network, the signal, the IP address) and the clock; `WIFI ON` connects to CONFIG.TXT\'s network (again), `WIFI OFF` leaves it; `WIFI SCAN` lists the networks around.',
+  ['At power-up BASIC connects in the background to `WIFI_SSID` (with `WIFI_PASSWORD`) from FLASH:/CONFIG.TXT, tries again every 30 seconds when the network is lost, and sets the clock by NTP once it\'s up, then every hour; DATE$ and TIME$ give the local time (`TZ`).',
+   'Builds without Wi-Fi say `Feature not available` (73).'],
+  'WIFI', 'Connected to HOME, signal -52 dBm\nIP 192.168.1.20, gateway 192.168.1.1, DNS 192.168.1.1\nClock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT', ['NTP', 'CONFIG', 'TIME$'], P)
+e('NTP', 'Command', 'NTP', 'Asks the NTP server (`NTP_SERVER` in CONFIG.TXT, pool.ntp.org to start with) for the time now, sets the clock, and prints it as local time (`TZ`). Waits up to 5 seconds.',
+  ['Wi-Fi builds only; BASIC asks by itself once connected, and every hour.'], 'NTP', '2026-10-31 18:30:05 EDT (from pool.ntp.org)', ['WIFI', 'TIME$', 'DATE$'], P)
 e('NUMBERS', 'Command', 'NUMBERS OFF | NUMBERS ON',
   '`NUMBERS OFF` takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (`L100:`), and those use the label. `NUMBERS ON` numbers the lines 10, 20, 30... again, keeping the labels.',
   ['A program without numbers is listed, saved and edited without them; its lines\' numbers (in errors, ERL, TRON) are their lines in the file.',

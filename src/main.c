@@ -30,6 +30,9 @@
 #include "psram_heap.h"
 #include "stack_switch.h"
 #include "usb_console.h"
+#if PICO_BASIC_WIFI
+#include "wifi.h"
+#endif
 
 #ifndef PICO_BASIC_VERSION
 #define PICO_BASIC_VERSION "0.1"
@@ -104,6 +107,9 @@ void board_banner(void) {
                (unsigned long)(sd_free >> 10));
     else
         printf("SD card (SD:): %s\n", sd_error ? sd_error : "none");
+#endif
+#if PICO_BASIC_WIFI
+    wifi_banner();
 #endif
     config_warnings();
 }
@@ -221,6 +227,9 @@ int main(void) {
 #endif
     config_load();  // FLASH:/CONFIG.TXT: the SD card's pins and so on
     console_backlog_start();
+#if PICO_BASIC_WIFI
+    wifi_start();  // connects in the background; NTP sets the clock
+#endif
 #if PICO_BASIC_SD
     sd_error = sd_card_mount();
 #endif

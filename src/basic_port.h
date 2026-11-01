@@ -153,6 +153,12 @@ bool port_stack_low(void);
 /// Opens `path` in the full-screen editor and returns when it is closed.
 /// @param path the file
 void port_edit(const char *path);
+
+/// WIFI [ON | OFF | SCAN] (what: 0 the status, 1 on, 2 off, 3 scan) and NTP
+/// (what: 4); false if the build has no Wi-Fi.
+/// @param what which
+/// @return the build has it
+bool port_wifi(int what);
 /// The same for a text file that isn't the program (EDIT "file").
 /// @param path the file
 void port_edit_file(const char *path);

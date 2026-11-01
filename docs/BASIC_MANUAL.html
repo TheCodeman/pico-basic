@@ -64,6 +64,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#the-disk">The disk</a></li>
 <li><a href="#the-sd-card-drive-sd">The SD card (drive SD:)</a></li>
 <li><a href="#settings-configtxt">Settings: CONFIG.TXT</a></li>
+<li><a href="#wi-fi-and-the-clock">Wi-Fi and the clock</a></li>
 <li><a href="#files-from-programs">Files from programs</a></li>
 </ul>
 </li>
@@ -196,6 +197,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-new">NEW</a></li>
 <li><a href="#ref-next">NEXT</a></li>
 <li><a href="#ref-not">NOT</a></li>
+<li><a href="#ref-ntp">NTP</a></li>
 <li><a href="#ref-numbers">NUMBERS</a></li>
 <li><a href="#ref-oct">OCT$</a></li>
 <li><a href="#ref-on-com">ON COM</a></li>
@@ -266,6 +268,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-wend">WEND</a></li>
 <li><a href="#ref-while">WHILE</a></li>
 <li><a href="#ref-width">WIDTH</a></li>
+<li><a href="#ref-wifi">WIFI</a></li>
 <li><a href="#ref-write">WRITE</a></li>
 <li><a href="#ref-write-1">WRITE</a></li>
 <li><a href="#ref-xor">XOR</a></li>
@@ -1335,6 +1338,9 @@ SD_MODE = 3        # SPI mode 0-3 (3 suits most slots; 0 is the usual default)
 SD_PULLUPS = 13, 14   # pins held up while the card is used (DAT1, DAT2); none
 SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
 NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
+TZ = EST           # the time zone DATE$ and TIME$ show (UTC without it)
+WIFI_SSID = HOME   # Wi-Fi builds: the network to join at power-up
+WIFI_PASSWORD = secret
 </code></pre>
 <ul>
 <li>Keys and values are any case, with or without spaces; pins can be <code>18</code>
@@ -1346,7 +1352,41 @@ NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
 <li>On a board without a card slot, <code>SD = OFF</code> saves the moment start-up
   spends looking for one (BASIC gives up after a tenth of a second when
   nothing answers at all).</li>
+<li><code>TZ</code> is a name (UTC, EST, CST, MST, PST, AKST, HST, ARIZONA, UK, CET,
+  EET, JST, AEST, or EASTERN, PACIFIC...: these follow daylight saving), hours
+  from UTC (<code>TZ = -5</code>, <code>TZ = 5.5</code>: no daylight saving), or a POSIX TZ string
+  (<code>TZ = EST5EDT,M3.2.0,M11.1.0</code>).</li>
 <li><code>examples/CONFIG.TXT</code> is a copy to start from.</li>
+</ul>
+<h3 id="wi-fi-and-the-clock">Wi-Fi and the clock</h3>
+<p>The Wi-Fi builds (a Pico 2 W, a Pico W, or a Pico Plus 2 with Pimoroni's
+RM2 breakout: see the README) join a network at power-up and set the clock
+from the internet (NTP), so DATE$ and TIME$ are right without setting them.
+CONFIG.TXT says which network:</p>
+<pre><code>WIFI_SSID = HOME          # the network's name
+WIFI_PASSWORD = secret    # leave it out for an open network
+WIFI_COUNTRY = US         # two letters; XX (the default) works anywhere
+TZ = EASTERN              # local time for DATE$ and TIME$
+NTP_SERVER = pool.ntp.org # the default
+WIFI = ON                 # OFF: don't connect at power-up
+</code></pre>
+<ul>
+<li>Connecting goes on in the background: the prompt doesn't wait. The banner
+  says how far it got (<code>Wi-Fi: connecting to HOME</code>), and <code>WIFI</code> tells you
+  later: the network, the signal, the IP address, and when NTP last set the
+  clock.</li>
+<li>A network that goes away is tried again every 30 seconds; NTP asks again
+  every hour. <code>NTP</code> asks now and prints the time; <code>WIFI OFF</code> and <code>WIFI ON</code>
+  leave and join again; <code>WIFI SCAN</code> lists the networks around.</li>
+<li>The password is kept as plain text in CONFIG.TXT on the board's flash
+  disk: anyone with the board (or <code>XSEND "FLASH:CONFIG.TXT"</code>) can read it.
+  CONFIG shows it as <code>****</code>.</li>
+<li>On a Pico 2 W and a Pico W, GP23, GP24, GP25 and GP29 belong to the radio
+  (BASIC refuses them), and the LED is on the radio chip: <code>PIN LED, 1</code>
+  still lights it (PWM on it just turns it on or off). On the RM2 breakout
+  the radio has GP32-35.</li>
+<li>Other builds say <code>Feature not available</code> to WIFI and NTP; TZ works on
+  every build (for DATE$ and TIME$ set by hand).</li>
 </ul>
 <h3 id="files-from-programs">Files from programs</h3>
 <p>Up to 4 files can be open at once, numbered #1 to #4. File names are
@@ -2166,7 +2206,7 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
 <p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
@@ -2437,6 +2477,7 @@ RUN
   SD = OFF
   SPEAKER = GP18
   NEOPIXEL = GP28 (NEOPIXEL OPEN's default)
+  TZ = UTC (none set)
 </code></pre>
 <p>See also: <a href="#ref-edit">EDIT</a>, <a href="#ref-neopixel">NEOPIXEL</a>, <a href="#ref-beep">BEEP</a></p>
 <h3 id="ref-cont">CONT</h3>
@@ -3278,6 +3319,19 @@ HI
 <pre><code>-1 -6
 </code></pre>
 <p>See also: <a href="#ref-and">AND</a></p>
+<h3 id="ref-ntp">NTP</h3>
+<p><em>Command</em> · <code>NTP</code></p>
+<p>Asks the NTP server (<code>NTP_SERVER</code> in CONFIG.TXT, pool.ntp.org to start with) for the time now, sets the clock, and prints it as local time (<code>TZ</code>). Waits up to 5 seconds.</p>
+<ul>
+<li>Wi-Fi builds only; BASIC asks by itself once connected, and every hour.</li>
+</ul>
+<p>Example:</p>
+<pre><code>NTP
+</code></pre>
+<p>Shows:</p>
+<pre><code>2026-10-31 18:30:05 EDT (from pool.ntp.org)
+</code></pre>
+<p>See also: <a href="#ref-wifi">WIFI</a>, <a href="#ref-time">TIME$</a>, <a href="#ref-date">DATE$</a></p>
 <h3 id="ref-numbers">NUMBERS</h3>
 <p><em>Command</em> · <code>NUMBERS OFF | NUMBERS ON</code></p>
 <p><code>NUMBERS OFF</code> takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (<code>L100:</code>), and those use the label. <code>NUMBERS ON</code> numbers the lines 10, 20, 30... again, keeping the labels.</p>
@@ -3953,6 +4007,22 @@ RUN
 <h3 id="ref-width">WIDTH</h3>
 <p><em>Statement</em> · <code>WIDTH n</code></p>
 <p>Accepted for old programs; the screen stays 80 columns.</p>
+<h3 id="ref-wifi">WIFI</h3>
+<p><em>Command</em> · <code>WIFI | WIFI ON | WIFI OFF | WIFI SCAN</code></p>
+<p>Wi-Fi (on a Pico 2 W, a Pico W, or a Pico Plus 2 with an RM2 breakout): <code>WIFI</code> shows the connection (the network, the signal, the IP address) and the clock; <code>WIFI ON</code> connects to CONFIG.TXT's network (again), <code>WIFI OFF</code> leaves it; <code>WIFI SCAN</code> lists the networks around.</p>
+<ul>
+<li>At power-up BASIC connects in the background to <code>WIFI_SSID</code> (with <code>WIFI_PASSWORD</code>) from FLASH:/CONFIG.TXT, tries again every 30 seconds when the network is lost, and sets the clock by NTP once it's up, then every hour; DATE$ and TIME$ give the local time (<code>TZ</code>).</li>
+<li>Builds without Wi-Fi say <code>Feature not available</code> (73).</li>
+</ul>
+<p>Example:</p>
+<pre><code>WIFI
+</code></pre>
+<p>Shows:</p>
+<pre><code>Connected to HOME, signal -52 dBm
+IP 192.168.1.20, gateway 192.168.1.1, DNS 192.168.1.1
+Clock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT
+</code></pre>
+<p>See also: <a href="#ref-ntp">NTP</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-time">TIME$</a></p>
 <h3 id="ref-write">WRITE</h3>
 <p><em>Statement</em> · <code>WRITE [items]</code></p>
 <p>Prints the items separated by commas, strings in quotes, numbers without spaces: what INPUT # reads back exactly.</p>

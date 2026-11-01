@@ -1609,10 +1609,10 @@ static const char *const statement_words[] = {
     "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "GET",
     "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
     "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MUSIC",
-    "NAME", "NEOPIXEL", "NEW", "NEXT", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
+    "NAME", "NEOPIXEL", "NEW", "NEXT", "NTP", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
     "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
-    "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WINDOW", "WRITE", "XRECV", "XSEND",
+    "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WIFI", "WINDOW", "WRITE", "XRECV", "XSEND",
 };
 
 /// The words of a list grouped by first letter, built on first use.
@@ -9093,6 +9093,17 @@ static int statement(void) {
         do_pin();
     } else if (accept("PWM")) {
         do_pwm();
+    } else if (accept_word("WIFI")) {
+        int what = accept_word("ON") ? 1 : accept_word("OFF") ? 2 : accept_word("SCAN") ? 3 : 0;
+        if (!what && !at_end_of_statement())
+            error(E_SYNTAX);
+        out_flush();
+        if (!port_wifi(what))
+            error(E_NO_FEATURE);
+    } else if (accept_word("NTP")) {
+        out_flush();
+        if (!port_wifi(4))
+            error(E_NO_FEATURE);
     } else if (accept_word("CONFIG")) {
         out_flush();
         port_config_show();

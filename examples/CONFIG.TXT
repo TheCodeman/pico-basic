@@ -19,3 +19,15 @@ SD_PULLUPS = 13, 14
 SPEAKER = 18
 # NEOPIXEL OPEN's default pin (the Maker Pi Pico's RGB LED is on 28).
 NEOPIXEL = 28
+
+# The time zone DATE$ and TIME$ show: a name (UTC, EST, CST, MST, PST, UK, CET,
+# EASTERN, PACIFIC...), hours from UTC (-5), or a POSIX TZ string.
+# TZ = EASTERN
+
+# Wi-Fi builds (Pico 2 W, Pico W, Pico Plus 2 + RM2): the network to join at
+# power-up; NTP then sets the clock. The password is kept here as plain text.
+# WIFI_SSID = HOME
+# WIFI_PASSWORD = secret
+# WIFI_COUNTRY = US
+# NTP_SERVER = pool.ntp.org
+# WIFI = ON
