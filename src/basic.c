@@ -1598,7 +1598,7 @@ static const char *const builtin_words[] = {
     "ABS", "ADC", "ASC", "ATN", "CDBL", "CHR", "CINT", "COS", "CSNG", "CSRLIN", "CVD", "CVI",
     "CVS", "DATE", "DIR", "ENVIRON", "EOF", "ERDEV", "ERL", "ERR", "EXP", "EXTERR", "FIX", "FONTH", "FONTW", "FRE",
     "GWIDTH", "HEX", "I2CREAD", "INKEY", "INP", "INSTR", "INT", "IOCTL", "KEYDOWN", "LCASE", "LEFT", "LEN", "LOC", "LOF",
-    "LOG", "LPOS", "MID", "MKD", "MKI", "MKS", "MOUSEB", "MOUSEW", "MOUSEX", "MOUSEY", "MUSIC", "OCT", "PEEK", "PEN", "PIN", "PLAY", "PMAP",
+    "LOG", "LPOS", "MID", "MKD", "MKI", "MKS", "MQTT", "MOUSEB", "MOUSEW", "MOUSEX", "MOUSEY", "MUSIC", "OCT", "PEEK", "PEN", "PIN", "PLAY", "PMAP",
     "POINT", "POS", "RGB", "RIGHT", "RND", "SCREEN", "SGN", "SIN", "SPACE", "SPI", "SPRITEHIT", "SPRITEON", "SPRITEX", "SPRITEY", "SQR", "STICK",
     "STR", "TAN", "TEMP", "TIME", "UCASE", "USR", "VAL", "VARPTR", "WDRESET", "WIFI",
 };
@@ -1608,7 +1608,7 @@ static const char *const statement_words[] = {
     "CLOSE", "CLS", "COLOR", "COM", "CONT", "DATA", "DATE", "DEF", "DELETE", "DIM", "DRAW",
     "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "GET",
     "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
-    "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MUSIC",
+    "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MQTT", "MUSIC",
     "NAME", "NEOPIXEL", "NEW", "NEXT", "NTP", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
     "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
@@ -2122,6 +2122,18 @@ static value_t builtin(void) {
         int n = arg_int();
         expect(")");
         return num(port_music_state(n));
+    }
+    if (accept("MQTT(")) {  // MQTT(0) connected, (1) messages waiting, (2) dropped
+        int n = arg_int();
+        expect(")");
+        return num(port_mqtt_value(n));
+    }
+    if (accept("MQTT$(")) {  // MQTT$(0) takes the next message's topic, (1) its payload
+        int n = arg_int();
+        expect(")");
+        int len;
+        const char *t = port_mqtt_text(n, &len);
+        return str(t, len);
     }
     if (accept("WDRESET"))  // -1 if the watchdog reset the board last
         return num(port_watchdog_reset() ? -1 : 0);
@@ -3942,7 +3954,7 @@ static void push_gosub(void) {
 // handled once it's back ON.
 
 /// The events: KEY(1)-KEY(20) are 1-20, then TIMER, PLAY and COM.
-enum { EV_KEY = 0, EV_TIMER = 21, EV_PLAY, EV_COM, EV_COUNT };
+enum { EV_KEY = 0, EV_TIMER = 21, EV_PLAY, EV_COM, EV_MQTT, EV_COUNT };
 /// An event's state.
 enum { EV_OFF, EV_ON, EV_STOP };
 
@@ -4084,6 +4096,8 @@ static void check_events(void) {
     }
     if (events[EV_COM].state != EV_OFF && files_com_waiting())
         events[EV_COM].pending = true;
+    if (events[EV_MQTT].state != EV_OFF && port_mqtt_value(1) > 0)
+        events[EV_MQTT].pending = true;  // a message is waiting (MQTT$(0) takes it)
     read_keys(true);
     int k = take_trapped_key();
     if (k)
@@ -4260,6 +4274,16 @@ static bool trap_error(int code) {
 static void do_on(void) {
     if (accept_word("ERROR")) {
         do_on_error();
+        return;
+    }
+    if (accept_word("MQTT")) {  // ON MQTT GOSUB line: a message has come
+        if (!accept("GOSUB"))
+            error(E_SYNTAX);
+        int line = read_line_number();
+        bool exact;
+        if (line && (find_line(line, &exact), !exact))
+            error(E_UNDEFINED_LINE);
+        events[EV_MQTT].line = line;
         return;
     }
     static const char *const kinds[] = {"KEY", "TIMER", "PLAY", "COM"};
@@ -7788,6 +7812,71 @@ static void do_format(void) {
     }
 }
 
+/// MQTT CONNECT [host$[, port]] | DISCONNECT | PUBLISH topic$, payload$[, qos[,
+/// retain]] | SUBSCRIBE topic$[, qos] | UNSUBSCRIBE topic$ | ON | OFF | STOP
+/// (ON MQTT's trap), or alone the status. Wi-Fi builds.
+static void do_mqtt(void) {
+    skip_spaces();
+    if (!strncmp(p, "ON", 2) || !strncmp(p, "OFF", 3) || !strncmp(p, "STOP", 4)) {
+        set_event_state(EV_MQTT);
+        return;
+    }
+    if (!port_mqtt_available())
+        error(E_NO_FEATURE);
+    const char *err = NULL;
+    char topic[130];
+    bool sub;
+    if (accept_word("CONNECT")) {
+        char host[66] = "";
+        int port = 0;
+        if (!at_end_of_statement()) {
+            const char *h = str_expr();
+            snprintf(host, sizeof host, "%.*s", slen(h), h);
+            if (accept(","))
+                port = arg_int();
+            if (port < 0 || port > 65535)
+                error(E_ILLEGAL_CALL);
+        }
+        out_flush();
+        err = port_mqtt_connect(host, port);
+    } else if (accept_word("DISCONNECT")) {
+        port_mqtt_disconnect();
+    } else if (accept_word("PUBLISH")) {
+        const char *t = str_expr();
+        snprintf(topic, sizeof topic, "%.*s", slen(t), t);
+        expect(",");
+        const char *m = str_expr();
+        int qos = 0, retain = 0;
+        if (accept(","))
+            qos = arg_int();
+        if (accept(","))
+            retain = arg_int();
+        if (qos < 0 || qos > 2)
+            error(E_ILLEGAL_CALL);
+        err = port_mqtt_publish(topic, m, slen(m), qos, retain != 0);
+    } else if ((sub = accept_word("SUBSCRIBE")) || accept_word("UNSUBSCRIBE")) {
+        const char *t = str_expr();
+        snprintf(topic, sizeof topic, "%.*s", slen(t), t);
+        int qos = 0;
+        if (sub && accept(","))
+            qos = arg_int();
+        if (qos < 0 || qos > 2)
+            error(E_ILLEGAL_CALL);
+        err = port_mqtt_subscribe(topic, qos, sub);
+    } else if (at_end_of_statement()) {
+        out_flush();
+        port_mqtt_status();
+    } else {
+        error(E_SYNTAX);
+    }
+    if (err) {
+        out_str("MQTT: ");
+        out_str(err);
+        out_newline();
+        error(E_DEVICE_IO);
+    }
+}
+
 /// WATCHDOG ms | FEED | OFF, or alone its state. Armed, the board resets
 /// unless the program feeds it within `ms`; a break (Ctrl-C, STOP) turns it
 /// off, but an error or END leaves it on, so a board on its own starts again
@@ -9153,6 +9242,8 @@ static int statement(void) {
         do_pin();
     } else if (accept("PWM")) {
         do_pwm();
+    } else if (accept_word("MQTT")) {
+        do_mqtt();
     } else if (accept_word("WATCHDOG")) {
         do_watchdog();
     } else if (accept_word("WIFI")) {

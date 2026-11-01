@@ -1,8 +1,8 @@
 /**
  * @file lwipopts.h
  * @brief lwIP settings for Wi-Fi builds (pico_cyw43_arch_lwip_threadsafe_background:
- * lwIP runs in a low-priority interrupt, no RTOS). Only what NTP needs: DHCP,
- * DNS and UDP.
+ * lwIP runs in a low-priority interrupt, no RTOS): DHCP, DNS and UDP for NTP,
+ * and TCP for MQTT.
  *
  * @author Ken Segler
  * @copyright Copyright (c) 2026 Ken Segler
@@ -16,17 +16,27 @@
 #define LWIP_NETCONN                0
 #define MEM_LIBC_MALLOC             0  ///< malloc isn't safe from the lwIP interrupt
 #define MEM_ALIGNMENT               4
-#define MEM_SIZE                    4000  ///< lwIP's own heap
+#define MEM_SIZE                    8000  ///< lwIP's own heap: outgoing segments
 #define MEMP_NUM_ARP_QUEUE          10
-#define MEMP_NUM_SYS_TIMEOUT        (LWIP_NUM_SYS_TIMEOUT_INTERNAL + 2)
-#define PBUF_POOL_SIZE              8     ///< incoming packets, 1.5 KB each
+#define MEMP_NUM_SYS_TIMEOUT        (LWIP_NUM_SYS_TIMEOUT_INTERNAL + 3)
+#define MEMP_NUM_TCP_PCB            2
+#define MEMP_NUM_TCP_SEG            16
+#define PBUF_POOL_SIZE              10    ///< incoming packets, 1.5 KB each
 #define LWIP_ARP                    1
 #define LWIP_ETHERNET               1
 #define LWIP_ICMP                   1
 #define LWIP_RAW                    0
 #define LWIP_IPV4                   1
 #define LWIP_IPV6                   0
-#define LWIP_TCP                    0
+#define LWIP_TCP                    1
+#define TCP_MSS                     1460
+#define TCP_WND                     (4 * TCP_MSS)
+#define TCP_SND_BUF                 (2 * TCP_MSS)
+#define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
+#define LWIP_TCP_KEEPALIVE          1
+#define MQTT_OUTPUT_RINGBUF_SIZE    1024  ///< a few messages: a payload, its topic and headers
+#define MQTT_VAR_HEADER_BUFFER_LEN  256   ///< an incoming topic and the payload's start
+#define MQTT_REQ_MAX_IN_FLIGHT      12    ///< the subscriptions made again after a reconnect
 #define LWIP_UDP                    1
 #define LWIP_DNS                    1
 #define LWIP_DHCP                   1

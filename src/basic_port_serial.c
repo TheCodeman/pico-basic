@@ -39,6 +39,7 @@
 #include "board_watchdog.h"
 #include "hardware/watchdog.h"
 #if PICO_BASIC_WIFI
+#include "mqtt.h"
 #include "wifi.h"
 #endif
 #if PICO_BASIC_SD
@@ -1429,6 +1430,73 @@ int port_watchdog_max(void) {
     return 0xffffff / 1000;
 #endif
 }
+
+bool port_mqtt_available(void) {
+    return PICO_BASIC_WIFI;
+}
+
+#if PICO_BASIC_WIFI
+const char *port_mqtt_connect(const char *host, int port) {
+    return mqtt_connect(host, port);
+}
+
+void port_mqtt_disconnect(void) {
+    mqtt_disconnect_now();
+}
+
+const char *port_mqtt_publish(const char *topic, const char *payload, int len, int qos, bool retain) {
+    return mqtt_publish_now(topic, payload, len, qos, retain);
+}
+
+const char *port_mqtt_subscribe(const char *topic, int qos, bool sub) {
+    return mqtt_subscribe_now(topic, qos, sub);
+}
+
+void port_mqtt_status(void) {
+    mqtt_status();
+}
+
+int port_mqtt_value(int n) {
+    return mqtt_value(n);
+}
+
+const char *port_mqtt_text(int n, int *len) {
+    return n ? mqtt_payload(len) : mqtt_take(len);
+}
+#else
+const char *port_mqtt_connect(const char *host, int port) {
+    (void)host;
+    (void)port;
+    return NULL;
+}
+
+void port_mqtt_disconnect(void) {
+}
+
+const char *port_mqtt_publish(const char *topic, const char *payload, int len, int qos, bool retain) {
+    (void)topic, (void)payload, (void)len, (void)qos, (void)retain;
+    return NULL;
+}
+
+const char *port_mqtt_subscribe(const char *topic, int qos, bool sub) {
+    (void)topic, (void)qos, (void)sub;
+    return NULL;
+}
+
+void port_mqtt_status(void) {
+}
+
+int port_mqtt_value(int n) {
+    (void)n;
+    return 0;
+}
+
+const char *port_mqtt_text(int n, int *len) {
+    (void)n;
+    *len = 0;
+    return "";
+}
+#endif
 
 bool port_clock_12h(void) {
     return config.clock12;

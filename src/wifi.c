@@ -19,6 +19,7 @@
 
 #include "board_watchdog.h"
 #include "config.h"
+#include "mqtt.h"
 #include "hardware/clocks.h"
 #include "lwip/apps/sntp.h"
 #include "lwip/dns.h"
@@ -101,6 +102,7 @@ static void sntp_follow(bool up) {
 static void check_link(async_context_t *context, async_at_time_worker_t *w) {
     int s = link_status();
     sntp_follow(s == CYW43_LINK_UP);
+    mqtt_tick(s == CYW43_LINK_UP);
     if (want && s != CYW43_LINK_UP && s != CYW43_LINK_JOIN && s != CYW43_LINK_NOIP &&
         s != CYW43_LINK_BADAUTH && time_reached(retry_at))
         start_connect();
@@ -143,6 +145,7 @@ static bool start_radio(void) {
 void wifi_start(void) {
     if (!config.wifi || !config.wifi_ssid[0])
         return;
+    mqtt_start();
     if (!start_radio())
         return;
     cyw43_arch_lwip_begin();

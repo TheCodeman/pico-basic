@@ -141,8 +141,9 @@ endif()
 if(PICO_BASIC_WIFI)
     # The CYW43 driver and lwIP run in a low-priority interrupt; lwIP's SNTP
     # client sets the clock (src/wifi.c, src/lwipopts.h).
-    target_sources(pico_basic PRIVATE src/wifi.c)
-    target_link_libraries(pico_basic pico_cyw43_arch_lwip_threadsafe_background pico_lwip_sntp)
+    target_sources(pico_basic PRIVATE src/wifi.c src/mqtt.c)
+    target_link_libraries(pico_basic pico_cyw43_arch_lwip_threadsafe_background pico_lwip_sntp
+        pico_lwip_mqtt)
     target_compile_definitions(pico_basic PRIVATE PICO_BASIC_WIFI=1 CYW43_HOST_NAME="pico-basic")
     if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
         # As pico-os: the RM2 breakout on the SP/CE connector, power GP32,
