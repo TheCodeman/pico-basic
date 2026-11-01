@@ -36,6 +36,7 @@ typedef struct {
     char wifi_country[3];    ///< WIFI_COUNTRY: two letters, XX worldwide
     char ntp_server[64];     ///< NTP_SERVER
     char tz[64];             ///< TZ as given (a name, a POSIX TZ string or an offset)
+    int watchdog;            ///< WATCHDOG = ms: armed before AUTORUN.BAS runs (0: not)
     bool clock12;            ///< CLOCK = 12: TIME$ and the clock shown as 1:30:00 PM
 } config_t;
 

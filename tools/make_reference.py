@@ -43,7 +43,7 @@ e('CHDIR', 'Statement', 'CHDIR path$',
   'MKDIR "GAMES": CHDIR "GAMES": FILES', 'File not found\n3080192 Bytes free', ['MKDIR', 'RMDIR', 'FILES'], P)
 e('CLEAR', 'Statement', 'CLEAR [, n[, m]]',
   'Deletes every variable and array, closes every file, and forgets DATA, FOR, GOSUB and WHILE positions and event traps. The program stays.',
-  ['Any numbers after it (GW-BASIC\'s memory sizes) are accepted and ignored.'],
+  ['Any numbers after it (memory sizes, for older programs) are accepted and ignored.'],
   'A = 5: CLEAR: PRINT A', ' 0', ['NEW', 'ERASE'], P)
 e('COMMON', 'Statement', 'COMMON var[, var...]',
   'Names the variables CHAIN passes to the next program. Arrays are written with empty brackets: `COMMON A(), N$`.',
@@ -82,7 +82,7 @@ e('LLIST', 'Command', 'LLIST [range]', 'The same as LIST: there is no printer.',
 e('LOAD', 'Command', 'LOAD file$[, R]',
   'Loads a program, replacing the one in memory; with `,R` runs it too.',
   ['`.BAS` is added if the name has no extension.',
-   'Plain text (CR LF or LF lines) and GW-BASIC tokenised files are read.',
+   'Plain text (CR LF or LF lines) and tokenised (binary) BASIC files from a PC are read.',
    'Errors: `File not found` (53).'],
   'LOAD "PRIMES": RUN', ' 168 primes below 1000', ['SAVE', 'RUN', 'MERGE'], P)
 e('MERGE', 'Command', 'MERGE file$',
@@ -96,6 +96,14 @@ e('FORMAT', 'Command', 'FORMAT ON | FORMAT OFF | FORMAT n',
   'Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the subroutines (the lines under a label GOSUB calls or ON ERROR GOTO goes to; labels stay at the left).',
   ['Only the look changes: loading a program takes the indent off again.', 'On at start-up.'],
   '10 FOR I = 1 TO 2\n20 PRINT I\n30 NEXT\nLIST', '10 FOR I = 1 TO 2\n20   PRINT I\n30 NEXT', ['LIST', 'EDIT', 'SAVE'], P)
+e('WATCHDOG', 'Statement', 'WATCHDOG ms | WATCHDOG FEED | WATCHDOG OFF | WATCHDOG',
+  'The chip\'s watchdog: `WATCHDOG ms` arms it, and the board resets unless `WATCHDOG FEED` comes within `ms` milliseconds (100 up to 8388 on the RP2040, 16777 on the RP2350); `WATCHDOG OFF` disarms it; `WATCHDOG` alone says how it is.',
+  ['A break (Ctrl-C or STOP) turns it off, as someone is there; an error or END leaves it on, so a board on its own resets and runs AUTORUN.BAS again.',
+   'Disk reads and writes, XMODEM, Wi-Fi waits and the full-screen editor feed it themselves; INPUT and PAUSE don\'t, so a program waiting longer than `ms` resets the board.',
+   '`WATCHDOG = ms` in CONFIG.TXT arms it just before AUTORUN.BAS runs.', 'Errors: `Illegal function call` (5) for a time out of range.'],
+  'WATCHDOG 2000: PAUSE 500: WATCHDOG FEED: WATCHDOG OFF: PRINT "OK"', 'OK', ['WDRESET'], P)
+e('WDRESET', 'Function', 'WDRESET', '-1 (true) if the last reset was the watchdog\'s (it ran out), else 0.', ['The banner says `Reset by the watchdog` then too.'],
+  'IF WDRESET THEN PRINT "Restarted by the watchdog"', '', ['WATCHDOG'], P)
 e('WIFI', 'Command', 'WIFI | WIFI ON | WIFI OFF | WIFI SCAN',
   'Wi-Fi (on a Pico 2 W, a Pico W, or a Pico Plus 2 with an RM2 breakout): `WIFI` shows the connection (the network, the signal, the IP address) and the clock; `WIFI ON` connects to CONFIG.TXT\'s network (again), `WIFI OFF` leaves it; `WIFI SCAN` lists the networks around.',
   ['At power-up BASIC connects in the background to `WIFI_SSID` (with `WIFI_PASSWORD`) from FLASH:/CONFIG.TXT, tries again every 30 seconds when the network is lost, and sets the clock by NTP once it\'s up, then every hour; DATE$ and TIME$ give the local time (`TZ`).',
@@ -242,7 +250,7 @@ e('PRINT USING', 'Statement', 'PRINT USING fmt$; items[;]', 'Prints numbers and 
   'PRINT USING "###.##"; 3.14159; -2', '  3.14 -2.00', ['PRINT'], T)
 e('SPC', 'Function', 'SPC(n)', 'In PRINT, prints `n` spaces.', [], 'PRINT "A"; SPC(3); "B"', 'A   B', ['TAB', 'SPACE$'], T)
 e('TAB', 'Function', 'TAB(n)', 'In PRINT, moves to column `n` (1-80); to the next line first if the cursor is already past it.',
-  ['As in GW-BASIC: at column `n` already, it does nothing; past it, it goes to column `n` of the next line. So `PRINT T; TAB(4); "hello"` stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).',
+  ['At column `n` already, it does nothing; past it, it goes to column `n` of the next line. So `PRINT T; TAB(4); "hello"` stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).',
    'Give TAB room for the widest number (`TAB(6)` for up to 999), or a fixed width: `PRINT USING "### "; T;: PRINT "hello"`.'], 'PRINT "A"; TAB(10); "B"', 'A        B', ['SPC', 'LOCATE'], T)
 e('VIEW PRINT', 'Statement', 'VIEW PRINT [top TO bottom]', 'Makes only rows `top` to `bottom` scroll (an ANSI scroll region); `VIEW PRINT` alone undoes it.', [], 'VIEW PRINT 5 TO 20', '', ['LOCATE', 'CLS'], T)
 e('WIDTH', 'Statement', 'WIDTH n', 'Accepted for old programs; the screen stays 80 columns.', [], '', '', [], T)
@@ -288,7 +296,7 @@ e('VAL', 'Function', 'VAL(s$)', 'The number at the start of `s$` (spaces skipped
 # ---- Files -------------------------------------------------------------------------
 D = 'Data files'
 e('CLOSE', 'Statement', 'CLOSE [[#]n[, [#]n...]]', 'Closes the files numbered, or all of them. Writes still in memory go to the disk.', [], 'CLOSE #1', '', ['OPEN', 'RESET'], D)
-e('CVD', 'Function', 'CVD(s$)', 'The double-precision number in an 8-byte string made by MKD$ (GW-BASIC\'s format).', ['Errors: `Illegal function call` (5) for a string shorter than 8.'], '', '', ['MKD$'], D)
+e('CVD', 'Function', 'CVD(s$)', 'The double-precision number in an 8-byte string made by MKD$ (Microsoft Binary Format).', ['Errors: `Illegal function call` (5) for a string shorter than 8.'], '', '', ['MKD$'], D)
 e('CVI', 'Function', 'CVI(s$)', 'The integer in a 2-byte string made by MKI$ (low byte first).', [], 'PRINT CVI(MKI$(1234))', ' 1234', ['MKI$'], D)
 e('CVS', 'Function', 'CVS(s$)', 'The single-precision number in a 4-byte string made by MKS$.', [], 'PRINT CVS(MKS$(2.5))', ' 2.5', ['MKS$'], D)
 e('DIR$', 'Function', 'DIR$(pattern$[, n])', 'The `n`-th (default 1st) file name matching the pattern, e.g. `DIR$("*.BAS", 2)`; "" after the last. For going through a folder\'s files.', [], '10 I = 1\n20 F$ = DIR$("*.BAS", I): IF F$ = "" THEN END\n30 PRINT F$: I = I + 1: GOTO 20\nRUN', 'PRIMES.BAS\nNEODEMO.BAS', ['FILES'], D)
@@ -305,7 +313,7 @@ e('LOF', 'Function', 'LOF(n)', 'The length of file `n` in bytes (for COM1: the r
 e('LSET', 'Statement', 'LSET var$ = s$', 'Puts `s$` in a FIELD variable, left-aligned and padded with spaces (cut if too long). Use it, not LET, for field variables.', [], 'LSET NM$ = "Grace"', '', ['RSET', 'FIELD'], D)
 e('MKD$', 'Function', 'MKD$(x)', 'The number `x` as an 8-byte double-precision string, for random files.', [], '', '', ['CVD'], D)
 e('MKI$', 'Function', 'MKI$(n)', 'The integer `n` (-32768 to 32767) as a 2-byte string, low byte first.', ['Errors: `Overflow` (6).'], 'PRINT LEN(MKI$(5))', ' 2', ['CVI'], D)
-e('MKS$', 'Function', 'MKS$(x)', 'The number `x` as a 4-byte single-precision string (GW-BASIC\'s format).', [], '', '', ['CVS'], D)
+e('MKS$', 'Function', 'MKS$(x)', 'The number `x` as a 4-byte single-precision string (Microsoft Binary Format).', [], '', '', ['CVS'], D)
 e('OPEN', 'Statement', 'OPEN file$ FOR INPUT | OUTPUT | APPEND | RANDOM AS [#]n [LEN = size] | OPEN mode$, [#]n, file$[, size] | OPEN "COM1:..." AS [#]n',
   'Opens a file as number `n` (1-4). OUTPUT creates or empties it, APPEND adds to its end, INPUT reads it, RANDOM reads and writes fixed-size records (LEN 1-1024, default 128; also the default without FOR).',
   ['The short form takes "I", "O", "A" or "R".', 'A "COM1:" name opens the serial port: see the manual\'s COM1 section.', 'Errors: `File not found` (53), `File already open` (55), `Bad file number` (52).'],
@@ -330,7 +338,7 @@ e('TIMER ON', 'Statement', 'TIMER ON | OFF | STOP', 'Turns the timer event (ON T
 # ---- Sound ---------------------------------------------------------------------------
 N = 'Sound'
 e('BEEP', 'Statement', 'BEEP', 'A short beep: 800 Hz for a quarter of a second, on the speaker pin (GP18, the Maker Pi Pico\'s buzzer).', [], 'BEEP', '', ['SOUND', 'PLAY'], N)
-e('PLAY', 'Statement', 'PLAY music$', 'Plays notes in GW-BASIC\'s music language (see the manual\'s Sound section: A-G, O, L, T, P, MF/MB...).',
+e('PLAY', 'Statement', 'PLAY music$', 'Plays notes in the music language (see the manual\'s Sound section: A-G, O, L, T, P, MF/MB...).',
   ['After `MB` the notes play in the background (up to 32 queued) while the program goes on.', '`X` substrings aren\'t supported; `=variable;` is.'],
   'PLAY "T160 O3 L8 CDEFGAB > C"', '', ['SOUND', 'PLAY(n)', 'ON PLAY'], N)
 e('PLAY(n)', 'Function', 'PLAY(n)', 'How much is still waiting in the background queue (`n` is ignored): each note counts twice, as the note and the short gap after it (MN, normal style).', [], 'PLAY "MB CDE": PRINT PLAY(0)', ' 6', ['PLAY', 'ON PLAY'], N)
@@ -367,12 +375,12 @@ e('TEMP', 'Function', 'TEMP()', 'The chip\'s temperature in °C (uncalibrated: w
 
 # ---- System ----------------------------------------------------------------------------
 Y = 'System'
-e('BLOAD', 'Statement', 'BLOAD file$[, offset]', 'Loads a file saved by BSAVE (GW-BASIC\'s 7-byte header) into the emulated memory (DEF SEG).', [], '', '', ['BSAVE', 'DEF SEG'], Y)
+e('BLOAD', 'Statement', 'BLOAD file$[, offset]', 'Loads a file saved by BSAVE (a 7-byte header) into the emulated memory (DEF SEG).', [], '', '', ['BSAVE', 'DEF SEG'], Y)
 e('BSAVE', 'Statement', 'BSAVE file$, offset, length', 'Saves `length` bytes of the emulated memory (DEF SEG) to a file.', [], '', '', ['BLOAD'], Y)
 e('DATE$', 'Statement / function', 'DATE$ = "mm-dd-yyyy" | DATE$', 'Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up (Wi-Fi builds set it by NTP).', [], 'DATE$ = "10-31-2026": PRINT DATE$', '10-31-2026', ['TIME$'], Y)
 e('ENVIRON', 'Statement', 'ENVIRON "name=value"', 'Sets a string ENVIRON$ gives back (there is no DOS environment).', [], 'ENVIRON "USER=KEN"', '', ['ENVIRON$'], Y)
 e('ENVIRON$', 'Function', 'ENVIRON$(name$) | ENVIRON$(n)', 'The value set for `name$` with ENVIRON, or the n-th "name=value" string; "" if none.', [], 'ENVIRON "USER=KEN": PRINT ENVIRON$("USER")', 'KEN', ['ENVIRON'], Y)
-e('ERDEV', 'Function', 'ERDEV | ERDEV$', 'GW-BASIC\'s device error details: always 0 and "" here.', [], '', '', ['ERR'], Y)
+e('ERDEV', 'Function', 'ERDEV | ERDEV$', 'Device error details: always 0 and "" here.', [], '', '', ['ERR'], Y)
 e('EXTERR', 'Function', 'EXTERR(n)', 'DOS extended error information: always 0 here.', [], '', '', ['ERR'], Y)
 e('FRE', 'Function', 'FRE(x)', 'The memory free for programs and data, in bytes (`x` is ignored).', [], 'PRINT FRE(0)', ' 431456', [], Y)
 e('PEEK', 'Function', 'PEEK(offset)', 'A byte of the emulated memory chosen by DEF SEG: the text screen (&HB800: reads spaces and colour 7, as a terminal can\'t be read) or BIOS data (DEF SEG = 0: &H449 mode 3, &H44A columns 80, &H484 rows-1 29, &H46C-&H46E timer ticks).',
@@ -482,7 +490,7 @@ APPENDICES = '''## Appendix A: error codes
 | 24 | Device Timeout | 75 | Path/File Access Error |
 | 25 | Device Fault | 76 | Path not found |
 
-(Other GW-BASIC codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print `Unprintable error`.)
+(Other codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print `Unprintable error`.)
 
 ## Appendix B: PRINT USING formats
 

@@ -1,6 +1,6 @@
 # Pico BASIC (standalone)
 
-A GW-BASIC style BASIC for the RP2350 and RP2040 on their own: no HDMI, no keyboard or
+Pico BASIC: a BASIC for the RP2350 and RP2040 on their own: no HDMI, no keyboard or
 USB drive. You use it from a terminal program on the PC, over the board's own
 USB port, and it keeps its files in the Pico's own flash.
 

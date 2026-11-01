@@ -26,6 +26,10 @@ NEOPIXEL = 28
 # 12 or 24: CLOCK = 12 makes TIME$ "01:30:00 PM" (24, the default: "13:30:00").
 # CLOCK = 12
 
+# Arm the watchdog (ms) just before AUTORUN.BAS runs: a program that hangs
+# resets the board, which runs AUTORUN.BAS again. Only with an AUTORUN.BAS.
+# WATCHDOG = 5000
+
 # Wi-Fi builds (Pico 2 W, Pico W, Pico Plus 2 + RM2): the network to join at
 # power-up; NTP then sets the clock. The password is kept here as plain text.
 # WIFI_SSID = HOME

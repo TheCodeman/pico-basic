@@ -9,6 +9,7 @@
 
 #include "ff.h"
 #include "diskio.h"
+#include "board_watchdog.h"
 #include "flash_disk.h"
 #if PICO_BASIC_SD
 #include "sd_card.h"
@@ -23,6 +24,7 @@ DSTATUS disk_status(BYTE pdrv) {
 }
 
 DSTATUS disk_initialize(BYTE pdrv) {
+    board_watchdog_feed();
 #if PICO_BASIC_SD
     if (pdrv == 1)
         return sd_initialize();
@@ -31,6 +33,7 @@ DSTATUS disk_initialize(BYTE pdrv) {
 }
 
 DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
+    board_watchdog_feed();  // a long file operation isn't a hang
 #if PICO_BASIC_SD
     if (pdrv == 1)
         return sd_read(buff, sector, count);
@@ -39,6 +42,7 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
 }
 
 DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
+    board_watchdog_feed();
 #if PICO_BASIC_SD
     if (pdrv == 1)
         return sd_write(buff, sector, count);

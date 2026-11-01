@@ -214,6 +214,15 @@ static void set(int line, const char *key, const char *v) {
         }
     } else if (!strcasecmp(key, "NTP_SERVER")) {
         set_text(line, key, v, config.ntp_server, sizeof config.ntp_server);
+    } else if (!strcasecmp(key, "WATCHDOG")) {
+        char *end;
+        long ms = strtol(v, &end, 10);
+        if (!strcasecmp(v, "OFF") || !strcmp(v, "0"))
+            config.watchdog = 0;
+        else if (end != v && !*end && ms >= 100 && ms <= 8388)
+            config.watchdog = (int)ms;
+        else
+            warn("CONFIG.TXT line %d: WATCHDOG = %s: 100 to 8388 ms, or OFF", line, v);
     } else if (!strcasecmp(key, "CLOCK")) {
         if (!strcmp(v, "12") || !strcmp(v, "24") || !strcasecmp(v, "12H") || !strcasecmp(v, "24H"))
             config.clock12 = v[0] == '1';
@@ -338,5 +347,7 @@ void config_print(void) {
     printf("  TZ = %s\n", config.tz[0] ? config.tz : "UTC (none set)");
     if (config.clock12)
         printf("  CLOCK = 12 (TIME$ 01:30:00 PM)\n");
+    if (config.watchdog)
+        printf("  WATCHDOG = %d (armed before AUTORUN.BAS)\n", config.watchdog);
     config_warnings();
 }

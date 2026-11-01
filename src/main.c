@@ -1,6 +1,6 @@
 /**
  * @file main.c
- * @brief Pico BASIC on its own: a GW-BASIC style BASIC on an RP2350 or RP2040, used from
+ * @brief Pico BASIC on its own: a BASIC for an RP2350 or RP2040, used from
  * a serial terminal, with its files in the Pico's flash.
  *
  * @author Ken Segler
@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "basic.h"
+#include "basic_port.h"
 #include "ff.h"
 #include "config.h"
 #include "flash_disk.h"
@@ -111,6 +112,8 @@ void board_banner(void) {
 #if PICO_BASIC_WIFI
     wifi_banner();
 #endif
+    if (port_watchdog_reset())
+        printf("Reset by the watchdog\n");
     config_warnings();
 }
 
@@ -162,6 +165,7 @@ static bool autorun_skipped(void) {
 }
 
 int main(void) {
+    port_watchdog_reset();  // note why the board reset before anything arms it
     // The disk first: formatting it (the first start-up) writes the flash
     // with interrupts off for a while, which the USB can't be left waiting
     // through while the PC is setting it up.
@@ -251,6 +255,10 @@ int main(void) {
             first = NULL;
         } else {
             printf("Running AUTORUN.BAS (from %s); Ctrl-C stops it\n", drive);
+            if (config.watchdog) {
+                printf("Watchdog on: %d ms (WATCHDOG = in CONFIG.TXT)\n", config.watchdog);
+                port_watchdog_set(config.watchdog);
+            }
         }
     }
     for (;;) {

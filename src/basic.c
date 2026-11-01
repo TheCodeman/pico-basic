@@ -1,6 +1,6 @@
 /**
  * @file basic.c
- * @brief GW-BASIC style interpreter.
+ * @brief The BASIC interpreter.
  *
  * Program lines are kept as text (keywords upper-cased when entered) in a
  * sorted array and interpreted directly, so LIST, SAVE and EDIT show exactly
@@ -61,7 +61,7 @@
 
 // ---- Errors ---------------------------------------------------------------
 
-/// BASIC's error numbers (GW-BASIC's).
+/// BASIC's error numbers.
 enum {
     E_NEXT_WITHOUT_FOR = 1, E_SYNTAX = 2, E_RETURN_WITHOUT_GOSUB = 3, E_OUT_OF_DATA = 4,
     E_ILLEGAL_CALL = 5, E_OVERFLOW = 6, E_OUT_OF_MEMORY = 7, E_UNDEFINED_LINE = 8,
@@ -220,7 +220,7 @@ static void out_char(int c) {
         char ch = c;
         if (c == '\n') {
             // Text files end lines in CR LF; COM1 sends CR, and LF only
-            // with the LF option, as GW-BASIC does.
+            // with the LF option.
             if (out_dev->mode != FM_COM || out_dev->com_lf)
                 file_write("\r\n", 2);
             else
@@ -478,7 +478,7 @@ static int read_escape(void) {
 }
 
 /// KEY n, "text": what F1-F10 type at the Ok prompt and in INPUT ("\r"
-/// ends the line), GW-BASIC's defaults to start with.
+/// ends the line), to start with.
 static char soft_keys[10][16] = {"LIST ", "RUN\r", "LOAD\"", "SAVE\"", "CONT\r",
                                  ",\"LPT1:\"\r", "TRON\r", "TROFF\r", "KEY ", "SCREEN 0,0,0\r"};
 
@@ -760,7 +760,7 @@ static const char *want_str(value_t v) {
     return v.s;
 }
 
-/// GW-BASIC style: no leading zero, a space in place of a + sign, and a
+/// No leading zero, a space in place of a + sign, and a
 /// trailing space when printed.
 /// @param n the number
 /// @param out the text
@@ -788,7 +788,7 @@ static void format_number(double n, char *out, int size) {
     }
     if (fabs(n) < 1e15 && n == floor(n))
         snprintf(buf, sizeof buf, "%.0f", fabs(n));
-    else if ((double)(float)n == n)  // a single-precision value: 7 digits, as GW-BASIC
+    else if ((double)(float)n == n)  // a single-precision value: 7 digits
         snprintf(buf, sizeof buf, "%.7G", fabs(n));
     else
         snprintf(buf, sizeof buf, "%.9G", fabs(n));
@@ -1311,7 +1311,7 @@ static void prune_vars(bool (*keep)(const char *name, bool array), bool keep_fns
 
 /// CHAIN ... ALL keeps DEF FN functions, but they only work while their
 /// definition is in the program, unchanged at the same place. That's how it
-/// works out in GW-BASIC, which keeps a pointer into the program text: a game
+/// works out with a pointer into the program text: a game
 /// that chains to another program and back to the first finds its functions
 /// again. Elsewhere calling one is "Undefined user function" rather than
 /// running garbage. Before loading: note where each one is (body NULL while
@@ -1485,7 +1485,7 @@ typedef struct {
 static for_frame_t *for_stack;  ///< STACK_MAX each, while BASIC runs (SRAM is short)
 /// FOR loops open.
 static int for_depth;
-/// A GOSUB also remembers the FOR and WHILE depths: as in GW-BASIC, loops
+/// A GOSUB also remembers the FOR and WHILE depths: loops
 /// started in a subroutine end at its RETURN, and a FOR or NEXT there doesn't
 /// touch the caller's loops (a FOR X inside a FOR X loop's subroutine).
 typedef struct {
@@ -1576,7 +1576,7 @@ static void skip_spaces(void) {
         ++p;
 }
 
-/// Matches a keyword at p (no word boundary needed, as in GW-BASIC).
+/// Matches a keyword at p (no word boundary needed).
 /// @param kw the keyword
 /// @return matched (p is past it)
 static bool accept(const char *kw) {
@@ -1600,7 +1600,7 @@ static const char *const builtin_words[] = {
     "GWIDTH", "HEX", "I2CREAD", "INKEY", "INP", "INSTR", "INT", "IOCTL", "KEYDOWN", "LCASE", "LEFT", "LEN", "LOC", "LOF",
     "LOG", "LPOS", "MID", "MKD", "MKI", "MKS", "MOUSEB", "MOUSEW", "MOUSEX", "MOUSEY", "MUSIC", "OCT", "PEEK", "PEN", "PIN", "PLAY", "PMAP",
     "POINT", "POS", "RGB", "RIGHT", "RND", "SCREEN", "SGN", "SIN", "SPACE", "SPI", "SPRITEHIT", "SPRITEON", "SPRITEX", "SPRITEY", "SQR", "STICK",
-    "STR", "TAN", "TEMP", "TIME", "UCASE", "USR", "VAL", "VARPTR", "WIFI",
+    "STR", "TAN", "TEMP", "TIME", "UCASE", "USR", "VAL", "VARPTR", "WDRESET", "WIFI",
 };
 /// The start of every keyword statement() tries.
 static const char *const statement_words[] = {
@@ -1612,7 +1612,7 @@ static const char *const statement_words[] = {
     "NAME", "NEOPIXEL", "NEW", "NEXT", "NTP", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
     "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
-    "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WEND", "WHILE", "WIDTH", "WIFI", "WINDOW", "WRITE", "XRECV", "XSEND",
+    "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WATCHDOG", "WEND", "WHILE", "WIDTH", "WIFI", "WINDOW", "WRITE", "XRECV", "XSEND",
 };
 
 /// The words of a list grouped by first letter, built on first use.
@@ -1717,7 +1717,7 @@ static bool read_name(char *name) {
         if (n > 0 && strchr("TSEGAOXMI", *p)) {  // the stop words' first letters
             bool stop = false;
             // Only when what follows can't be part of a name: SCORE, HAND(5),
-            // PHOTO$ and TOTO.1 stay names, as in GW-BASIC.
+            // PHOTO$ and TOTO.1 stay names.
             for (size_t k = 0; k < sizeof stop_words / sizeof *stop_words; ++k) {
                 size_t l = strlen(stop_words[k]);
                 char after = p[l];
@@ -1988,7 +1988,7 @@ static double one_num_arg(void) {
 static int gfx_point(int x, int y);
 
 /// Kept out of line so its locals only take stack when a function is called.
-__attribute__((noinline)) // Microsoft Binary Format, GW-BASIC's MKS$/MKD$ layout: little-endian
+__attribute__((noinline)) // Microsoft Binary Format, MKS$/MKD$'s layout: little-endian
 /// mantissa (sign in the top bit of the byte below the exponent), then an
 /// exponent byte biased by 129 (0 means zero). Single precision is 4 bytes,
 /// double 8.
@@ -2123,6 +2123,8 @@ static value_t builtin(void) {
         expect(")");
         return num(port_music_state(n));
     }
+    if (accept("WDRESET"))  // -1 if the watchdog reset the board last
+        return num(port_watchdog_reset() ? -1 : 0);
     if (accept("WIFI(")) {  // WIFI(0) connected, (1) signal, (2) clock set by NTP
         int n = arg_int();
         expect(")");
@@ -2521,7 +2523,7 @@ static value_t builtin(void) {
         return str(b, 2);
     }
     case 41:
-    case 42: {  // MKS$(x), MKD$(x): Microsoft Binary Format, as GW-BASIC
+    case 42: {  // MKS$(x), MKD$(x): Microsoft Binary Format
         char b[8];
         int size = which == 41 ? 4 : 8;
         to_mbf(one_num_arg(), b, size);
@@ -2696,7 +2698,7 @@ static value_t additive(void) {
     }
 }
 
-/// Relational results are -1 (true) or 0, as in GW-BASIC.
+/// Relational results are -1 (true) or 0.
 /// @return the value
 static value_t relational(void) {
     value_t a = additive();
@@ -2864,7 +2866,7 @@ static char type_of(const char *name) {
 
 /// What a numeric variable of `type` holds when given d. A % variable rounds
 /// to -32768..32767 and a ! one keeps single precision (so 0.05 added up
-/// twenty times reaches 1, as in GW-BASIC); # keeps d as it is.
+/// twenty times reaches 1); # keeps d as it is.
 /// @param type the type
 /// @param d the value
 /// @return what it holds
@@ -2989,6 +2991,10 @@ static void print_error(int code) {
     if (out_col)
         out_newline();
     if (code == E_BREAK) {
+        if (port_watchdog_ms()) {
+            port_watchdog_set(0);  // someone is here: no reset at the prompt
+            out_str("(watchdog off) ");
+        }
         out_str("Break");
     } else {
         const char *text = "Unprintable error";
@@ -3046,7 +3052,7 @@ static int load_line_no;
 static enum { LOAD_UNKNOWN, LOAD_NUMBERED, LOAD_UNNUMBERED } load_kind;
 
 /// Reads plain-text programs a chunk at a time, so loading needs no more
-/// memory than the program itself. GW-BASIC tokenised files (first byte 0xFF,
+/// memory than the program itself. Tokenised (binary) files (first byte 0xFF,
 /// at most 64 KB) are read whole and converted.
 enum { LOAD_MERGE = 1, LOAD_KEEP_VARS = 2 };
 
@@ -3085,7 +3091,7 @@ static void load_file(const char *name, int flags) {
             error(E_PROTECTED);
         if (got && (uint8_t)chunk[0] == 0xFF) {
             if (flags & LOAD_MERGE)
-                error(E_BAD_FILE_MODE);  // as GW-BASIC: MERGE takes ASCII files only
+                error(E_BAD_FILE_MODE);  // MERGE takes ASCII files only
             size_t size = f_size(&f);
             whole = checked_malloc(size + 1);
             memcpy(whole, chunk, got);
@@ -3175,7 +3181,7 @@ static bool load_plain_line(char *line) {
     return true;
 }
 
-/// GW-BASIC tokenised format: 0xFF, then per line a 2-byte link, a 2-byte line
+/// The tokenised format: 0xFF, then per line a 2-byte link, a 2-byte line
 /// number, tokens, and a 0 byte; a 0 link ends the program.
 static const char *const tok1[] = {
     [0x81] = "END", "FOR", "NEXT", "DATA", "INPUT", "DIM", "READ", "LET", "GOTO", "RUN", "IF",
@@ -3190,7 +3196,7 @@ static const char *const tok1[] = {
     NULL, NULL, ">", "=", "<", "+", "-", "*", "/", "^", "AND", "OR", "XOR", "EQV", "IMP", "MOD",
     "\\",
 };
-/// GW-BASIC's tokens after 0xFE.
+/// The tokens after 0xFE.
 static const char *const tok_fe[] = {
     [0x81] = "FILES", "FIELD", "SYSTEM", "NAME", "LSET", "RSET", "KILL", "PUT", "GET", "RESET",
     "COMMON", "CHAIN", "DATE$", "TIME$", "PAINT", "COM", "CIRCLE", "DRAW", "PLAY", "TIMER",
@@ -3226,7 +3232,7 @@ static double mbf_to_double(const uint8_t *b, int bytes) {
     return neg ? -v : v;
 }
 
-/// Loads a GW-BASIC tokenised program (as SAVE without ,A makes on a PC).
+/// Loads a tokenised program (as SAVE without ,A makes on a PC).
 /// @param b the file
 /// @param len its length
 /// @return it was one
@@ -3841,7 +3847,7 @@ static void do_input(bool line_input) {
                 }
                 ++in;
             } else if (*in) {
-                redo = true;  // "?Extra ignored" in GW-BASIC; redo is stricter
+                redo = true;  // ("?Extra ignored" would be laxer)
                 break;
             }
         } while (!at_end_of_statement() || false);
@@ -4194,7 +4200,7 @@ static void do_if(void) {
 }
 
 /// ON ERROR GOTO line (0 turns it off; inside a handler that reports the
-/// error as if there were no handler, as GW-BASIC does).
+/// error as if there were no handler).
 static void do_on_error(void) {
     if (!accept("GOTO"))
         error(E_SYNTAX);
@@ -4653,7 +4659,7 @@ static void do_read(void) {
             while (*end == ' ')
                 ++end;
             if (*end) {
-                cur_line = data_pos.line;  // GW-BASIC reports the DATA line
+                cur_line = data_pos.line;  // the error is the DATA line's
                 error(E_SYNTAX);
             }
             set_num(lv, d);
@@ -5026,7 +5032,7 @@ static int gfx_point(int x, int y) {
     return 256 + rgb;
 }
 
-/// Bresenham, with GW-BASIC's 16-bit line style (bit 15 first).
+/// Bresenham, with a 16-bit line style (bit 15 first).
 /// @param x1 the start
 /// @param y1 it
 /// @param x2 the end
@@ -5233,7 +5239,7 @@ static void do_screen(void) {
         if (apage < 0)
             apage = active_page;
         if (vpage < 0)
-            vpage = apage;  // as GW-BASIC: the active page is shown
+            vpage = apage;  // the active page is shown
         if (apage >= page_count || vpage >= page_count)
             error(E_ILLEGAL_CALL);
         if (port_set_pages(apage, vpage))
@@ -5265,7 +5271,7 @@ static void do_gline(void) {
     if (*p == '(' || !strncmp(p, "STEP", 4))
         read_point(&x1, &y1);
     expect("-");
-    last_x = x1;  // as in GW-BASIC, -STEP(dx,dy) counts from the first point
+    last_x = x1;  // -STEP(dx,dy) counts from the first point
     last_y = y1;
     read_point(&x2, &y2);
     int colour = gfg;
@@ -5814,7 +5820,7 @@ static void poke_byte(long addr, int v) {
     error(E_ILLEGAL_CALL);
 }
 
-/// BSAVE "file", offset, length: the bytes, after GW-BASIC's 7-byte header.
+/// BSAVE "file", offset, length: the bytes, after a 7-byte header.
 static void do_bsave(void) {
     char name[64];
     file_name_arg(name, sizeof name, false);
@@ -6022,10 +6028,9 @@ static void do_window(void) {
 // ---- Graphics GET and PUT -------------------------------------------------------
 //
 // GET (x1,y1)-(x2,y2), a[(i)] keeps a rectangle of pixels in a numeric array
-// and PUT (x,y), a[(i)][, PSET|PRESET|XOR|OR|AND] draws it back. As in
-// GW-BASIC the first element holds the size and the pixels are packed at
-// the mode's bits per pixel, so arrays dimensioned by GW-BASIC's formula are
-// big enough: here 32 bits go in each element.
+// and PUT (x,y), a[(i)][, PSET|PRESET|XOR|OR|AND] draws it back. The
+// first element holds the size and the pixels are packed at the mode's bits
+// per pixel, so arrays dimensioned by the usual formula are big enough: here 32 bits go in each element.
 
 /// Bits a pixel in this mode (GET/PUT arrays).
 /// @return 1, 2, 4 or 8
@@ -7487,7 +7492,7 @@ static void do_servo(void) {
 
 // ---- PLAY ----------------------------------------------------------------------
 //
-// GW-BASIC's music macro language. The settings last from one PLAY to the
+// The music macro language. The settings last from one PLAY to the
 // next (RUN resets them).
 
 /// The octave, the note length and the tempo.
@@ -7578,7 +7583,7 @@ static double play_duration(const char *m, int len, int *i) {
     return ms;
 }
 
-/// SOUND freq, ticks (18.2 a second). As in GW-BASIC: after PLAY "MB" it goes
+/// SOUND freq, ticks (18.2 a second). After PLAY "MB" it goes
 /// to the background music queue; freq 32767 is silence; ticks 0 stops the
 /// sound playing.
 static void do_sound(void) {
@@ -7780,6 +7785,36 @@ static void do_format(void) {
             error(E_ILLEGAL_CALL);
         format_width = n;
         format_on = true;
+    }
+}
+
+/// WATCHDOG ms | FEED | OFF, or alone its state. Armed, the board resets
+/// unless the program feeds it within `ms`; a break (Ctrl-C, STOP) turns it
+/// off, but an error or END leaves it on, so a board on its own starts again
+/// (and runs AUTORUN.BAS).
+static void do_watchdog(void) {
+    if (accept_word("OFF")) {
+        port_watchdog_set(0);
+    } else if (accept_word("FEED")) {
+        port_watchdog_feed();
+    } else if (at_end_of_statement()) {
+        char buf[96];
+        int ms = port_watchdog_ms();
+        if (ms)
+            snprintf(buf, sizeof buf, "Watchdog on: %d ms", ms);
+        else
+            snprintf(buf, sizeof buf, "Watchdog off (WATCHDOG ms arms it, up to %d ms)", port_watchdog_max());
+        out_str(buf);
+        out_newline();
+        if (port_watchdog_reset()) {
+            out_str("The last reset was the watchdog's");
+            out_newline();
+        }
+    } else {
+        int ms = arg_int();
+        if (ms < 100 || ms > port_watchdog_max())
+            error(E_ILLEGAL_CALL);
+        port_watchdog_set(ms);
     }
 }
 
@@ -8125,7 +8160,7 @@ static void do_files(void) {
         out_str("File not found");
         out_newline();
     }
-    // As GW-BASIC: the disk's free space after the list.
+    // The disk's free space after the list.
     FATFS *fs;
     DWORD clusters;
     if (f_getfree(folder, &clusters, &fs) == FR_OK) {
@@ -8205,7 +8240,7 @@ static bool accept_word(const char *kw) {
 }
 
 /// OPEN "COM1:[speed][,parity][,data][,stop][,options]" AS #n opens the
-/// serial port, UART1. As in GW-BASIC the defaults are 300 baud, even parity,
+/// serial port, UART1. The defaults are 300 baud, even parity,
 /// 7 data bits and 1 stop bit; options are LF (send LF after CR), RS, CS, DS,
 /// CD, PE, BIN and ASC (accepted, no effect: there are no handshake lines),
 /// and TXn / RXn to choose the pins (default TX GP4, RX GP5).
@@ -9118,6 +9153,8 @@ static int statement(void) {
         do_pin();
     } else if (accept("PWM")) {
         do_pwm();
+    } else if (accept_word("WATCHDOG")) {
+        do_watchdog();
     } else if (accept_word("WIFI")) {
         int what = accept_word("ON") ? 1 : accept_word("OFF") ? 2 : accept_word("SCAN") ? 3 : 0;
         if (!what && !at_end_of_statement())
@@ -9258,7 +9295,7 @@ static int statement(void) {
             error(E_SYNTAX);
         for (int i = 0; i < BUCKETS; ++i)
             if (arrays[i] && b != option_base)
-                error(E_DUPLICATE_DEF);  // as GW-BASIC: before any array exists
+                error(E_DUPLICATE_DEF);  // only before any array exists
         option_base = b;
     } else if (accept_word("ERASE")) {
         do_erase();
@@ -9329,7 +9366,7 @@ static int statement(void) {
     } else if (accept("COM(")) {
         set_event_state(event_number("COM"));
     } else if (accept_word("WIDTH")) {
-        // As GW-BASIC: WIDTH 80 in SCREEN 1 switches to SCREEN 2 and WIDTH 40
+        // WIDTH 80 in SCREEN 1 switches to SCREEN 2 and WIDTH 40
         // in SCREEN 2 back. Text otherwise stays 80 columns.
         skip_spaces();
         if (isdigit((unsigned char)*p)) {
@@ -9371,7 +9408,7 @@ static bool direct(const char *text) {
             cont_pos.line = -2;
         print_error(code);
         if (running && code != E_BREAK)
-            close_all_files();  // as GW-BASIC does when a program stops on an error
+            close_all_files();  // as when a program stops on an error
         if (running && music_from_program)
             port_music_stop();  // the program's music ends with it
         running = false;
@@ -9414,7 +9451,7 @@ static bool try_store_line(int n, const char *text) {
     }
     unnumbered = false;
     store_line(n, text);
-    clear_vars();  // as GW-BASIC does when the program changes
+    clear_vars();  // the program changed
     reset_run_state();
     cont_pos.line = -2;
     return true;
@@ -9545,9 +9582,9 @@ void basic_main(const char *file) {
     trace = false;
     program_name[0] = 0;
 #ifdef BASIC_NO_SCREEN
-    out_str("Pico BASIC (GW-BASIC style). SYSTEM starts it afresh.");
+    out_str("Pico BASIC. SYSTEM starts it afresh.");
 #else
-    out_str("Pico BASIC (GW-BASIC style). SYSTEM returns to the shell.");
+    out_str("Pico BASIC. SYSTEM returns to the shell.");
 #endif
     out_newline();
     basic_print_free();
@@ -9564,6 +9601,13 @@ void basic_main(const char *file) {
                 out_newline();
             out_str("Ok");
             out_newline();
+            if (port_watchdog_ms()) {
+                char buf[80];
+                snprintf(buf, sizeof buf, "Watchdog on: the board resets in %d ms (WATCHDOG OFF stops it)",
+                         port_watchdog_ms());
+                out_str(buf);
+                out_newline();
+            }
         }
         ok = true;
         char buf[LINE_MAX_LEN + 1];

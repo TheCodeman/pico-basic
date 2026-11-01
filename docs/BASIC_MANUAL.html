@@ -64,6 +64,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#the-disk">The disk</a></li>
 <li><a href="#the-sd-card-drive-sd">The SD card (drive SD:)</a></li>
 <li><a href="#settings-configtxt">Settings: CONFIG.TXT</a></li>
+<li><a href="#the-watchdog">The watchdog</a></li>
 <li><a href="#wi-fi-and-the-clock">Wi-Fi and the clock</a></li>
 <li><a href="#files-from-programs">Files from programs</a></li>
 </ul>
@@ -265,6 +266,8 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-ucase">UCASE$</a></li>
 <li><a href="#ref-val">VAL</a></li>
 <li><a href="#ref-view-print">VIEW PRINT</a></li>
+<li><a href="#ref-watchdog">WATCHDOG</a></li>
+<li><a href="#ref-wdreset">WDRESET</a></li>
 <li><a href="#ref-wend">WEND</a></li>
 <li><a href="#ref-while">WHILE</a></li>
 <li><a href="#ref-width">WIDTH</a></li>
@@ -286,7 +289,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 </ul>
 </div>
 </div>
-<p>Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 or RP2040 board, used from
+<p>Pico BASIC is a BASIC interpreter for a bare RP2350 or RP2040 board, used from
 a serial terminal. It keeps its programs and data files on a FAT disk in the
 board's own flash, swaps files with the PC by XMODEM, plays tones on a
 speaker pin, and drives the chip's GPIO, PWM, ADC, I2C, SPI and a second
@@ -397,7 +400,7 @@ needs to be in the <code>dialout</code> group to open the port.</p>
 <pre><code>Pico BASIC 0.1 for the RP2350 (pimoroni_pico_plus2_rp2350)
 PSRAM: 8 MB
 Flash disk: 15336 KB, 15332 KB free
-Pico BASIC (GW-BASIC style). SYSTEM starts it afresh.
+Pico BASIC. SYSTEM starts it afresh.
 8825424 Bytes free
 Ok
 </code></pre>
@@ -551,7 +554,7 @@ it. <code>RUN "NEODEMO"</code> saved as AUTORUN (<code>LOAD "NEODEMO"</code> the
 </tr>
 <tr>
 <td>F1-F10</td>
-<td>type their soft-key text (<code>KEY LIST</code> shows it: F1 <code>LIST</code>, F2 <code>RUN</code> and Enter, ... as in GW-BASIC)</td>
+<td>type their soft-key text (<code>KEY LIST</code> shows it: F1 <code>LIST</code>, F2 <code>RUN</code> and Enter, ...)</td>
 </tr>
 <tr>
 <td>Ctrl-C</td>
@@ -695,7 +698,7 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 </tr>
 <tr>
 <td><code>LOAD "file"[,R]</code></td>
-<td>Loads a program, and with <code>,R</code> runs it. <code>.BAS</code> is added if the name has no extension. Reads plain text and GW-BASIC tokenised files.</td>
+<td>Loads a program, and with <code>,R</code> runs it. <code>.BAS</code> is added if the name has no extension. Reads plain text and tokenised (binary) BASIC files from a PC.</td>
 </tr>
 <tr>
 <td><code>SAVE "file"[,A]</code></td>
@@ -771,8 +774,8 @@ SAVE "PRIMES2"
 <h2 id="3-language">3. Language</h2>
 <h3 id="numbers-strings-and-variables">Numbers, strings and variables</h3>
 <ul>
-<li><strong>Single precision</strong> (<code>!</code>, and names without a type) keep 7 digits, as in
-  GW-BASIC: a value stored in one is rounded to single precision and prints
+<li><strong>Single precision</strong> (<code>!</code>, and names without a type) keep 7 digits: a value
+  stored in one is rounded to single precision and prints
   with up to 7 digits.</li>
 <li><strong>Double precision</strong> (<code>#</code>) keep about 15 digits (printed with up to 9);
   calculations are always done in double precision.</li>
@@ -787,7 +790,7 @@ SAVE "PRIMES2"
   <code>DEFDBL</code>/<code>DEFSTR</code> say otherwise (after <code>DEFINT A-Z</code>, <code>A</code> is <code>A%</code>).</li>
 <li>An array and a plain variable may share a name: <code>A</code> and <code>A(3)</code> are
   separate.</li>
-<li>Keywords are recognised without spaces (GW-BASIC style), so a variable
+<li>Keywords are recognised without spaces, so a variable
   name must not start with a keyword: <code>PRINTER</code> reads as <code>PRINT ER</code>.</li>
 </ul>
 <h3 id="arrays">Arrays</h3>
@@ -852,7 +855,7 @@ SAVE "PRIMES2"
 </tr>
 </tbody>
 </table>
-<p>The logical operators work bit by bit on integers, as in GW-BASIC.</p>
+<p>The logical operators work bit by bit on integers.</p>
 <h3 id="flow-of-control">Flow of control</h3>
 <table>
 <thead>
@@ -1341,6 +1344,7 @@ SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
 NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
 TZ = EST           # the time zone DATE$ and TIME$ show (UTC without it)
 CLOCK = 12         # TIME$ as 01:30:00 PM; 24 (the default): 13:30:00
+WATCHDOG = 5000    # arm the watchdog (ms) just before AUTORUN.BAS runs
 WIFI_SSID = HOME   # Wi-Fi builds: the network to join at power-up
 WIFI_PASSWORD = secret
 </code></pre>
@@ -1361,10 +1365,40 @@ WIFI_PASSWORD = secret
 <li><code>CLOCK = 12</code> (or <code>12H</code>) makes TIME$ 12-hour with AM or PM,
   <code>"01:30:00 PM"</code>: 11 characters instead of 8, so <code>LEFT$(TIME$, 5)</code> still
   gives <code>"01:30"</code> but a program that takes TIME$ apart may need changing.
-  <code>CLOCK = 24</code>, the default, keeps GW-BASIC's <code>"13:30:00"</code>. WIFI and NTP show
+  <code>CLOCK = 24</code>, the default, keeps the usual <code>"13:30:00"</code>. WIFI and NTP show
   the time the same way. <code>TIME$ = "1:30 PM"</code> and <code>TIME$ = "13:30"</code> both work
   either way.</li>
 <li><code>examples/CONFIG.TXT</code> is a copy to start from.</li>
+</ul>
+<h3 id="the-watchdog">The watchdog</h3>
+<p>The chip's watchdog resets the board if a program stops checking in: a
+hang, a loop that never ends, a device that never answers. With AUTORUN.BAS
+a board on its own then starts again by itself.</p>
+<pre><code>WATCHDOG 2000              ' arm it: reset unless fed within 2 seconds
+WHILE 1
+  ... the work ...
+  WATCHDOG FEED            ' "still alive"
+WEND
+</code></pre>
+<ul>
+<li><code>WATCHDOG ms</code> arms it (100 ms up to 8388 on the RP2040, 16777 on the
+  RP2350), <code>WATCHDOG FEED</code> reloads it, <code>WATCHDOG OFF</code> disarms it, and
+  <code>WATCHDOG</code> alone says how it is.</li>
+<li>A break (Ctrl-C, or STOP) turns it off, as someone is there. An error or
+  END leaves it on, and BASIC says so under <code>Ok</code> (<code>Watchdog on: the board
+  resets in 2000 ms</code>): a board on its own resets and runs AUTORUN.BAS
+  again. Use <code>WATCHDOG OFF</code> before END to stop for good.</li>
+<li>Disk reads and writes, XMODEM, Wi-Fi waits and the full-screen editor feed
+  it themselves. INPUT, PAUSE and the like don't: a program that waits
+  longer than the time resets the board.</li>
+<li>After a reset by the watchdog the banner says <code>Reset by the watchdog</code>, and
+  the function <code>WDRESET</code> is -1 (true): <code>IF WDRESET THEN ...</code>.</li>
+<li><code>WATCHDOG = 5000</code> in CONFIG.TXT arms it just before AUTORUN.BAS runs (and
+  not when there's none, so the prompt is safe).</li>
+<li>Files are written to the disk as they go, so a reset loses only what a
+  program had in a file it hadn't closed (the last part of a file open for
+  output); <code>CLOSE</code> before a risky part keeps it all.</li>
+<li><code>examples/WATCHDOG.BAS</code> feeds it ten times, then lets it reset the board.</li>
 </ul>
 <h3 id="wi-fi-and-the-clock">Wi-Fi and the clock</h3>
 <p>The Wi-Fi builds (a Pico 2 W, a Pico W, or a Pico Plus 2 with Pimoroni's
@@ -1517,15 +1551,15 @@ close every file. Ctrl-C does not, so CONT can carry on.</p>
 40 GET #1, 1: PRINT NM$; CVI(AGE$)
 50 CLOSE #1
 </code></pre>
-<p>MKS$ and MKD$ use GW-BASIC's own number format (Microsoft Binary Format), so
-random files written by GW-BASIC on a PC read correctly here, and the other
+<p>MKS$ and MKD$ use Microsoft Binary Format, so
+random files written by BASICs on a PC read correctly here, and the other
 way round. CVI, CVS and CVD need at least 2, 4 and 8 bytes (otherwise
 Illegal function call).</p>
-<p>Differences from GW-BASIC:</p>
+<p>Differences from BASICs on a PC:</p>
 <ul>
 <li>A file can be open for INPUT under several numbers, but not written while
   it is open elsewhere.</li>
-<li>Ctrl-Z (byte 26) ends a file for INPUT # and INPUT$, as in GW-BASIC, so
+<li>Ctrl-Z (byte 26) ends a file for INPUT # and INPUT$, so
   binary files are best read with random access (GET).</li>
 </ul>
 <h2 id="5-moving-files-to-and-from-the-pc">5. Moving files to and from the PC</h2>
@@ -1614,7 +1648,7 @@ really ends in ^Z bytes loses them on the way in.</p>
 </tr>
 <tr>
 <td><code>PLAY "string"</code></td>
-<td>Music in GW-BASIC's music language (below). <code>PLAY "T160 O3 L8 CDEFGAB &gt; C"</code></td>
+<td>Music in the music language (below). <code>PLAY "T160 O3 L8 CDEFGAB &gt; C"</code></td>
 </tr>
 <tr>
 <td><code>PLAY(0)</code></td>
@@ -1894,7 +1928,7 @@ LINE INPUT # and INPUT$ on it.</p>
 </code></pre>
 <ul>
 <li><strong>Settings:</strong> speed 75-921600 baud; parity N, E or O; data bits 5-8; stop
-  bits 1 or 2. As in GW-BASIC, anything left out defaults to 300 baud, even
+  bits 1 or 2. Anything left out defaults to 300 baud, even
   parity, 7 data bits and 1 stop bit, so usually you give them all:
   <code>OPEN "COM1:9600,N,8,1" AS #1</code>.</li>
 <li><strong>Pins:</strong> GP8 (TX) and GP9 (RX) unless <code>TXn</code> / <code>RXn</code> options choose
@@ -2167,6 +2201,10 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 <td>prints the primes below 1000</td>
 </tr>
 <tr>
+<td>WATCHDOG.BAS</td>
+<td>arms the watchdog, feeds it ten times, then lets it reset the board</td>
+</tr>
+<tr>
 <td>LABELS.BAS</td>
 <td>a menu program without line numbers: GOSUB, ON GOSUB, RESTORE, ON ERROR GOTO and RESUME with labels</td>
 </tr>
@@ -2224,7 +2262,7 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-wifi-1">WIFI()</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-watchdog">WATCHDOG</a>, <a href="#ref-wdreset">WDRESET</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-wifi-1">WIFI()</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
 <p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
@@ -2349,7 +2387,7 @@ RUN "PRIMES"                               (in BASIC)
 <p>See also: <a href="#ref-sound">SOUND</a>, <a href="#ref-play">PLAY</a></p>
 <h3 id="ref-bload">BLOAD</h3>
 <p><em>Statement</em> · <code>BLOAD file$[, offset]</code></p>
-<p>Loads a file saved by BSAVE (GW-BASIC's 7-byte header) into the emulated memory (DEF SEG).</p>
+<p>Loads a file saved by BSAVE (a 7-byte header) into the emulated memory (DEF SEG).</p>
 <p>See also: <a href="#ref-bsave">BSAVE</a>, <a href="#ref-def-seg">DEF SEG</a></p>
 <h3 id="ref-bsave">BSAVE</h3>
 <p><em>Statement</em> · <code>BSAVE file$, offset, length</code></p>
@@ -2430,7 +2468,7 @@ RUN
 <p><em>Statement</em> · <code>CLEAR [, n[, m]]</code></p>
 <p>Deletes every variable and array, closes every file, and forgets DATA, FOR, GOSUB and WHILE positions and event traps. The program stays.</p>
 <ul>
-<li>Any numbers after it (GW-BASIC's memory sizes) are accepted and ignored.</li>
+<li>Any numbers after it (memory sizes, for older programs) are accepted and ignored.</li>
 </ul>
 <p>Example:</p>
 <pre><code>A = 5: CLEAR: PRINT A
@@ -2537,7 +2575,7 @@ RUN
 <p>See also: <a href="#ref-pos">POS</a>, <a href="#ref-locate">LOCATE</a></p>
 <h3 id="ref-cvd">CVD</h3>
 <p><em>Function</em> · <code>CVD(s$)</code></p>
-<p>The double-precision number in an 8-byte string made by MKD$ (GW-BASIC's format).</p>
+<p>The double-precision number in an 8-byte string made by MKD$ (Microsoft Binary Format).</p>
 <ul>
 <li>Errors: <code>Illegal function call</code> (5) for a string shorter than 8.</li>
 </ul>
@@ -2746,7 +2784,7 @@ RUN
 <p>See also: <a href="#ref-dim">DIM</a></p>
 <h3 id="ref-erdev">ERDEV</h3>
 <p><em>Function</em> · <code>ERDEV | ERDEV$</code></p>
-<p>GW-BASIC's device error details: always 0 and "" here.</p>
+<p>Device error details: always 0 and "" here.</p>
 <p>See also: <a href="#ref-err">ERR</a></p>
 <h3 id="ref-erl">ERL</h3>
 <p><em>Function</em> · <code>ERL</code></p>
@@ -3170,7 +3208,7 @@ HI
 <p>Loads a program, replacing the one in memory; with <code>,R</code> runs it too.</p>
 <ul>
 <li><code>.BAS</code> is added if the name has no extension.</li>
-<li>Plain text (CR LF or LF lines) and GW-BASIC tokenised files are read.</li>
+<li>Plain text (CR LF or LF lines) and tokenised (binary) BASIC files from a PC are read.</li>
 <li>Errors: <code>File not found</code> (53).</li>
 </ul>
 <p>Example:</p>
@@ -3287,7 +3325,7 @@ HI
 <p>See also: <a href="#ref-cvi">CVI</a></p>
 <h3 id="ref-mks">MKS$</h3>
 <p><em>Function</em> · <code>MKS$(x)</code></p>
-<p>The number <code>x</code> as a 4-byte single-precision string (GW-BASIC's format).</p>
+<p>The number <code>x</code> as a 4-byte single-precision string (Microsoft Binary Format).</p>
 <p>See also: <a href="#ref-cvs">CVS</a></p>
 <h3 id="ref-name">NAME</h3>
 <p><em>Statement</em> · <code>NAME old$ AS new$</code></p>
@@ -3541,7 +3579,7 @@ RUN
 <p>See also: <a href="#ref-pin">PIN</a></p>
 <h3 id="ref-play">PLAY</h3>
 <p><em>Statement</em> · <code>PLAY music$</code></p>
-<p>Plays notes in GW-BASIC's music language (see the manual's Sound section: A-G, O, L, T, P, MF/MB...).</p>
+<p>Plays notes in the music language (see the manual's Sound section: A-G, O, L, T, P, MF/MB...).</p>
 <ul>
 <li>After <code>MB</code> the notes play in the background (up to 32 queued) while the program goes on.</li>
 <li><code>X</code> substrings aren't supported; <code>=variable;</code> is.</li>
@@ -3906,7 +3944,7 @@ RUN
 <p><em>Function</em> · <code>TAB(n)</code></p>
 <p>In PRINT, moves to column <code>n</code> (1-80); to the next line first if the cursor is already past it.</p>
 <ul>
-<li>As in GW-BASIC: at column <code>n</code> already, it does nothing; past it, it goes to column <code>n</code> of the next line. So <code>PRINT T; TAB(4); "hello"</code> stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).</li>
+<li>At column <code>n</code> already, it does nothing; past it, it goes to column <code>n</code> of the next line. So <code>PRINT T; TAB(4); "hello"</code> stays on one line for T = 5 (" 5 " fills columns 1-3) but not for T = 10 (" 10 " fills 1-4).</li>
 <li>Give TAB room for the widest number (<code>TAB(6)</code> for up to 999), or a fixed width: <code>PRINT USING "### "; T;: PRINT "hello"</code>.</li>
 </ul>
 <p>Example:</p>
@@ -4006,6 +4044,32 @@ RUN
 <pre><code>VIEW PRINT 5 TO 20
 </code></pre>
 <p>See also: <a href="#ref-locate">LOCATE</a>, <a href="#ref-cls">CLS</a></p>
+<h3 id="ref-watchdog">WATCHDOG</h3>
+<p><em>Statement</em> · <code>WATCHDOG ms | WATCHDOG FEED | WATCHDOG OFF | WATCHDOG</code></p>
+<p>The chip's watchdog: <code>WATCHDOG ms</code> arms it, and the board resets unless <code>WATCHDOG FEED</code> comes within <code>ms</code> milliseconds (100 up to 8388 on the RP2040, 16777 on the RP2350); <code>WATCHDOG OFF</code> disarms it; <code>WATCHDOG</code> alone says how it is.</p>
+<ul>
+<li>A break (Ctrl-C or STOP) turns it off, as someone is there; an error or END leaves it on, so a board on its own resets and runs AUTORUN.BAS again.</li>
+<li>Disk reads and writes, XMODEM, Wi-Fi waits and the full-screen editor feed it themselves; INPUT and PAUSE don't, so a program waiting longer than <code>ms</code> resets the board.</li>
+<li><code>WATCHDOG = ms</code> in CONFIG.TXT arms it just before AUTORUN.BAS runs.</li>
+<li>Errors: <code>Illegal function call</code> (5) for a time out of range.</li>
+</ul>
+<p>Example:</p>
+<pre><code>WATCHDOG 2000: PAUSE 500: WATCHDOG FEED: WATCHDOG OFF: PRINT &quot;OK&quot;
+</code></pre>
+<p>Shows:</p>
+<pre><code>OK
+</code></pre>
+<p>See also: <a href="#ref-wdreset">WDRESET</a></p>
+<h3 id="ref-wdreset">WDRESET</h3>
+<p><em>Function</em> · <code>WDRESET</code></p>
+<p>-1 (true) if the last reset was the watchdog's (it ran out), else 0.</p>
+<ul>
+<li>The banner says <code>Reset by the watchdog</code> then too.</li>
+</ul>
+<p>Example:</p>
+<pre><code>IF WDRESET THEN PRINT &quot;Restarted by the watchdog&quot;
+</code></pre>
+<p>See also: <a href="#ref-watchdog">WATCHDOG</a></p>
 <h3 id="ref-wend">WEND</h3>
 <p><em>Statement</em> · <code>WEND</code></p>
 <p>Ends a WHILE loop.</p>
@@ -4265,7 +4329,7 @@ Sent 1 file, 2048 bytes.
 </tr>
 </tbody>
 </table>
-<p>(Other GW-BASIC codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print <code>Unprintable error</code>.)</p>
+<p>(Other codes, 14, 16, 23, 27, 51, 66, 69, 72 and 74, have their messages for ERROR n; unknown codes print <code>Unprintable error</code>.)</p>
 <h2 id="appendix-b-print-using-formats">Appendix B: PRINT USING formats</h2>
 <table>
 <thead>

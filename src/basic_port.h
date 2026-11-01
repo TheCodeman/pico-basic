@@ -175,6 +175,25 @@ const char *port_wifi_text(int n);
 /// CLOCK = 12 in CONFIG.TXT: TIME$ gives 12-hour time with AM or PM.
 /// @return it does
 bool port_clock_12h(void);
+
+/// WATCHDOG ms (arm, 100 ms up to port_watchdog_max) or 0 (off).
+/// @param ms the timeout
+void port_watchdog_set(int ms);
+
+/// WATCHDOG FEED: reloads it.
+void port_watchdog_feed(void);
+
+/// The timeout while it's armed, else 0.
+/// @return ms
+int port_watchdog_ms(void);
+
+/// The longest timeout the chip has (8388 ms on the RP2040, 16777 on the RP2350).
+/// @return ms
+int port_watchdog_max(void);
+
+/// WDRESET: the last reset was the watchdog's (it ran out).
+/// @return it was
+bool port_watchdog_reset(void);
 /// The same for a text file that isn't the program (EDIT "file").
 /// @param path the file
 void port_edit_file(const char *path);

@@ -1,6 +1,6 @@
 # Pico BASIC User's Manual
 
-Pico BASIC is a GW-BASIC style interpreter for a bare RP2350 or RP2040 board, used from
+Pico BASIC is a BASIC interpreter for a bare RP2350 or RP2040 board, used from
 a serial terminal. It keeps its programs and data files on a FAT disk in the
 board's own flash, swaps files with the PC by XMODEM, plays tones on a
 speaker pin, and drives the chip's GPIO, PWM, ADC, I2C, SPI and a second
@@ -85,7 +85,7 @@ When the board starts it shows:
     Pico BASIC 0.1 for the RP2350 (pimoroni_pico_plus2_rp2350)
     PSRAM: 8 MB
     Flash disk: 15336 KB, 15332 KB free
-    Pico BASIC (GW-BASIC style). SYSTEM starts it afresh.
+    Pico BASIC. SYSTEM starts it afresh.
     8825424 Bytes free
     Ok
 
@@ -222,7 +222,7 @@ At the `Ok` prompt and in `INPUT`:
 | Insert | switches between inserting and overwriting |
 | Esc | clears the line |
 | Up, Down | (at `Ok`) bring back the last 8 lines typed |
-| F1-F10 | type their soft-key text (`KEY LIST` shows it: F1 `LIST `, F2 `RUN` and Enter, ... as in GW-BASIC) |
+| F1-F10 | type their soft-key text (`KEY LIST` shows it: F1 `LIST `, F2 `RUN` and Enter, ...) |
 | Ctrl-C | abandons the line |
 
 `EDIT n` (or `EDIT .`, the last line typed or the one that failed) puts a
@@ -279,7 +279,7 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).
 | `LLIST [range]` | Same as LIST (there's no printer). |
 | `NEW` | Deletes the program and its variables. |
 | `CLEAR` | Clears variables and closes files (any arguments are ignored). |
-| `LOAD "file"[,R]` | Loads a program, and with `,R` runs it. `.BAS` is added if the name has no extension. Reads plain text and GW-BASIC tokenised files. |
+| `LOAD "file"[,R]` | Loads a program, and with `,R` runs it. `.BAS` is added if the name has no extension. Reads plain text and tokenised (binary) BASIC files from a PC. |
 | `SAVE "file"[,A]` | Saves as plain text (`,A` is accepted; text is the only format). `.BAS` is added if the name has no extension. |
 | `MERGE "file"` | Adds the lines of a plain-text program to the one in memory (lines with the same number are replaced). |
 | `CHAIN [MERGE] "file"[, [line][, ALL][, DELETE range]]` | Runs another program from a program, keeping open files. Only the variables named in `COMMON` are passed on, or all of them with `ALL`. `CHAIN MERGE` adds the file's lines (after deleting `range`) and keeps all variables. |
@@ -307,8 +307,8 @@ Example:
 
 ### Numbers, strings and variables
 
-- **Single precision** (`!`, and names without a type) keep 7 digits, as in
-  GW-BASIC: a value stored in one is rounded to single precision and prints
+- **Single precision** (`!`, and names without a type) keep 7 digits: a value
+  stored in one is rounded to single precision and prints
   with up to 7 digits.
 - **Double precision** (`#`) keep about 15 digits (printed with up to 9);
   calculations are always done in double precision.
@@ -323,7 +323,7 @@ Example:
   `DEFDBL`/`DEFSTR` say otherwise (after `DEFINT A-Z`, `A` is `A%`).
 - An array and a plain variable may share a name: `A` and `A(3)` are
   separate.
-- Keywords are recognised without spaces (GW-BASIC style), so a variable
+- Keywords are recognised without spaces, so a variable
   name must not start with a keyword: `PRINTER` reads as `PRINT ER`.
 
 ### Arrays
@@ -349,7 +349,7 @@ Example:
 | `OR` `XOR` | |
 | `EQV` `IMP` | |
 
-The logical operators work bit by bit on integers, as in GW-BASIC.
+The logical operators work bit by bit on integers.
 
 ### Flow of control
 
@@ -600,6 +600,7 @@ too).
     NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
     TZ = EST           # the time zone DATE$ and TIME$ show (UTC without it)
     CLOCK = 12         # TIME$ as 01:30:00 PM; 24 (the default): 13:30:00
+    WATCHDOG = 5000    # arm the watchdog (ms) just before AUTORUN.BAS runs
     WIFI_SSID = HOME   # Wi-Fi builds: the network to join at power-up
     WIFI_PASSWORD = secret
 
@@ -619,10 +620,41 @@ too).
 - `CLOCK = 12` (or `12H`) makes TIME$ 12-hour with AM or PM,
   `"01:30:00 PM"`: 11 characters instead of 8, so `LEFT$(TIME$, 5)` still
   gives `"01:30"` but a program that takes TIME$ apart may need changing.
-  `CLOCK = 24`, the default, keeps GW-BASIC's `"13:30:00"`. WIFI and NTP show
+  `CLOCK = 24`, the default, keeps the usual `"13:30:00"`. WIFI and NTP show
   the time the same way. `TIME$ = "1:30 PM"` and `TIME$ = "13:30"` both work
   either way.
 - `examples/CONFIG.TXT` is a copy to start from.
+
+### The watchdog
+
+The chip's watchdog resets the board if a program stops checking in: a
+hang, a loop that never ends, a device that never answers. With AUTORUN.BAS
+a board on its own then starts again by itself.
+
+    WATCHDOG 2000              ' arm it: reset unless fed within 2 seconds
+    WHILE 1
+      ... the work ...
+      WATCHDOG FEED            ' "still alive"
+    WEND
+
+- `WATCHDOG ms` arms it (100 ms up to 8388 on the RP2040, 16777 on the
+  RP2350), `WATCHDOG FEED` reloads it, `WATCHDOG OFF` disarms it, and
+  `WATCHDOG` alone says how it is.
+- A break (Ctrl-C, or STOP) turns it off, as someone is there. An error or
+  END leaves it on, and BASIC says so under `Ok` (`Watchdog on: the board
+  resets in 2000 ms`): a board on its own resets and runs AUTORUN.BAS
+  again. Use `WATCHDOG OFF` before END to stop for good.
+- Disk reads and writes, XMODEM, Wi-Fi waits and the full-screen editor feed
+  it themselves. INPUT, PAUSE and the like don't: a program that waits
+  longer than the time resets the board.
+- After a reset by the watchdog the banner says `Reset by the watchdog`, and
+  the function `WDRESET` is -1 (true): `IF WDRESET THEN ...`.
+- `WATCHDOG = 5000` in CONFIG.TXT arms it just before AUTORUN.BAS runs (and
+  not when there's none, so the prompt is safe).
+- Files are written to the disk as they go, so a reset loses only what a
+  program had in a file it hadn't closed (the last part of a file open for
+  output); `CLOSE` before a risky part keeps it all.
+- `examples/WATCHDOG.BAS` feeds it ten times, then lets it reset the board.
 
 ### Wi-Fi and the clock
 
@@ -711,16 +743,16 @@ Random access (a 22-byte record: a 20-character name and a 2-byte number):
     40 GET #1, 1: PRINT NM$; CVI(AGE$)
     50 CLOSE #1
 
-MKS$ and MKD$ use GW-BASIC's own number format (Microsoft Binary Format), so
-random files written by GW-BASIC on a PC read correctly here, and the other
+MKS$ and MKD$ use Microsoft Binary Format, so
+random files written by BASICs on a PC read correctly here, and the other
 way round. CVI, CVS and CVD need at least 2, 4 and 8 bytes (otherwise
 Illegal function call).
 
-Differences from GW-BASIC:
+Differences from BASICs on a PC:
 
 - A file can be open for INPUT under several numbers, but not written while
   it is open elsewhere.
-- Ctrl-Z (byte 26) ends a file for INPUT # and INPUT$, as in GW-BASIC, so
+- Ctrl-Z (byte 26) ends a file for INPUT # and INPUT$, so
   binary files are best read with random access (GET).
 
 ## 5. Moving files to and from the PC
@@ -793,7 +825,7 @@ A square wave on **GP18** (another pin if BASIC was built with a different
 |---|---|
 | `BEEP` | A short beep (800 Hz for a quarter of a second). |
 | `SOUND freq, ticks` | A tone of freq Hz (37-32767; 32767 is silence) for `ticks` (18.2 make a second). After `PLAY "MB"` it goes to the background queue; ticks 0 stops the sound playing. `SOUND 440, 18` |
-| `PLAY "string"` | Music in GW-BASIC's music language (below). `PLAY "T160 O3 L8 CDEFGAB > C"` |
+| `PLAY "string"` | Music in the music language (below). `PLAY "T160 O3 L8 CDEFGAB > C"` |
 | `PLAY(0)` | Notes still waiting in the background queue. |
 
 PLAY's commands:
@@ -926,7 +958,7 @@ LINE INPUT # and INPUT$ on it.
     OPEN "COM1:[speed][,parity][,data][,stop][,options]" AS #n
 
 - **Settings:** speed 75-921600 baud; parity N, E or O; data bits 5-8; stop
-  bits 1 or 2. As in GW-BASIC, anything left out defaults to 300 baud, even
+  bits 1 or 2. Anything left out defaults to 300 baud, even
   parity, 7 data bits and 1 stop bit, so usually you give them all:
   `OPEN "COM1:9600,N,8,1" AS #1`.
 - **Pins:** GP8 (TX) and GP9 (RX) unless `TXn` / `RXn` options choose
@@ -1042,6 +1074,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | Program | What it does |
 |---|---|
 | PRIMES.BAS | prints the primes below 1000 |
+| WATCHDOG.BAS | arms the watchdog, feeds it ten times, then lets it reset the board |
 | LABELS.BAS | a menu program without line numbers: GOSUB, ON GOSUB, RESTORE, ON ERROR GOTO and RESUME with labels |
 | GUESS.BAS | a guess-the-number game |
 | BOXES.BAS | coloured boxes drawn with the PC line-drawing characters |
