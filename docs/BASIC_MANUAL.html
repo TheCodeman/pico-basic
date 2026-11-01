@@ -39,6 +39,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#the-terminal">The terminal</a></li>
 <li><a href="#first-program">First program</a></li>
 <li><a href="#programs-without-line-numbers">Programs without line numbers</a></li>
+<li><a href="#library-files-include">Library files: INCLUDE</a></li>
 <li><a href="#formatted-listings">Formatted listings</a></li>
 <li><a href="#autorunbas">AUTORUN.BAS</a></li>
 <li><a href="#editing-a-line">Editing a line</a></li>
@@ -163,6 +164,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-i2cread-1">I2CREAD$</a></li>
 <li><a href="#ref-if">IF</a></li>
 <li><a href="#ref-imp">IMP</a></li>
+<li><a href="#ref-include">INCLUDE</a></li>
 <li><a href="#ref-inkey">INKEY$</a></li>
 <li><a href="#ref-input">INPUT</a></li>
 <li><a href="#ref-input-1">INPUT</a></li>
@@ -469,6 +471,34 @@ RETURN
   <code>ERL</code> comparisons (<code>IF ERL = 100</code>) aren't changed.</li>
 <li><code>examples/LABELS.BAS</code> is a menu program with labels.</li>
 </ul>
+<h3 id="library-files-include">Library files: INCLUDE</h3>
+<p>Subroutines you use in many programs can live in a library file of their
+own, a program without line numbers made of labelled subroutines, and each
+program brings it in with <code>INCLUDE</code>:</p>
+<pre><code>INCLUDE "OLEDLIB"
+GOSUB oledstart
+ROW = 0: COL = 0: TX$ = "HELLO": GOSUB oledtext
+</code></pre>
+<ul>
+<li><code>INCLUDE "file"</code> goes on a line of its own (a label may come before it).
+  <code>.BAS</code> is added if the name has no extension; a folder or drive may be
+  given (<code>INCLUDE "LIB/OLEDLIB"</code>, <code>INCLUDE "SD:MATHS"</code>).</li>
+<li>RUN reads the files in before the program starts and puts their lines
+  after the program's own, so their labels work like the program's. Each
+  file comes in once, however many INCLUDEs name it, and a library may
+  INCLUDE others. Up to 16 files.</li>
+<li>LIST, SAVE and EDIT show only the program's own lines; the libraries' come
+  in again at each RUN (so a changed library is picked up). Changing the
+  program takes them out until the next RUN, and CONT can't carry on.</li>
+<li>An error in a library names its file and line: <code>Division by zero in line
+  5 of OLEDLIB.BAS</code>. One that isn't there is <code>File not found</code> at the INCLUDE
+  line; a library with line numbers is <code>Bad file mode</code>. A label in both the
+  program and a library is <code>Duplicate label</code>.</li>
+<li>Running on past the program's last line ends it, as always: it doesn't
+  carry on into a library. The variables are shared, so a library should
+  give its own a prefix (OLEDLIB's start with <code>OL.</code>) and say which ones it
+  takes, as OLEDLIB.BAS does at its top.</li>
+</ul>
 <h3 id="formatted-listings">Formatted listings</h3>
 <p>LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
 and WHILE ... WEND loops go in two spaces a level, and in a program without
@@ -715,6 +745,10 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 <tr>
 <td><code>CHAIN [MERGE] "file"[, [line][, ALL][, DELETE range]]</code></td>
 <td>Runs another program from a program, keeping open files. Only the variables named in <code>COMMON</code> are passed on, or all of them with <code>ALL</code>. <code>CHAIN MERGE</code> adds the file's lines (after deleting <code>range</code>) and keeps all variables.</td>
+</tr>
+<tr>
+<td><code>INCLUDE "file"</code></td>
+<td>In a program, on a line of its own: brings in a library file's labelled subroutines when the program runs (see Library files).</td>
 </tr>
 <tr>
 <td><code>COMMON var[, var...]</code></td>
@@ -2293,7 +2327,11 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 </tr>
 <tr>
 <td>OLED.BAS</td>
-<td>text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &amp;H3C)</td>
+<td>text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &amp;H3C), with OLEDLIB.BAS</td>
+</tr>
+<tr>
+<td>OLEDLIB.BAS</td>
+<td>a library (INCLUDE "OLEDLIB") for that OLED: start, clear, text in a 5x7 font, contrast, invert, off</td>
 </tr>
 <tr>
 <td>NEODEMO.BAS</td>
@@ -2317,7 +2355,7 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-mqtt">MQTT</a>, <a href="#ref-mqtt-1">MQTT()</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-on-mqtt">ON MQTT</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-watchdog">WATCHDOG</a>, <a href="#ref-wdreset">WDRESET</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-wifi-1">WIFI()</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-include">INCLUDE</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-mqtt">MQTT</a>, <a href="#ref-mqtt-1">MQTT()</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-on-mqtt">ON MQTT</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-watchdog">WATCHDOG</a>, <a href="#ref-wdreset">WDRESET</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-wifi-1">WIFI()</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
 <p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
@@ -3097,6 +3135,20 @@ HI
 <pre><code>-1
 </code></pre>
 <p>See also: <a href="#ref-eqv">EQV</a></p>
+<h3 id="ref-include">INCLUDE</h3>
+<p><em>Statement</em> · <code>INCLUDE file$</code></p>
+<p>In a program, on a line of its own: when the program runs, the library file's lines (labelled subroutines, no line numbers) go after the program's, so GOSUB can call them.</p>
+<ul>
+<li><code>.BAS</code> is added if the name has no extension. Each file comes in once; a library may INCLUDE others; up to 16 files.</li>
+<li>LIST, SAVE and EDIT leave the libraries out; each RUN reads them again.</li>
+<li>An error in a library names it: <code>Division by zero in line 5 of OLEDLIB.BAS</code>.</li>
+<li>Errors: <code>File not found</code> (53), <code>Bad file mode</code> (54) for a file with line numbers, <code>Illegal direct</code> (12) in direct mode.</li>
+</ul>
+<p>Example:</p>
+<pre><code>INCLUDE &quot;OLEDLIB&quot;
+GOSUB oledstart
+</code></pre>
+<p>See also: <a href="#ref-gosub">GOSUB</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-merge">MERGE</a></p>
 <h3 id="ref-inkey">INKEY$</h3>
 <p><em>Function</em> · <code>INKEY$</code></p>
 <p>The key waiting, or "" if none: it doesn't wait. Cursor and function keys give CHR$(0) and the PC scan code (see INKEY$ key codes).</p>

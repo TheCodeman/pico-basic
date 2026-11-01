@@ -153,6 +153,35 @@ and RUN take a label wherever they take a line number:
   `ERL` comparisons (`IF ERL = 100`) aren't changed.
 - `examples/LABELS.BAS` is a menu program with labels.
 
+### Library files: INCLUDE
+
+Subroutines you use in many programs can live in a library file of their
+own, a program without line numbers made of labelled subroutines, and each
+program brings it in with `INCLUDE`:
+
+    INCLUDE "OLEDLIB"
+    GOSUB oledstart
+    ROW = 0: COL = 0: TX$ = "HELLO": GOSUB oledtext
+
+- `INCLUDE "file"` goes on a line of its own (a label may come before it).
+  `.BAS` is added if the name has no extension; a folder or drive may be
+  given (`INCLUDE "LIB/OLEDLIB"`, `INCLUDE "SD:MATHS"`).
+- RUN reads the files in before the program starts and puts their lines
+  after the program's own, so their labels work like the program's. Each
+  file comes in once, however many INCLUDEs name it, and a library may
+  INCLUDE others. Up to 16 files.
+- LIST, SAVE and EDIT show only the program's own lines; the libraries' come
+  in again at each RUN (so a changed library is picked up). Changing the
+  program takes them out until the next RUN, and CONT can't carry on.
+- An error in a library names its file and line: `Division by zero in line
+  5 of OLEDLIB.BAS`. One that isn't there is `File not found` at the INCLUDE
+  line; a library with line numbers is `Bad file mode`. A label in both the
+  program and a library is `Duplicate label`.
+- Running on past the program's last line ends it, as always: it doesn't
+  carry on into a library. The variables are shared, so a library should
+  give its own a prefix (OLEDLIB's start with `OL.`) and say which ones it
+  takes, as OLEDLIB.BAS does at its top.
+
 ### Formatted listings
 
 LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
@@ -283,6 +312,7 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).
 | `SAVE "file"[,A]` | Saves as plain text (`,A` is accepted; text is the only format). `.BAS` is added if the name has no extension. |
 | `MERGE "file"` | Adds the lines of a plain-text program to the one in memory (lines with the same number are replaced). |
 | `CHAIN [MERGE] "file"[, [line][, ALL][, DELETE range]]` | Runs another program from a program, keeping open files. Only the variables named in `COMMON` are passed on, or all of them with `ALL`. `CHAIN MERGE` adds the file's lines (after deleting `range`) and keeps all variables. |
+| `INCLUDE "file"` | In a program, on a line of its own: brings in a library file's labelled subroutines when the program runs (see Library files). |
 | `COMMON var[, var...]` | Names the variables CHAIN passes on (arrays as `A()`). |
 | `FILES ["pattern"]` | Lists the files in the current folder (`FILES "*.BAS"`), then the disk's free space: `15331328 Bytes free`. |
 | `KILL "file"` | Deletes a file. |
@@ -1129,7 +1159,8 @@ The source's `examples` folder has these; send them over with `XRECV`
 | ANALOG.BAS | shows the ADC inputs and the chip temperature (GP26-29; change `FIRST = 26: LAST = 29` to `FIRST = 40: LAST = 46` on a Pico Plus 2) |
 | SERIAL.BAS | a small terminal on COM1 (GP8 TX, GP9 RX) |
 | I2CSCAN.BAS | lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7 |
-| OLED.BAS | text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &H3C) |
+| OLED.BAS | text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &H3C), with OLEDLIB.BAS |
+| OLEDLIB.BAS | a library (INCLUDE "OLEDLIB") for that OLED: start, clear, text in a 5x7 font, contrast, invert, off |
 | NEODEMO.BAS | eight NeoPixel effects (rainbow, breathe, colour wipe, chase, candle, sparkle, police, heartbeat), changing every 8 seconds; Space/N, P, + and - (or the Maker Pi Pico's buttons GP20-22) to choose, Q quits; one line sets a strip's pin and length |
 | NEOPIXEL.BAS | red, green, blue, then a rainbow on WS2812B LEDs (the Maker Pi Pico's RGB LED on GP28, or a strip) |
 | SPIFLASH.BAS | reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP4-7) |

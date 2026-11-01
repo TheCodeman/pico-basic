@@ -832,6 +832,25 @@ static bool unnumbered;
 /// The labels need finding again (the program changed).
 static bool labels_stale = true;
 
+/// A file INCLUDE brings in when the program runs. Its lines go after the
+/// program's own, numbered from base on (base + its line in the file - 1).
+typedef struct {
+    char name[64];  ///< the file
+    uint16_t base;  ///< the number its first line has
+} library_t;
+#define MAX_LIBRARIES 16  ///< the most files INCLUDE brings in
+static library_t libraries[MAX_LIBRARIES];  ///< the files brought in
+static int library_count;  ///< how many
+/// The index of the first library line, or -1 if none are in. The lines
+/// from there on are the libraries': LIST, SAVE and EDIT leave them out.
+static int library_first = -1;
+
+/// The program's own lines (without the libraries').
+/// @return their count
+static int own_line_count(void) {
+    return library_first >= 0 ? library_first : line_count;
+}
+
 /// Where a line number is (or would go).
 /// @param num the number
 /// @param exact set to it being there, or NULL
@@ -867,6 +886,8 @@ static void clear_program(void) {
     lines = NULL;
     line_cap = 0;
     unnumbered = false;
+    library_first = -1;
+    library_count = 0;
 }
 
 /// Whether a character can start a name.
@@ -1539,6 +1560,40 @@ static void reset_run_state(void) {
     data_pos.p = NULL;
 }
 
+/// Takes out the libraries' lines (before the program is changed); they come
+/// back when it runs again. CONT can't carry on after.
+static void drop_libraries(void) {
+    if (library_first < 0)
+        return;
+    while (line_count > library_first)
+        delete_line_at(line_count - 1);
+    library_first = -1;
+    library_count = 0;
+    cont_pos.line = -2;
+}
+
+/// The library a line number is in.
+/// @param num the number
+/// @return its index, or -1 if it is the program's own line
+static int library_of(int num) {
+    int k = -1;
+    for (int j = 0; j < library_count; ++j)
+        if (num >= libraries[j].base)
+            k = j;  // (an empty file shares the next one's base, and comes first)
+    return k;
+}
+
+/// Whether a line is the last of its file (the program's or a library's), so
+/// running on past it ends the program.
+/// @param i the line's index
+/// @return it is
+static bool last_of_its_file(int i) {
+    if (i + 1 >= line_count || i + 1 == library_first)
+        return true;
+    return library_first >= 0 && i >= library_first &&
+           library_of(lines[i].num) != library_of(lines[i + 1].num);
+}
+
 /// The line running.
 /// @return its number, or -1 (direct mode)
 static int current_line_number(void) {
@@ -1607,7 +1662,7 @@ static const char *const statement_words[] = {
     "BASE", "BEEP", "BLOAD", "BSAVE", "BYE", "CALL", "CHAIN", "CHDIR", "CIRCLE", "CLEAR", "CONFIG",
     "CLOSE", "CLS", "COLOR", "COM", "CONT", "DATA", "DATE", "DEF", "DELETE", "DIM", "DRAW",
     "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "GET",
-    "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
+    "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INCLUDE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
     "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MQTT", "MUSIC",
     "NAME", "NEOPIXEL", "NEW", "NEXT", "NTP", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
@@ -2963,7 +3018,7 @@ static bool next_statement(void) {
         ++p;
         return true;
     }
-    if (cur_line < 0 || cur_line + 1 >= line_count)
+    if (cur_line < 0 || last_of_its_file(cur_line))
         return false;
     ++cur_line;
     p = line_body(cur_line);
@@ -3021,11 +3076,16 @@ static void print_error(int code) {
     }
     error_label[0] = 0;
     int ln = running ? current_line_number() : -1;
-    if (ln >= 0)
+    int lib = ln >= 0 ? library_of(ln) : -1;
+    if (ln >= 0 && lib < 0)
         last_line_num = ln;
     if (ln >= 0) {
-        char buf[16];
-        snprintf(buf, sizeof buf, unnumbered ? " in line %d" : " in %d", ln);
+        char buf[96];
+        if (lib >= 0)
+            snprintf(buf, sizeof buf, " in line %d of %s", ln - libraries[lib].base + 1,
+                     libraries[lib].name);
+        else
+            snprintf(buf, sizeof buf, unnumbered ? " in line %d" : " in %d", ln);
         out_str(buf);
     }
     out_newline();
@@ -3060,18 +3120,22 @@ static bool load_tokenised(const uint8_t *buf, size_t len);
 
 /// The file's line being loaded, and whether its lines have numbers.
 static int load_line_no;
+/// Added to a file's line numbers as it loads (a library's go after the program).
+static int load_base;
 /// What the lines loaded so far had: none yet, numbers, or none.
 static enum { LOAD_UNKNOWN, LOAD_NUMBERED, LOAD_UNNUMBERED } load_kind;
 
 /// Reads plain-text programs a chunk at a time, so loading needs no more
 /// memory than the program itself. Tokenised (binary) files (first byte 0xFF,
 /// at most 64 KB) are read whole and converted.
-enum { LOAD_MERGE = 1, LOAD_KEEP_VARS = 2 };
+enum { LOAD_MERGE = 1, LOAD_KEEP_VARS = 2, LOAD_LIBRARY = 4 };
 
 /// Loads a program (LOAD_MERGE: adds a plain-text one's lines to the program
-/// in memory; LOAD_KEEP_VARS: leaves the variables, for CHAIN).
+/// in memory; LOAD_KEEP_VARS: leaves the variables, for CHAIN; LOAD_LIBRARY:
+/// adds a plain-text file without line numbers from line load_base + 1 on,
+/// leaving the program's state alone, for INCLUDE).
 /// @param name the file
-/// @param flags LOAD_MERGE, LOAD_KEEP_VARS
+/// @param flags LOAD_MERGE, LOAD_KEEP_VARS, LOAD_LIBRARY
 static void load_file(const char *name, int flags) {
     FIL f;  // (on the stack: kept across the longjmp below, as it's in memory)
     FRESULT r = f_open(&f, name, FA_READ);
@@ -3081,13 +3145,17 @@ static void load_file(const char *name, int flags) {
         f_close(&f);
         error(E_BAD_FILE_MODE);  // MERGE goes by line numbers
     }
-    if (!(flags & LOAD_MERGE))
+    bool library = flags & LOAD_LIBRARY;
+    if (!(flags & LOAD_MERGE) && !library)
         clear_program();
-    if (!(flags & LOAD_KEEP_VARS))
+    if (!(flags & LOAD_KEEP_VARS) && !library)
         clear_vars();
-    reset_run_state();
+    if (!library) {
+        reset_run_state();
+        load_base = 0;
+    }
     load_line_no = 0;
-    load_kind = (flags & LOAD_MERGE) ? LOAD_NUMBERED : LOAD_UNKNOWN;
+    load_kind = (flags & LOAD_MERGE) ? LOAD_NUMBERED : library ? LOAD_UNNUMBERED : LOAD_UNKNOWN;
     static char *whole;
     whole = NULL;
     int err = 0;
@@ -3102,8 +3170,8 @@ static void load_file(const char *name, int flags) {
         if (got && (uint8_t)chunk[0] == 0xFE)
             error(E_PROTECTED);
         if (got && (uint8_t)chunk[0] == 0xFF) {
-            if (flags & LOAD_MERGE)
-                error(E_BAD_FILE_MODE);  // MERGE takes ASCII files only
+            if (flags & (LOAD_MERGE | LOAD_LIBRARY))
+                error(E_BAD_FILE_MODE);  // MERGE and INCLUDE take ASCII files only
             size_t size = f_size(&f);
             whole = checked_malloc(size + 1);
             memcpy(whole, chunk, got);
@@ -3146,12 +3214,13 @@ static void load_file(const char *name, int flags) {
     memcpy(error_jump, saved, sizeof saved);
     free(whole);
     f_close(&f);
+    load_base = 0;
     if (err) {
-        if (!(flags & LOAD_MERGE))
+        if (!(flags & LOAD_MERGE) && !library)
             clear_program();  // don't leave half a program behind
-        error(err);
+        error(err);  // (half a library goes at the next RUN or change)
     }
-    if (!(flags & LOAD_MERGE)) {
+    if (!(flags & LOAD_MERGE) && !library) {
         snprintf(program_name, sizeof program_name, "%s", name);
         unnumbered = load_kind == LOAD_UNNUMBERED;
     }
@@ -3170,12 +3239,12 @@ static bool load_plain_line(char *line) {
     if (!*q)
         return true;
     if (!isdigit((unsigned char)*q)) {
-        if (load_kind == LOAD_NUMBERED || load_line_no > 65529)
+        if (load_kind == LOAD_NUMBERED || load_base + load_line_no > 65529)
             return false;  // "Direct statement in file"
         load_kind = LOAD_UNNUMBERED;
         if (strlen(q) > LINE_MAX_LEN)
             q[LINE_MAX_LEN] = 0;
-        store_line(load_line_no, q);
+        store_line(load_base + load_line_no, q);
         return true;
     }
     if (load_kind == LOAD_UNNUMBERED)
@@ -3358,7 +3427,7 @@ static void save_file(const char *name) {
         error(fresult_error(r));
     format_t fmt;
     format_begin(&fmt);
-    for (int i = 0; i < line_count && r == FR_OK; ++i) {
+    for (int i = 0; i < own_line_count() && r == FR_OK; ++i) {
         char buf[LINE_MAX_LEN + INDENT_MAX + 16], text[LINE_MAX_LEN + INDENT_MAX + 2];
         const char *t = format_line(i, &fmt, text, sizeof text);
         int n;
@@ -7750,6 +7819,8 @@ static void line_range(int *first, int *last) {
     }
     *first = find_line(lo, NULL);
     *last = find_line(hi + 1, NULL) - 1;
+    if (*last >= own_line_count())
+        *last = own_line_count() - 1;  // not the libraries' lines
 }
 
 /// Pauses LIST: false for Ctrl-C, Q or Esc.
@@ -8825,6 +8896,37 @@ static void do_kill(void) {
 
 static void run_program(int start_line);
 
+/// Brings in the files that INCLUDE "file" lines name (INCLUDE starting a
+/// line, in the program or in a library): their lines go after the program's,
+/// each file once. Errors are the INCLUDE line's.
+static void add_libraries(void) {
+    for (int i = 0; i < line_count; ++i) {
+        const char *s = line_body(i);
+        if (strncmp(s, "INCLUDE", 7) || is_label_char((unsigned char)s[7]))
+            continue;
+        cur_line = i;
+        p = s + 7;
+        running = true;
+        char name[64];
+        file_name_arg(name, sizeof name, true);
+        bool seen = false;
+        for (int j = 0; j < library_count && !seen; ++j)
+            seen = !strcasecmp(libraries[j].name, name);
+        if (seen)
+            continue;
+        if (library_count == MAX_LIBRARIES)
+            error(E_TOO_MANY_FILES);
+        int base = line_count ? lines[line_count - 1].num + 1 : 1;
+        if (library_first < 0)
+            library_first = line_count;
+        snprintf(libraries[library_count].name, sizeof libraries[0].name, "%s", name);
+        libraries[library_count++].base = base;
+        load_base = base - 1;
+        load_file(name, LOAD_LIBRARY);
+    }
+    running = false;
+}
+
 /// RUN [line or file].
 static void do_run(void) {
     port_music_stop();
@@ -8913,6 +9015,7 @@ static void do_chain(void) {
         }
     }
     if (merge) {
+        drop_libraries();
         if (del_from >= 0)
             for (int i = del_to; i >= del_from; --i)
                 delete_line_at(i);
@@ -8926,6 +9029,9 @@ static void do_chain(void) {
     common_count = 0;
     if (!line_count)
         error(E_ILLEGAL_CALL);
+    add_libraries();
+    if (labels_stale)
+        find_labels();
     if (start >= 0) {
         jump_to_line(start);
     } else {
@@ -8996,7 +9102,7 @@ static int execute(void) {
             continue;
         }
         if (!*p || *p == '\'') {
-            if (!running || cur_line < 0 || cur_line + 1 >= line_count) {
+            if (!running || cur_line < 0 || last_of_its_file(cur_line)) {
                 if (running && cur_line >= 0 && in_error_handler)
                     error(E_NO_RESUME);  // ran off the end inside an error handler
                 return S_END;
@@ -9033,8 +9139,10 @@ static void run_program(int start_line) {
     clear_vars();
     reset_run_state();
     rnd_state = 0x12345678u;
+    drop_libraries();
     if (!line_count)
         return;
+    add_libraries();
     if (labels_stale)
         find_labels();
     if (start_line >= 0) {
@@ -9339,6 +9447,7 @@ static int statement(void) {
     } else if (accept_word("MERGE")) {
         char name[64];
         file_name_arg(name, sizeof name, true);
+        drop_libraries();
         load_file(name, LOAD_MERGE | LOAD_KEEP_VARS);
         cont_pos.line = -2;
         return S_END;
@@ -9356,15 +9465,24 @@ static int statement(void) {
         do_files();
     } else if (accept("KILL")) {
         do_kill();
+    } else if (accept_word("INCLUDE")) {
+        // The file came in when the program started (add_libraries).
+        if (cur_line < 0)
+            error(E_ILLEGAL_DIRECT);
+        char name[64];
+        file_name_arg(name, sizeof name, true);
     } else if (accept("DELETE")) {
+        drop_libraries();
         do_delete();
         return S_END;
     } else if (accept("RENUM")) {
+        drop_libraries();
         do_renum();
         return S_END;
     } else if (accept("NUMBERS")) {
         if (cur_line >= 0)
             error(E_ILLEGAL_DIRECT);
+        drop_libraries();
         do_numbers();
         return S_END;
     } else if (accept("TRON")) {
@@ -9535,6 +9653,7 @@ static bool try_store_line(int n, const char *text) {
     }
     if (n > 65529)
         error(E_SYNTAX);
+    drop_libraries();
     if (unnumbered && line_count) {
         out_str("This program has no line numbers: EDIT it (or NUMBERS ON)");
         out_newline();
@@ -9552,6 +9671,7 @@ static bool try_store_line(int n, const char *text) {
 /// @param start the first
 /// @param step the step
 static void do_auto(int start, int step) {
+    drop_libraries();
     if (unnumbered && line_count) {
         out_str("This program has no line numbers: EDIT it (or NUMBERS ON)");
         out_newline();

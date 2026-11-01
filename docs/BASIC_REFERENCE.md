@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [MQTT](#ref-mqtt), [MQTT()](#ref-mqtt-1), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [ON MQTT](#ref-on-mqtt), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WATCHDOG](#ref-watchdog), [WDRESET](#ref-wdreset), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [INCLUDE](#ref-include), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [MQTT](#ref-mqtt), [MQTT()](#ref-mqtt-1), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [ON MQTT](#ref-on-mqtt), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WATCHDOG](#ref-watchdog), [WDRESET](#ref-wdreset), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -1389,6 +1389,26 @@ Shows:
 ```
 
 See also: [EQV](#ref-eqv)
+
+### INCLUDE {#ref-include}
+
+*Statement* · `INCLUDE file$`
+
+In a program, on a line of its own: when the program runs, the library file's lines (labelled subroutines, no line numbers) go after the program's, so GOSUB can call them.
+
+- `.BAS` is added if the name has no extension. Each file comes in once; a library may INCLUDE others; up to 16 files.
+- LIST, SAVE and EDIT leave the libraries out; each RUN reads them again.
+- An error in a library names it: `Division by zero in line 5 of OLEDLIB.BAS`.
+- Errors: `File not found` (53), `Bad file mode` (54) for a file with line numbers, `Illegal direct` (12) in direct mode.
+
+Example:
+
+```
+INCLUDE "OLEDLIB"
+GOSUB oledstart
+```
+
+See also: [GOSUB](#ref-gosub), [CHAIN](#ref-chain), [MERGE](#ref-merge)
 
 ### INKEY$ {#ref-inkey}
 

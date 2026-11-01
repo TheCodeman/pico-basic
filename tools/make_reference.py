@@ -79,6 +79,13 @@ e('LIST', 'Command', 'LIST [range]',
   'Lists the program, pausing after each 28 lines (any key goes on, Q stops). `range` is `n`, `n-`, `-n` or `n-m`.',
   [], 'LIST 10-30', '10 PRINT "HELLO"\n20 GOTO 10', ['LLIST', 'EDIT'], P)
 e('LLIST', 'Command', 'LLIST [range]', 'The same as LIST: there is no printer.', [], '', '', ['LIST'], P)
+e('INCLUDE', 'Statement', 'INCLUDE file$',
+  'In a program, on a line of its own: when the program runs, the library file\'s lines (labelled subroutines, no line numbers) go after the program\'s, so GOSUB can call them.',
+  ['`.BAS` is added if the name has no extension. Each file comes in once; a library may INCLUDE others; up to 16 files.',
+   'LIST, SAVE and EDIT leave the libraries out; each RUN reads them again.',
+   'An error in a library names it: `Division by zero in line 5 of OLEDLIB.BAS`.',
+   'Errors: `File not found` (53), `Bad file mode` (54) for a file with line numbers, `Illegal direct` (12) in direct mode.'],
+  'INCLUDE "OLEDLIB"\nGOSUB oledstart', '', ['GOSUB', 'CHAIN', 'MERGE'], P)
 e('LOAD', 'Command', 'LOAD file$[, R]',
   'Loads a program, replacing the one in memory; with `,R` runs it too.',
   ['`.BAS` is added if the name has no extension.',
