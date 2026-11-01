@@ -170,14 +170,29 @@ e('XSEND', 'Statement', 'XSEND file$',
 
 # ---- Flow of control --------------------------------------------------------------
 F = 'Flow of control and errors'
-e('END', 'Statement', 'END', 'Ends the program and closes its files.', [], '10 PRINT "DONE": END\nRUN', 'DONE', ['STOP'], F)
+e('END', 'Statement', 'END | END SUB | END FUNCTION', 'Ends the program and closes its files. END SUB and END FUNCTION end a SUB or FUNCTION.', [], '10 PRINT "DONE": END\nRUN', 'DONE', ['STOP'], F)
 e('ERL', 'Function', 'ERL', 'The line number where the last error happened (0 in direct mode).', [],
   '100 PRINT "Error"; ERR; "in"; ERL: RESUME NEXT', '', ['ERR', 'ON ERROR GOTO'], F)
 e('ERR', 'Function', 'ERR', 'The code of the last error (see Error codes).', [],
   '10 ON ERROR GOTO 100\n20 X = 1 / 0\n30 END\n100 PRINT ERR: RESUME NEXT\nRUN', ' 11', ['ERL', 'ERROR'], F)
 e('ERROR', 'Statement', 'ERROR n', 'Raises error `n` (1-255), as if it had happened: a test, or a program\'s own error codes.',
   ['Codes without a message print `Unprintable error`.'], 'ERROR 53', 'File not found', ['ON ERROR GOTO', 'ERR'], F)
-e('EXIT FOR', 'Statement', 'EXIT FOR', 'Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC).',
+e('SUB', 'Statement', 'SUB name[(param[, param...])] ... END SUB',
+  'A subroutine with parameters and variables of its own, called by its name: `name arg, arg` or `CALL name(arg, arg)`. EXIT SUB leaves it early.',
+  ['Its variables (and arrays) are its own unless SHARED names them; the parameters are set to the arguments (by value: a copy). Up to 8 parameters; recursion works.',
+   'The program runs on past a SUB without running it. SUBs are found when the program starts, in its INCLUDE libraries too.',
+   'A name must not start with a keyword (`PRINTIT` would be PRINT).',
+   'Errors: `Wrong number of arguments` (86), `SUB without END SUB` (82), `END SUB without SUB` (84), `Duplicate Definition` (10).'],
+  'SUB SHOW(N$, T)\n  FOR I = 1 TO T: PRINT N$;: NEXT: PRINT\nEND SUB\nSHOW "HI ", 3', 'HI HI HI', ['FUNCTION', 'SHARED', 'CALL', 'GOSUB'], F)
+e('FUNCTION', 'Statement', 'FUNCTION name[(param[, param...])] ... END FUNCTION',
+  'A function of several lines, used in expressions as `name(args)`: it gives back what was last given to `name`. EXIT FUNCTION leaves it early. String functions end in $.',
+  ['Its variables are its own, as for SUB; arguments are copies.', 'An error in a FUNCTION going to ON ERROR is the calling statement\'s: RESUME NEXT goes on after it.',
+   'Errors: `Wrong number of arguments` (86), `FUNCTION without END FUNCTION` (83), `END FUNCTION without FUNCTION` (85).'],
+  'FUNCTION FACT(N)\n  IF N <= 1 THEN FACT = 1 ELSE FACT = N * FACT(N - 1)\nEND FUNCTION\nPRINT FACT(10)', ' 3628800', ['SUB', 'DEF FN'], F)
+e('SHARED', 'Statement', 'SHARED var[, var...]', 'In a SUB or FUNCTION: these variables (arrays as `A()`) are the program\'s rather than the call\'s own.',
+  ['Errors: `Illegal function call` (5) outside a SUB or FUNCTION.'], 'SUB COUNTUP\n  SHARED COUNT\n  COUNT = COUNT + 1\nEND SUB', '', ['SUB', 'FUNCTION'], F)
+e('CALL', 'Statement', 'CALL name[(arg[, arg...])]', 'Calls a SUB; the same as `name arg, arg`.', [], 'CALL SHOW("HI ", 2)', 'HI HI', ['SUB'], F)
+e('EXIT FOR', 'Statement', 'EXIT FOR | EXIT SUB | EXIT FUNCTION', 'Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC); EXIT SUB and EXIT FUNCTION leave a SUB or FUNCTION.',
   [], '10 FOR I = 1 TO 10: IF I = 3 THEN EXIT FOR\n20 NEXT: PRINT I\nRUN', ' 3', ['FOR'], F)
 e('FOR', 'Statement', 'FOR v = a TO b [STEP s] ... NEXT [v]',
   'Repeats the lines up to NEXT with `v` = a, a+s, ... while it hasn\'t passed `b`. STEP defaults to 1; a negative STEP counts down.',
@@ -563,7 +578,7 @@ NOT_HERE = {'CIRCLE', 'DRAW', 'FONT', 'GPRINT', 'IMAGE', 'SAVEIMAGE', 'MOUSE', '
             'PALETTE', 'PCOPY', 'PRESET', 'PSET', 'SHELL', 'SPRITE', 'WINDOW', 'POINT', 'PMAP',
             'MOUSEX', 'MOUSEY', 'MOUSEB', 'MOUSEW', 'KEYDOWN', 'SPRITEHIT', 'SPRITEX', 'SPRITEY',
             'SPRITEON', 'FONTW', 'FONTH', 'GWIDTH', 'RGB', 'LOCK', 'UNLOCK', 'MOTOR', 'LPOS', 'STICK',
-            'STRIG', 'PEN', 'CALL', 'USR', 'VARPTR', 'INP', 'OUT', 'WAIT', 'IOCTL'}
+            'STRIG', 'PEN', 'USR', 'VARPTR', 'INP', 'OUT', 'WAIT', 'IOCTL'}
 
 def coverage(entries):
     src = open(os.path.join(ROOT, 'src', 'basic.c'), encoding='utf-8').read()

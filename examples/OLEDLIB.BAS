@@ -1,78 +1,100 @@
 ' OLEDLIB.BAS: a library for a 128x64 SSD1309 (or SSD1306) OLED on I2C,
 ' for INCLUDE "OLEDLIB" in a program. SDA on GP2, SCL on GP3 (I2C1).
 '
-'   GOSUB oledstart    opens I2C, starts the display, clears it. The
-'                      address is OLED.ADDR (&H3C if not set). No display:
-'                      Device I/O error (57), which ON ERROR can catch
-'   GOSUB oledclear    clears the display
-'   GOSUB oledtext     prints TX$ on text row ROW (0-7) from pixel column
-'                      COL (0-127): 21 characters of 6 pixels a row, upper
-'                      case (lower case is shown as capitals)
-'   GOSUB oledwhole    sets the write window to the whole display, for
-'                      I2C WRITE OLED.ADDR, &H40, bytes: 8 pages of 128
-'                      bytes, each byte a column of 8 pixels, bit 0 on top
-'   GOSUB oledcontrast contrast OLED.V (0-255)
-'   GOSUB oledinvert   inverted if OLED.V is not 0
-'   GOSUB oledstop     turns the display off and closes I2C
+'   OLEDSTART addr          opens I2C, starts the display (at addr, or &H3C
+'                           if 0) and clears it. No display: Device I/O
+'                           error (57), which ON ERROR can catch
+'   OLEDCLEAR               clears the display
+'   OLEDTEXT row, col, t$   prints t$ on text row 0-7 from pixel column
+'                           0-127: 21 characters of 6 pixels a row, upper
+'                           case (lower case is shown as capitals)
+'   OLEDCENTER(t$)          the column that centres t$ (a FUNCTION)
+'   OLEDWHOLE               sets the write window to the whole display;
+'   OLEDDATA bytes$         then sends display bytes: 8 pages of 128, each
+'                           byte a column of 8 pixels, bit 0 on top
+'   OLEDCONTRAST v          contrast 0-255
+'   OLEDINVERT on           inverted if on is not 0
+'   OLEDSTOP                turns the display off and closes I2C
 '
-' Its own variables start with OL. so they don't meet the program's.
+' The variables it shares between its SUBs start with OL.
 
-oledstart:
-  IF OLED.ADDR = 0 THEN OLED.ADDR = &H3C
+SUB OLEDSTART(A)
+  SHARED OL.ADDR, OL.READY
+  OL.ADDR = A: IF A = 0 THEN OL.ADDR = &H3C
   I2C OPEN 2, 3, 400
   ' Off, clock, 64 rows, no offset, start line 0, flipped both ways (pins
   ' at the top), COM pins, contrast, precharge, VCOMH, horizontal
   ' addressing, show RAM, not inverted, then on. For an SSD1306 put
   ' &H8D, &H14 (its charge pump) before the &HAF.
-  I2C WRITE OLED.ADDR, 0, &HAE, &HD5, &HA0, &HA8, &H3F, &HD3, 0, &H40, &HA1, &HC8
-  I2C WRITE OLED.ADDR, 0, &HDA, &H12, &H81, &HCF, &HD9, &HF1, &HDB, &H40, &H20, 0
-  I2C WRITE OLED.ADDR, 0, &HA4, &HA6, &HAF
-  IF OL.READY THEN oledclear
-  ' The 5x7 font (space to Z) as 6-byte column strings
-  DIM OL.G$(58): OL.H$ = "0123456789ABCDEF"
+  I2C WRITE OL.ADDR, 0, &HAE, &HD5, &HA0, &HA8, &H3F, &HD3, 0, &H40, &HA1, &HC8
+  I2C WRITE OL.ADDR, 0, &HDA, &H12, &H81, &HCF, &HD9, &HF1, &HDB, &H40, &H20, 0
+  I2C WRITE OL.ADDR, 0, &HA4, &HA6, &HAF
+  IF OL.READY = 0 THEN OLEDFONT: OL.READY = 1
+  OLEDCLEAR
+END SUB
+
+' Loads the 5x7 font (space to Z) as 6-byte column strings
+SUB OLEDFONT
+  SHARED OL.G$()
+  DIM OL.G$(58): H$ = "0123456789ABCDEF"
   RESTORE oledglyphs
-  FOR OL.I = 0 TO 58
-    READ OL.D$: OL.S$ = ""
-    FOR OL.J = 1 TO 9 STEP 2
-      OL.S$ = OL.S$ + CHR$((INSTR(OL.H$, MID$(OL.D$, OL.J, 1)) - 1) * 16 + INSTR(OL.H$, MID$(OL.D$, OL.J + 1, 1)) - 1)
+  FOR I = 0 TO 58
+    READ D$: S$ = ""
+    FOR J = 1 TO 9 STEP 2
+      S$ = S$ + CHR$((INSTR(H$, MID$(D$, J, 1)) - 1) * 16 + INSTR(H$, MID$(D$, J + 1, 1)) - 1)
     NEXT
-    OL.G$(OL.I) = OL.S$ + CHR$(0)
+    OL.G$(I) = S$ + CHR$(0)
   NEXT
-  OL.READY = 1
+END SUB
 
-oledclear:
-  GOSUB oledwhole
-  OL.S$ = STRING$(128, 0)
-  FOR OL.I = 0 TO 7: I2C WRITE OLED.ADDR, &H40, OL.S$: NEXT
-  RETURN
+SUB OLEDCLEAR
+  SHARED OL.ADDR
+  OLEDWHOLE
+  Z$ = STRING$(128, 0)
+  FOR I = 0 TO 7: I2C WRITE OL.ADDR, &H40, Z$: NEXT
+END SUB
 
-oledwhole:
-  I2C WRITE OLED.ADDR, 0, &H21, 0, 127, &H22, 0, 7
-  RETURN
+SUB OLEDWHOLE
+  SHARED OL.ADDR
+  I2C WRITE OL.ADDR, 0, &H21, 0, 127, &H22, 0, 7
+END SUB
 
-oledtext:
-  OL.S$ = ""
-  FOR OL.I = 1 TO LEN(TX$)
-    OL.K = ASC(MID$(TX$, OL.I, 1)): IF OL.K > 96 AND OL.K < 123 THEN OL.K = OL.K - 32
-    IF OL.K < 32 OR OL.K > 90 THEN OL.K = 63
-    OL.S$ = OL.S$ + OL.G$(OL.K - 32)
+SUB OLEDDATA(B$)
+  SHARED OL.ADDR
+  I2C WRITE OL.ADDR, &H40, B$
+END SUB
+
+SUB OLEDTEXT(R, C, T$)
+  SHARED OL.ADDR, OL.G$()
+  S$ = ""
+  FOR I = 1 TO LEN(T$)
+    K = ASC(MID$(T$, I, 1)): IF K > 96 AND K < 123 THEN K = K - 32
+    IF K < 32 OR K > 90 THEN K = 63
+    S$ = S$ + OL.G$(K - 32)
   NEXT
-  I2C WRITE OLED.ADDR, 0, &H21, COL, 127, &H22, ROW, ROW
-  I2C WRITE OLED.ADDR, &H40, LEFT$(OL.S$, 128 - COL)
-  RETURN
+  I2C WRITE OL.ADDR, 0, &H21, C, 127, &H22, R, R
+  I2C WRITE OL.ADDR, &H40, LEFT$(S$, 128 - C)
+END SUB
 
-oledcontrast:
-  I2C WRITE OLED.ADDR, 0, &H81, OLED.V
-  RETURN
+FUNCTION OLEDCENTER(T$)
+  OLEDCENTER = (128 - 6 * LEN(T$)) \ 2
+END FUNCTION
 
-oledinvert:
-  IF OLED.V THEN I2C WRITE OLED.ADDR, 0, &HA7 ELSE I2C WRITE OLED.ADDR, 0, &HA6
-  RETURN
+SUB OLEDCONTRAST(V)
+  SHARED OL.ADDR
+  I2C WRITE OL.ADDR, 0, &H81, V
+END SUB
 
-oledstop:
-  I2C WRITE OLED.ADDR, 0, &HAE
+SUB OLEDINVERT(V)
+  SHARED OL.ADDR
+  IF V THEN I2C WRITE OL.ADDR, 0, &HA7 ELSE I2C WRITE OL.ADDR, 0, &HA6
+END SUB
+
+SUB OLEDSTOP
+  SHARED OL.ADDR
+  I2C WRITE OL.ADDR, 0, &HAE
   I2C CLOSE
-  RETURN
+END SUB
 
 ' Font: 5 columns a character, bit 0 at the top
 oledglyphs:

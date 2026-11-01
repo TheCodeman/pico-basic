@@ -8,7 +8,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 **Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [INCLUDE](#ref-include), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [MQTT](#ref-mqtt), [MQTT()](#ref-mqtt-1), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [ON MQTT](#ref-on-mqtt), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WATCHDOG](#ref-watchdog), [WDRESET](#ref-wdreset), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
-**Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
+**Flow of control and errors:** [CALL](#ref-call), [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [FUNCTION](#ref-function), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [SHARED](#ref-shared), [STOP](#ref-stop), [SUB](#ref-sub), [WEND](#ref-wend), [WHILE](#ref-while)
 
 **Variables and data:** [DATA](#ref-data), [DEF FN](#ref-def-fn), [DEF SEG](#ref-def-seg), [DEFDBL](#ref-defdbl), [DEFINT](#ref-defint), [DEFSNG](#ref-defsng), [DEFSTR](#ref-defstr), [DIM](#ref-dim), [ERASE](#ref-erase), [LET](#ref-let), [MID$ =](#ref-mid-1), [OPTION BASE](#ref-option-base), [RANDOMIZE](#ref-randomize), [READ](#ref-read), [RESTORE](#ref-restore), [SWAP](#ref-swap)
 
@@ -257,6 +257,26 @@ See also: [BLOAD](#ref-bload)
 The same as SYSTEM.
 
 See also: [SYSTEM](#ref-system)
+
+### CALL {#ref-call}
+
+*Statement* · `CALL name[(arg[, arg...])]`
+
+Calls a SUB; the same as `name arg, arg`.
+
+Example:
+
+```
+CALL SHOW("HI ", 2)
+```
+
+Shows:
+
+```
+HI HI
+```
+
+See also: [SUB](#ref-sub)
 
 ### CDBL {#ref-cdbl}
 
@@ -842,9 +862,9 @@ See also: [LIST](#ref-list), [AUTO](#ref-auto)
 
 ### END {#ref-end}
 
-*Statement* · `END`
+*Statement* · `END | END SUB | END FUNCTION`
 
-Ends the program and closes its files.
+Ends the program and closes its files. END SUB and END FUNCTION end a SUB or FUNCTION.
 
 Example:
 
@@ -1013,9 +1033,9 @@ See also: [ON ERROR GOTO](#ref-on-error-goto), [ERR](#ref-err)
 
 ### EXIT FOR {#ref-exit-for}
 
-*Statement* · `EXIT FOR`
+*Statement* · `EXIT FOR | EXIT SUB | EXIT FUNCTION`
 
-Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC).
+Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC); EXIT SUB and EXIT FUNCTION leave a SUB or FUNCTION.
 
 Example:
 
@@ -1206,6 +1226,33 @@ F = FREEFILE: OPEN "LOG.TXT" FOR APPEND AS #F
 ```
 
 See also: [OPEN](#ref-open)
+
+### FUNCTION {#ref-function}
+
+*Statement* · `FUNCTION name[(param[, param...])] ... END FUNCTION`
+
+A function of several lines, used in expressions as `name(args)`: it gives back what was last given to `name`. EXIT FUNCTION leaves it early. String functions end in $.
+
+- Its variables are its own, as for SUB; arguments are copies.
+- An error in a FUNCTION going to ON ERROR is the calling statement's: RESUME NEXT goes on after it.
+- Errors: `Wrong number of arguments` (86), `FUNCTION without END FUNCTION` (83), `END FUNCTION without FUNCTION` (85).
+
+Example:
+
+```
+FUNCTION FACT(N)
+  IF N <= 1 THEN FACT = 1 ELSE FACT = N * FACT(N - 1)
+END FUNCTION
+PRINT FACT(10)
+```
+
+Shows:
+
+```
+ 3628800
+```
+
+See also: [SUB](#ref-sub), [DEF FN](#ref-def-fn)
 
 ### GET {#ref-get}
 
@@ -2863,6 +2910,25 @@ Shows:
 
 See also: [ABS](#ref-abs)
 
+### SHARED {#ref-shared}
+
+*Statement* · `SHARED var[, var...]`
+
+In a SUB or FUNCTION: these variables (arrays as `A()`) are the program's rather than the call's own.
+
+- Errors: `Illegal function call` (5) outside a SUB or FUNCTION.
+
+Example:
+
+```
+SUB COUNTUP
+  SHARED COUNT
+  COUNT = COUNT + 1
+END SUB
+```
+
+See also: [SUB](#ref-sub), [FUNCTION](#ref-function)
+
 ### SIN {#ref-sin}
 
 *Function* · `SIN(x)`
@@ -3037,6 +3103,34 @@ Shows:
 ```
 
 See also: [SPACE$](#ref-space)
+
+### SUB {#ref-sub}
+
+*Statement* · `SUB name[(param[, param...])] ... END SUB`
+
+A subroutine with parameters and variables of its own, called by its name: `name arg, arg` or `CALL name(arg, arg)`. EXIT SUB leaves it early.
+
+- Its variables (and arrays) are its own unless SHARED names them; the parameters are set to the arguments (by value: a copy). Up to 8 parameters; recursion works.
+- The program runs on past a SUB without running it. SUBs are found when the program starts, in its INCLUDE libraries too.
+- A name must not start with a keyword (`PRINTIT` would be PRINT).
+- Errors: `Wrong number of arguments` (86), `SUB without END SUB` (82), `END SUB without SUB` (84), `Duplicate Definition` (10).
+
+Example:
+
+```
+SUB SHOW(N$, T)
+  FOR I = 1 TO T: PRINT N$;: NEXT: PRINT
+END SUB
+SHOW "HI ", 3
+```
+
+Shows:
+
+```
+HI HI HI
+```
+
+See also: [FUNCTION](#ref-function), [SHARED](#ref-shared), [CALL](#ref-call), [GOSUB](#ref-gosub)
 
 ### SWAP {#ref-swap}
 

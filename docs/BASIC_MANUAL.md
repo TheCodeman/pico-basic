@@ -155,19 +155,20 @@ and RUN take a label wherever they take a line number:
 
 ### Library files: INCLUDE
 
-Subroutines you use in many programs can live in a library file of their
-own, a program without line numbers made of labelled subroutines, and each
-program brings it in with `INCLUDE`:
+SUBs, FUNCTIONs and subroutines you use in many programs can live in a
+library file of their own (without line numbers), and each program brings it
+in with `INCLUDE`:
 
     INCLUDE "OLEDLIB"
-    GOSUB oledstart
-    ROW = 0: COL = 0: TX$ = "HELLO": GOSUB oledtext
+    OLEDSTART &H3C
+    OLEDTEXT 0, 0, "HELLO"
 
 - `INCLUDE "file"` goes on a line of its own (a label may come before it).
   `.BAS` is added if the name has no extension; a folder or drive may be
   given (`INCLUDE "LIB/OLEDLIB"`, `INCLUDE "SD:MATHS"`).
 - RUN reads the files in before the program starts and puts their lines
-  after the program's own, so their labels work like the program's. Each
+  after the program's own, so their SUBs, FUNCTIONs and labels work like the
+  program's. Each
   file comes in once, however many INCLUDEs name it, and a library may
   INCLUDE others. Up to 16 files.
 - LIST, SAVE and EDIT show only the program's own lines; the libraries' come
@@ -178,9 +179,50 @@ program brings it in with `INCLUDE`:
   line; a library with line numbers is `Bad file mode`. A label in both the
   program and a library is `Duplicate label`.
 - Running on past the program's last line ends it, as always: it doesn't
-  carry on into a library. The variables are shared, so a library should
-  give its own a prefix (OLEDLIB's start with `OL.`) and say which ones it
-  takes, as OLEDLIB.BAS does at its top.
+  carry on into a library. A library's SUBs and FUNCTIONs have variables of
+  their own; what they share (SHARED) should have a prefix, as OLEDLIB's
+  `OL.` ones do, and its top should say how to call it.
+
+### SUB and FUNCTION
+
+Subroutines with parameters and variables of their own, as in QBasic:
+
+    SHOW "HELLO", 3
+    PRINT AREA(3, 4); FACT(10)
+    END
+
+    SUB SHOW(T$, N)
+      FOR I = 1 TO N: PRINT T$; " ";: NEXT
+      PRINT
+    END SUB
+
+    FUNCTION AREA(W, H)
+      AREA = W * H
+    END FUNCTION
+
+    FUNCTION FACT(N)
+      IF N <= 1 THEN FACT = 1 ELSE FACT = N * FACT(N - 1)
+    END FUNCTION
+
+- A SUB is called by its name and its arguments, `SHOW "HI", 2`, or with
+  `CALL SHOW("HI", 2)`; it runs to `END SUB` (or `EXIT SUB`) and comes back.
+  A FUNCTION is used in an expression, `AREA(3, 4)`, and gives back what was
+  last given to its name (`AREA = W * H`); a string one's name ends in `$`.
+- Each call's variables and arrays are its own: they start at 0 and "", and
+  go when it ends, so a SUB can use I or S$ without touching the program's.
+  `SHARED COUNT, NAMES$()` in it uses the program's instead. The parameters
+  are set to the arguments as copies (by value). Up to 8 parameters; calls
+  can go 32 deep, recursion included.
+- SUB and FUNCTION go on lines of their own, as do their ENDs; one can't be
+  inside another. The program runs on past them without running them, so
+  they can go anywhere. RUN finds them (in INCLUDE libraries too).
+- A name is letters, digits, `.` and `_`; it must not start with a keyword
+  (`PRINTIT` would be PRINT) or FN.
+- Errors: `Wrong number of arguments`, `SUB without END SUB`, `END SUB
+  without SUB` (and the same for FUNCTION). ON ERROR handlers use the
+  program's variables; an error in a FUNCTION counts as the calling
+  statement's, so `RESUME NEXT` goes on after that statement.
+- LIST and EDIT indent their bodies.
 
 ### Formatted listings
 
@@ -387,6 +429,9 @@ The logical operators work bit by bit on integers.
 |---|---|
 | `GOTO line` | `GOTO 100`, or a label: `GOTO again` (section 1) |
 | `GOSUB line` ... `RETURN` | RETURN ends the FOR and WHILE loops the subroutine started. |
+| `SUB name(params)` ... `END SUB` | A subroutine with parameters and its own variables, called as `name args` or `CALL name(args)`; `EXIT SUB` leaves it (section 1). |
+| `FUNCTION name(params)` ... `END FUNCTION` | A function of several lines, used as `name(args)` in expressions; `EXIT FUNCTION`. |
+| `SHARED var, ...` | In a SUB or FUNCTION: the program's variables rather than its own. |
 | `ON n GOTO l1, l2, ...` / `ON n GOSUB ...` | Goes to the n-th line; past the end, carries on. |
 | `IF cond THEN statements [ELSE statements]` | `THEN 100` and `ELSE 200` jump to lines; `IF X GOTO 100` works too. `IF A > 0 THEN PRINT "+" ELSE PRINT "-"` |
 | `FOR v = a TO b [STEP s]` ... `NEXT [v[, v...]]` | `FOR I = 10 TO 1 STEP -1: PRINT I: NEXT` |
@@ -1160,7 +1205,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | SERIAL.BAS | a small terminal on COM1 (GP8 TX, GP9 RX) |
 | I2CSCAN.BAS | lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7 |
 | OLED.BAS | text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &H3C), with OLEDLIB.BAS |
-| OLEDLIB.BAS | a library (INCLUDE "OLEDLIB") for that OLED: start, clear, text in a 5x7 font, contrast, invert, off |
+| OLEDLIB.BAS | a library of SUBs (INCLUDE "OLEDLIB") for that OLED: OLEDSTART, OLEDCLEAR, OLEDTEXT in a 5x7 font, OLEDCENTER, OLEDCONTRAST, OLEDINVERT, OLEDSTOP |
 | NEODEMO.BAS | eight NeoPixel effects (rainbow, breathe, colour wipe, chase, candle, sparkle, police, heartbeat), changing every 8 seconds; Space/N, P, + and - (or the Maker Pi Pico's buttons GP20-22) to choose, Q quits; one line sets a strip's pin and length |
 | NEOPIXEL.BAS | red, green, blue, then a rainbow on WS2812B LEDs (the Maker Pi Pico's RGB LED on GP28, or a strip) |
 | SPIFLASH.BAS | reads an SPI flash chip's JEDEC ID and first 16 bytes (SPI0 on GP4-7) |
