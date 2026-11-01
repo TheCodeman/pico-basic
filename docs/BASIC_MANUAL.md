@@ -652,8 +652,16 @@ CONFIG.TXT says which network:
   (BASIC refuses them), and the LED is on the radio chip: `PIN LED, 1`
   still lights it (PWM on it just turns it on or off). On the RM2 breakout
   the radio has GP32-35.
-- Other builds say `Feature not available` to WIFI and NTP; TZ works on
-  every build (for DATE$ and TIME$ set by hand).
+- A program can check: `WIFI(0)` is -1 (true) while connected, `WIFI(1)`
+  the signal (dBm), `WIFI(2)` -1 once NTP has set the clock; `WIFI$(0)` is
+  the IP address and `WIFI$(1)` the network. To wait up to 20 seconds:
+
+      T = TIMER
+      WHILE NOT WIFI(0) AND TIMER - T < 20: PAUSE 250: WEND
+      IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "No Wi-Fi"
+
+- Other builds say `Feature not available` to WIFI and NTP (WIFI() gives 0
+  and WIFI$() ""); TZ works on every build (for DATE$ and TIME$ set by hand).
 
 ### Files from programs
 

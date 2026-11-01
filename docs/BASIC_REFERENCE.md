@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WIFI](#ref-wifi), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -3257,6 +3257,28 @@ Clock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT
 ```
 
 See also: [NTP](#ref-ntp), [CONFIG](#ref-config), [TIME$](#ref-time)
+
+### WIFI() {#ref-wifi-1}
+
+*Function* · `WIFI(n) | WIFI$(n)`
+
+Wi-Fi's state for a program: `WIFI(0)` is -1 (true) while connected with an IP address, else 0; `WIFI(1)` the signal in dBm; `WIFI(2)` -1 once NTP has set the clock; `WIFI(3)` the link's state (1 joining, 2 waiting for an address, 3 up, 0 down, -1 failed, -2 no such network, -3 wrong password). `WIFI$(0)` is the IP address, `WIFI$(1)` the network's name.
+
+- Builds without Wi-Fi give 0 and "" (so a program runs on any board).
+
+Example:
+
+```
+IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "Offline"
+```
+
+Shows:
+
+```
+Online at 192.168.1.215
+```
+
+See also: [WIFI](#ref-wifi), [NTP](#ref-ntp)
 
 ### WRITE {#ref-write}
 

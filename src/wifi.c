@@ -339,6 +339,34 @@ void wifi_ntp(void) {
         printf("%s (from %s)\n", t, config.ntp_server);
 }
 
+int wifi_value(int n) {
+    int s = radio ? link_status() : CYW43_LINK_DOWN;
+    switch (n) {
+    case 0:
+        return s == CYW43_LINK_UP ? -1 : 0;
+    case 1: {
+        int32_t rssi = 0;
+        if (s == CYW43_LINK_UP)
+            cyw43_wifi_get_rssi(&cyw43_state, &rssi);
+        return (int)rssi;
+    }
+    case 2:
+        return synced ? -1 : 0;
+    default:
+        return s;
+    }
+}
+
+const char *wifi_text(int n) {
+    static char ip[16];
+    if (n == 1)
+        return want ? config.wifi_ssid : "";
+    if (!radio || link_status() != CYW43_LINK_UP)
+        return "";
+    snprintf(ip, sizeof ip, "%s", ip4addr_ntoa(netif_ip4_addr(sta())));
+    return ip;
+}
+
 void wifi_led(bool on) {
     if (start_radio() || driver)
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, on);

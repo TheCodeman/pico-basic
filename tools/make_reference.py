@@ -101,6 +101,10 @@ e('WIFI', 'Command', 'WIFI | WIFI ON | WIFI OFF | WIFI SCAN',
   ['At power-up BASIC connects in the background to `WIFI_SSID` (with `WIFI_PASSWORD`) from FLASH:/CONFIG.TXT, tries again every 30 seconds when the network is lost, and sets the clock by NTP once it\'s up, then every hour; DATE$ and TIME$ give the local time (`TZ`).',
    'Builds without Wi-Fi say `Feature not available` (73).'],
   'WIFI', 'Connected to HOME, signal -52 dBm\nIP 192.168.1.20, gateway 192.168.1.1, DNS 192.168.1.1\nClock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT', ['NTP', 'CONFIG', 'TIME$'], P)
+e('WIFI()', 'Function', 'WIFI(n) | WIFI$(n)',
+  'Wi-Fi\'s state for a program: `WIFI(0)` is -1 (true) while connected with an IP address, else 0; `WIFI(1)` the signal in dBm; `WIFI(2)` -1 once NTP has set the clock; `WIFI(3)` the link\'s state (1 joining, 2 waiting for an address, 3 up, 0 down, -1 failed, -2 no such network, -3 wrong password). `WIFI$(0)` is the IP address, `WIFI$(1)` the network\'s name.',
+  ['Builds without Wi-Fi give 0 and "" (so a program runs on any board).'],
+  'IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "Offline"', 'Online at 192.168.1.215', ['WIFI', 'NTP'], P)
 e('NTP', 'Command', 'NTP', 'Asks the NTP server (`NTP_SERVER` in CONFIG.TXT, pool.ntp.org to start with) for the time now, sets the clock, and prints it as local time (`TZ`). Waits up to 5 seconds.',
   ['Wi-Fi builds only; BASIC asks by itself once connected, and every hour.'], 'NTP', '2026-10-31 18:30:05 EDT (from pool.ntp.org)', ['WIFI', 'TIME$', 'DATE$'], P)
 e('NUMBERS', 'Command', 'NUMBERS OFF | NUMBERS ON',

@@ -31,6 +31,16 @@ void wifi_scan(void);
 /// NTP: asks for the time now and prints it (waits up to 5 seconds).
 void wifi_ntp(void);
 
+/// WIFI(n) for BASIC (see port_wifi_value).
+/// @param n which
+/// @return it
+int wifi_value(int n);
+
+/// WIFI$(n) for BASIC (see port_wifi_text).
+/// @param n which
+/// @return it
+const char *wifi_text(int n);
+
 /// Sets the board's LED (on the radio chip, on a W board).
 /// @param on lit
 void wifi_led(bool on);

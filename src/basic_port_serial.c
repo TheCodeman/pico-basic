@@ -1367,6 +1367,24 @@ void port_config_show(void) {
     config_print();
 }
 
+int port_wifi_value(int n) {
+#if PICO_BASIC_WIFI
+    return wifi_value(n);
+#else
+    (void)n;
+    return 0;
+#endif
+}
+
+const char *port_wifi_text(int n) {
+#if PICO_BASIC_WIFI
+    return wifi_text(n);
+#else
+    (void)n;
+    return "";
+#endif
+}
+
 bool port_clock_12h(void) {
     return config.clock12;
 }

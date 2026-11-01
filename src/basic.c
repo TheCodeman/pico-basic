@@ -1600,7 +1600,7 @@ static const char *const builtin_words[] = {
     "GWIDTH", "HEX", "I2CREAD", "INKEY", "INP", "INSTR", "INT", "IOCTL", "KEYDOWN", "LCASE", "LEFT", "LEN", "LOC", "LOF",
     "LOG", "LPOS", "MID", "MKD", "MKI", "MKS", "MOUSEB", "MOUSEW", "MOUSEX", "MOUSEY", "MUSIC", "OCT", "PEEK", "PEN", "PIN", "PLAY", "PMAP",
     "POINT", "POS", "RGB", "RIGHT", "RND", "SCREEN", "SGN", "SIN", "SPACE", "SPI", "SPRITEHIT", "SPRITEON", "SPRITEX", "SPRITEY", "SQR", "STICK",
-    "STR", "TAN", "TEMP", "TIME", "UCASE", "USR", "VAL", "VARPTR",
+    "STR", "TAN", "TEMP", "TIME", "UCASE", "USR", "VAL", "VARPTR", "WIFI",
 };
 /// The start of every keyword statement() tries.
 static const char *const statement_words[] = {
@@ -2122,6 +2122,17 @@ static value_t builtin(void) {
         int n = arg_int();
         expect(")");
         return num(port_music_state(n));
+    }
+    if (accept("WIFI(")) {  // WIFI(0) connected, (1) signal, (2) clock set by NTP
+        int n = arg_int();
+        expect(")");
+        return num(port_wifi_value(n));
+    }
+    if (accept("WIFI$(")) {  // WIFI$(0) the IP address, (1) the network
+        int n = arg_int();
+        expect(")");
+        const char *t = port_wifi_text(n);
+        return str(t, strlen(t));
     }
     if (accept("INKEY$"))
         return inkey();
