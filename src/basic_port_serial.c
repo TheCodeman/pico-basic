@@ -1132,6 +1132,12 @@ typedef struct {
 /// XRECV has created its file (so a broken download is deleted, but not a
 /// file of that name that was there before nothing arrived).
 static bool xrecv_created;
+/// XRECV's name for the file, used in place of a YMODEM or ZMODEM sender's
+/// (NULL once the first file has it).
+static const char *xrecv_as;
+/// XMODEM's ^Z padding is to come off received files (the other protocols
+/// send the size).
+static bool xrecv_strip;
 
 /// A byte from the console, waiting up to timeout_ms.
 /// @param ctx unused
@@ -1189,6 +1195,10 @@ static void *x_open_write(void *ctx, const char *name, uint32_t size, bool resum
     xfile_t *x = malloc(sizeof *x);
     if (!x)
         return NULL;
+    if (xrecv_as) {  // XRECV's own name for the first file
+        name = xrecv_as;
+        xrecv_as = NULL;
+    }
     if (f_open(&x->f, name, FA_READ | FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
         free(x);
         return NULL;
@@ -1257,7 +1267,7 @@ static void strip_padding(FIL *f) {
 static void x_close(void *ctx, void *file, bool ok) {
     (void)ctx;
     xfile_t *x = file;
-    if (x->writing && ok)
+    if (x->writing && ok && xrecv_strip)
         strip_padding(&x->f);
     f_close(&x->f);
     // FatFs keeps no name in a FIL: x_open_write's name is the one the
@@ -1269,20 +1279,26 @@ static void x_close(void *ctx, void *file, bool ok) {
 static const xfer_io_t xmodem_io = {NULL,   x_getc, x_write,      x_open_read, x_open_write,
                                     x_read, x_seek, x_write_file, x_close,     NULL};
 
-bool port_xsend(const char *path, char *msg, int size) {
+/// port_xsend's protocol numbers as xfer.c's.
+static const xfer_proto_t xfer_protos[] = {XFER_XMODEM_1K, XFER_YMODEM, XFER_ZMODEM};
+
+bool port_xsend(const char *path, int proto, char *msg, int size) {
     stdio_flush();
     xfer_result_t res;
     const char *paths[1] = {path};
-    xfer_send(&xmodem_io, XFER_XMODEM_1K, paths, 1, &res);
+    xfer_send(&xmodem_io, xfer_protos[proto >= 0 && proto <= 2 ? proto : 0], paths, 1, &res);
     snprintf(msg, size, "%s", res.message);
     return res.ok;
 }
 
-bool port_xrecv(const char *path, char *msg, int size) {
+bool port_xrecv(const char *path, int proto, char *msg, int size) {
     stdio_flush();
     xfer_result_t res;
     xrecv_created = false;
-    xfer_receive(&xmodem_io, XFER_XMODEM, path, &res);
+    xrecv_as = proto == 1 || proto == 2 ? path : NULL;
+    xrecv_strip = !xrecv_as;
+    xfer_receive(&xmodem_io, proto == 1 ? XFER_YMODEM : proto == 2 ? XFER_ZMODEM : XFER_XMODEM, path, &res);
+    xrecv_as = NULL;
     if (!res.ok && xrecv_created)
         f_unlink(path);
     snprintf(msg, size, "%s", res.message);

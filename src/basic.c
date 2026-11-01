@@ -7660,19 +7660,34 @@ static void do_image(void) {
     }
 }
 
-/// XSEND "file" / XRECV "file": a file to or from the terminal by XMODEM.
+/// XSEND "file"[, proto$] / XRECV "file"[, proto$]: a file to or from the
+/// terminal by XMODEM (the default), YMODEM ("Y") or ZMODEM ("Z").
 /// @param send XSEND (else XRECV)
 static void do_xmodem(bool send) {
     char name[96];
     file_name_arg(name, sizeof name, false);
+    int proto = 0;  // 0 XMODEM, 1 YMODEM, 2 ZMODEM (port_xsend's numbers)
+    if (accept(",")) {
+        const char *w = str_expr();
+        char c = (char)toupper((unsigned char)*w);
+        if (c == 'Y')
+            proto = 1;
+        else if (c == 'Z')
+            proto = 2;
+        else if (c != 'X')
+            error(E_ILLEGAL_CALL);
+    }
     if (!at_end_of_statement())
         error(E_SYNTAX);
-    out_str(send ? "Start the XMODEM receive on the terminal now."
-                 : "Start the XMODEM send on the terminal now.");
+    static const char *const names[] = {"XMODEM", "YMODEM", "ZMODEM"};
+    char start[64];
+    snprintf(start, sizeof start, "Start the %s %s on the terminal now.", names[proto],
+             send ? "receive" : "send");
+    out_str(start);
     out_newline();
     out_flush();
     char msg[100];
-    bool ok = send ? port_xsend(name, msg, sizeof msg) : port_xrecv(name, msg, sizeof msg);
+    bool ok = send ? port_xsend(name, proto, msg, sizeof msg) : port_xrecv(name, proto, msg, sizeof msg);
     out_newline();
     out_str(msg);
     out_newline();
@@ -8408,12 +8423,18 @@ static value_t dir_function(void) {
     return str("", 0);
 }
 
-/// FILES [pattern].
+/// FILES [pattern][, long]: with long (not 0), one file a line with its size
+/// and its whole name, for programs that read the list (the PC editor).
 static void do_files(void) {
     char arg[128] = "*";
+    bool long_form = false;
     skip_spaces();
-    if (!at_end_of_statement())
+    if (!at_end_of_statement() && *p != ',')
         snprintf(arg, sizeof arg, "%s", str_expr());
+    if (accept(","))
+        long_form = arg_int() != 0;
+    if (!at_end_of_statement())
+        error(E_SYNTAX);
     // A drive and folder may come first: "SD:", "SD:/GAMES/*.BAS".
     char folder[128] = "", pattern[64];
     const char *name = arg;
@@ -8440,6 +8461,17 @@ static void do_files(void) {
             *c = toupper((unsigned char)*c);
         if (!wild_match(pattern, upper))
             continue;
+        if (long_form) {
+            char line[sizeof info.fname + 24];
+            if (info.fattrib & AM_DIR)
+                snprintf(line, sizeof line, "     <DIR>  %s", info.fname);
+            else
+                snprintf(line, sizeof line, "%10lu  %s", (unsigned long)info.fsize, info.fname);
+            out_str(line);
+            out_newline();
+            ++shown;
+            continue;
+        }
         char entry[40];
         snprintf(entry, sizeof entry, "%-.14s%s", info.fname, info.fattrib & AM_DIR ? "<DIR>" : "");
         out_str(entry);

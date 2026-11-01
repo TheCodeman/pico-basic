@@ -401,18 +401,23 @@ int port_neopixel_pin(void);
 void port_config_show(void);
 
 /// XSEND "file": sends it over the console by XMODEM (1K blocks with CRC-16,
-/// or 128-byte blocks with a checksum if the receiver asks). XRECV "file":
-/// receives one into it (CRC-16, or a checksum if the sender only has that;
-/// 128- or 1K-byte blocks), replacing a file of that name, with XMODEM's ^Z
-/// padding taken off the end. `msg` gets what happened; false if it failed.
+/// or 128-byte blocks with a checksum if the receiver asks), YMODEM (its name
+/// and size go first) or ZMODEM. XRECV "file": receives one into it (CRC-16,
+/// or a checksum if the sender only has that; 128- or 1K-byte blocks),
+/// replacing a file of that name, with XMODEM's ^Z padding taken off the end
+/// (YMODEM and ZMODEM give the exact size, so nothing is taken off). `msg`
+/// gets what happened; false if it failed.
 /// @param path the file
+/// @param proto 0 XMODEM, 1 YMODEM, 2 ZMODEM
 /// @param msg set to what happened
 /// @param size room in msg
 /// @return it got through
-bool port_xsend(const char *path, char *msg, int size);
-/// Receives a file by XMODEM (see port_xsend).
+bool port_xsend(const char *path, int proto, char *msg, int size);
+/// Receives a file (see port_xsend). With YMODEM or ZMODEM the first file
+/// is saved as `path` whatever the sender calls it.
 /// @param path the file
+/// @param proto 0 XMODEM, 1 YMODEM, 2 ZMODEM
 /// @param msg set to what happened
 /// @param size room in msg
 /// @return it got through
-bool port_xrecv(const char *path, char *msg, int size);
+bool port_xrecv(const char *path, int proto, char *msg, int size);

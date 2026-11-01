@@ -1101,12 +1101,13 @@ See also: [GET](#ref-get), [PUT](#ref-put), [LSET](#ref-lset)
 
 ### FILES {#ref-files}
 
-*Command* · `FILES [pattern$]`
+*Command* · `FILES [pattern$][, long]`
 
 Lists files, four to a line (folders marked `<DIR>`), then the free space on that drive.
 
 - The pattern may have `*` and `?` and a drive and folder in front: `FILES "*.BAS"`, `FILES "SD:"`, `FILES "SD:/GAMES/*.BAS"`.
 - Without one, all files in the current folder.
+- With `long` not 0 (`FILES "*", 1`), one a line: the size in bytes (or `<DIR>`) in 10 columns, two spaces, and the whole name (the four-to-a-line list cuts names at 14 characters). The PC editor reads this.
 - `File not found` is printed (not an error) when nothing matches.
 
 Example:
@@ -3542,11 +3543,12 @@ See also: [OR](#ref-or)
 
 ### XRECV {#ref-xrecv}
 
-*Statement* · `XRECV file$`
+*Statement* · `XRECV file$[, protocol$]`
 
 Receives a file from the terminal by XMODEM and saves it as `file$`, replacing one of that name. Start the terminal's XMODEM send within a minute.
 
 - CRC-16 or checksum; 128- or 1K-byte blocks. XMODEM's ^Z padding is taken off the end.
+- `protocol$` `"Y"` takes YMODEM and `"Z"` ZMODEM instead (`"X"`, XMODEM, is the default). They send the file's size, so a file that ends in ^Z bytes keeps them; the file is still saved as `file$`, whatever the sender calls it.
 - A failed transfer deletes the partial file and gives `Device I/O error` (57). Ctrl-X a few times cancels.
 - Works to either drive: `XRECV "SD:PIC.BMP"`.
 
@@ -3567,10 +3569,11 @@ See also: [XSEND](#ref-xsend), [LOAD](#ref-load)
 
 ### XSEND {#ref-xsend}
 
-*Statement* · `XSEND file$`
+*Statement* · `XSEND file$[, protocol$]`
 
 Sends a file to the terminal by XMODEM (1K blocks with CRC-16, or 128-byte ones with a checksum if the receiver asks).
 
+- `protocol$` `"Y"` sends by YMODEM (the name and size go first) and `"Z"` by ZMODEM; `"X"` is the default.
 - Errors: `Device I/O error` (57) if it fails or the file can't be read.
 
 Example:

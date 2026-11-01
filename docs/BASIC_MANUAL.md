@@ -897,6 +897,7 @@ the terminal line:
 |---|---|
 | `XRECV "file"` | Receives a file from the terminal's XMODEM send and saves it as `file`, replacing a file of that name. It asks for CRC-16, falling back to checksums for an old sender, and takes 128- or 1K-byte blocks. XMODEM pads the last block with ^Z (byte 26) characters; they are taken off the end. If the transfer fails, the partial file is deleted (a file that was already there is kept if nothing arrived). |
 | `XSEND "file"` | Sends the file to the terminal's XMODEM receive, in 1K blocks with CRC-16, or 128-byte blocks with a checksum if the receiver asks for those. |
+| `XRECV "file", "Y"`, `XSEND "file", "Y"` | The same by YMODEM (`"Z"`: ZMODEM). These send the file's size, so nothing is taken off the end; XRECV still saves the file as `file`. |
 
 Type the command; BASIC says `Start the XMODEM send on the terminal now.`
 (or receive), and you then have a minute to start the transfer on the PC.

@@ -65,10 +65,11 @@ e('EDIT', 'Command', 'EDIT | EDIT file$ | EDIT n | EDIT .',
   ['In the full-screen editor Ctrl-X/C/V cut, copy and paste lines, Ctrl-Z/R undo and redo, Ctrl-S saves and Esc leaves. A program is only taken if every non-blank line starts with a line number (0-65529, 255 characters at most): otherwise nothing is saved and the cursor goes to the bad line.',
    'Leaving without saving keeps the program as it was. Blank lines are left out.'],
   'EDIT 20', '20 PRINT "HELLO"', ['LIST', 'AUTO'], P)
-e('FILES', 'Command', 'FILES [pattern$]',
+e('FILES', 'Command', 'FILES [pattern$][, long]',
   'Lists files, four to a line (folders marked `<DIR>`), then the free space on that drive.',
   ['The pattern may have `*` and `?` and a drive and folder in front: `FILES "*.BAS"`, `FILES "SD:"`, `FILES "SD:/GAMES/*.BAS"`.',
    'Without one, all files in the current folder.',
+   'With `long` not 0 (`FILES "*", 1`), one a line: the size in bytes (or `<DIR>`) in 10 columns, two spaces, and the whole name (the four-to-a-line list cuts names at 14 characters). The PC editor reads this.',
    '`File not found` is printed (not an error) when nothing matches.'],
   'FILES "*.BAS"', 'PRIMES.BAS          NEODEMO.BAS\n3084288 Bytes free', ['DIR$', 'KILL', 'CHDIR'], P)
 e('KILL', 'Statement', 'KILL file$',
@@ -157,15 +158,17 @@ e('SYSTEM', 'Command', 'SYSTEM', 'Leaves BASIC and starts it afresh, as after a 
 e('TROFF', 'Command', 'TROFF', 'Turns line tracing off.', [], '', '', ['TRON'], P)
 e('TRON', 'Command', 'TRON', 'Turns line tracing on: each line\'s number is printed in brackets as it runs.',
   [], 'TRON: RUN', '[10][20][10][20]...', ['TROFF'], P)
-e('XRECV', 'Statement', 'XRECV file$',
+e('XRECV', 'Statement', 'XRECV file$[, protocol$]',
   'Receives a file from the terminal by XMODEM and saves it as `file$`, replacing one of that name. Start the terminal\'s XMODEM send within a minute.',
   ['CRC-16 or checksum; 128- or 1K-byte blocks. XMODEM\'s ^Z padding is taken off the end.',
+   '`protocol$` `"Y"` takes YMODEM and `"Z"` ZMODEM instead (`"X"`, XMODEM, is the default). They send the file\'s size, so a file that ends in ^Z bytes keeps them; the file is still saved as `file$`, whatever the sender calls it.',
    'A failed transfer deletes the partial file and gives `Device I/O error` (57). Ctrl-X a few times cancels.',
    'Works to either drive: `XRECV "SD:PIC.BMP"`.'],
   'XRECV "GAME.BAS"', 'Start the XMODEM send on the terminal now.\nReceived 1 file, 2048 bytes.', ['XSEND', 'LOAD'], P)
-e('XSEND', 'Statement', 'XSEND file$',
+e('XSEND', 'Statement', 'XSEND file$[, protocol$]',
   'Sends a file to the terminal by XMODEM (1K blocks with CRC-16, or 128-byte ones with a checksum if the receiver asks).',
-  ['Errors: `Device I/O error` (57) if it fails or the file can\'t be read.'],
+  ['`protocol$` `"Y"` sends by YMODEM (the name and size go first) and `"Z"` by ZMODEM; `"X"` is the default.',
+   'Errors: `Device I/O error` (57) if it fails or the file can\'t be read.'],
   'XSEND "GAME.BAS"', 'Start the XMODEM receive on the terminal now.\nSent 1 file, 2048 bytes.', ['XRECV'], P)
 
 # ---- Flow of control --------------------------------------------------------------
