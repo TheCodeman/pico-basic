@@ -468,11 +468,12 @@ Examples:
 | `RESUME`, `RESUME NEXT`, `RESUME line` | Ends the handler: retries the statement that failed, goes on after it, or goes to the line. |
 | `ERROR n` | Raises error `n` (1-255): a test, or a program's own error codes. |
 
-    10 ON ERROR GOTO 100
-    20 OPEN "DATA.TXT" FOR INPUT AS #1
-    30 PRINT "opened": END
-    100 IF ERR = 53 THEN PRINT "no file": RESUME 30
-    110 ON ERROR GOTO 0
+    ON ERROR GOTO nofile
+    OPEN "DATA.TXT" FOR INPUT AS #1
+    opened: PRINT "opened": END
+    nofile:
+      IF ERR = 53 THEN PRINT "no file": RESUME opened
+      ON ERROR GOTO 0
 
 A program that reaches its end while handling an error stops with
 `No RESUME`. Ctrl-C can't be trapped.
@@ -492,11 +493,11 @@ from the subroutine continues the program where it was.
 | `ON PLAY(n) GOSUB line`, `PLAY ON` / `OFF` / `STOP` | The background music queue drops below `n` notes. |
 | `ON COM(1) GOSUB line`, `COM(1) ON` / `OFF` / `STOP` | Something arrives on the open COM1. |
 
-    10 ON TIMER(1) GOSUB 100: TIMER ON
-    20 ON KEY(1) GOSUB 200: KEY(1) ON
-    30 GOTO 30
-    100 PRINT TIME$: RETURN
-    200 PRINT "F1 pressed": RETURN
+    ON TIMER(1) GOSUB clock: TIMER ON
+    ON KEY(1) GOSUB f1: KEY(1) ON
+    idle: GOTO idle
+    clock: PRINT TIME$: RETURN
+    f1: PRINT "F1 pressed": RETURN
 
 ### Memory: PEEK and POKE
 
@@ -771,20 +772,20 @@ Files stay open across lines and statements until CLOSE. RUN, NEW, CLEAR,
 END, the program finishing, an error that stops the program, and SYSTEM
 close every file. Ctrl-C does not, so CONT can carry on.
 
-    10 OPEN "SCORES.TXT" FOR OUTPUT AS #1
-    20 WRITE #1, "Ann", 120
-    30 CLOSE #1
-    40 OPEN "SCORES.TXT" FOR INPUT AS #1
-    50 WHILE NOT EOF(1): INPUT #1, N$, S: PRINT N$, S: WEND
-    60 CLOSE #1
+    OPEN "SCORES.TXT" FOR OUTPUT AS #1
+    WRITE #1, "Ann", 120
+    CLOSE #1
+    OPEN "SCORES.TXT" FOR INPUT AS #1
+    WHILE NOT EOF(1): INPUT #1, N$, S: PRINT N$, S: WEND
+    CLOSE #1
 
 Random access (a 22-byte record: a 20-character name and a 2-byte number):
 
-    10 OPEN "PEOPLE.DAT" FOR RANDOM AS #1 LEN = 22
-    20 FIELD #1, 20 AS NM$, 2 AS AGE$
-    30 LSET NM$ = "Grace": LSET AGE$ = MKI$(85): PUT #1, 1
-    40 GET #1, 1: PRINT NM$; CVI(AGE$)
-    50 CLOSE #1
+    OPEN "PEOPLE.DAT" FOR RANDOM AS #1 LEN = 22
+    FIELD #1, 20 AS NM$, 2 AS AGE$
+    LSET NM$ = "Grace": LSET AGE$ = MKI$(85): PUT #1, 1
+    GET #1, 1: PRINT NM$; CVI(AGE$)
+    CLOSE #1
 
 MKS$ and MKD$ use Microsoft Binary Format, so
 random files written by BASICs on a PC read correctly here, and the other
@@ -956,10 +957,10 @@ A device that doesn't answer gives `Device I/O error` (57); using I2C or SPI
 before OPEN gives `Device unavailable` (68). Both can be caught with
 ON ERROR.
 
-    10 I2C OPEN: I2C SCAN
-    20 T = I2CREAD(&H48, 0): PRINT "LM75 at &H48:"; T
-    30 PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &H9F
-    40 ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
+    I2C OPEN: I2C SCAN
+    T = I2CREAD(&H48, 0): PRINT "LM75 at &H48:"; T
+    PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &H9F
+    ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
 
 ### NeoPixels: WS2812B LEDs
 
@@ -985,9 +986,9 @@ sent with `NEOPIXEL SHOW`.
   Power a strip of more than a few LEDs from its own 5 V supply, join its
   GND to the Pico's, and keep `BRIGHT` modest.
 
-    10 NEOPIXEL OPEN 16, 8: NEOPIXEL BRIGHT 40
-    20 FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
-    30 NEOPIXEL SHOW
+    NEOPIXEL OPEN 16, 8: NEOPIXEL BRIGHT 40
+    FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
+    NEOPIXEL SHOW
 
 `examples/NEOPIXEL.BAS` shows red, green and blue, then a rainbow;
 `examples/NEODEMO.BAS` has eight effects to step through.
@@ -1125,7 +1126,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | FILES.BAS | writes, appends and reads back a text file, and stores and reads records (MKI$/CVI) in a random-access file |
 | BLINK.BAS | flashes the LED |
 | FADE.BAS | fades the LED with PWM |
-| ANALOG.BAS | shows the ADC inputs and the chip temperature (GP26-29; change line 16 to `FIRST = 40: LAST = 46` on a Pico Plus 2) |
+| ANALOG.BAS | shows the ADC inputs and the chip temperature (GP26-29; change `FIRST = 26: LAST = 29` to `FIRST = 40: LAST = 46` on a Pico Plus 2) |
 | SERIAL.BAS | a small terminal on COM1 (GP8 TX, GP9 RX) |
 | I2CSCAN.BAS | lists the I2C devices on GP2/GP3 and reads the first one's registers 0-7 |
 | OLED.BAS | text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &H3C) |

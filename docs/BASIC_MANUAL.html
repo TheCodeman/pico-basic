@@ -1181,11 +1181,12 @@ K$ = INKEY$: IF K$ = CHR$(0) + CHR$(72) THEN PRINT "UP"
 </tr>
 </tbody>
 </table>
-<pre><code>10 ON ERROR GOTO 100
-20 OPEN "DATA.TXT" FOR INPUT AS #1
-30 PRINT "opened": END
-100 IF ERR = 53 THEN PRINT "no file": RESUME 30
-110 ON ERROR GOTO 0
+<pre><code>ON ERROR GOTO nofile
+OPEN "DATA.TXT" FOR INPUT AS #1
+opened: PRINT "opened": END
+nofile:
+  IF ERR = 53 THEN PRINT "no file": RESUME opened
+  ON ERROR GOTO 0
 </code></pre>
 <p>A program that reaches its end while handling an error stops with
 <code>No RESUME</code>. Ctrl-C can't be trapped.</p>
@@ -1221,11 +1222,11 @@ from the subroutine continues the program where it was.</p>
 </tr>
 </tbody>
 </table>
-<pre><code>10 ON TIMER(1) GOSUB 100: TIMER ON
-20 ON KEY(1) GOSUB 200: KEY(1) ON
-30 GOTO 30
-100 PRINT TIME$: RETURN
-200 PRINT "F1 pressed": RETURN
+<pre><code>ON TIMER(1) GOSUB clock: TIMER ON
+ON KEY(1) GOSUB f1: KEY(1) ON
+idle: GOTO idle
+clock: PRINT TIME$: RETURN
+f1: PRINT "F1 pressed": RETURN
 </code></pre>
 <h3 id="memory-peek-and-poke">Memory: PEEK and POKE</h3>
 <p>There's no PC memory. <code>DEF SEG = segment</code> with <code>PEEK(offset)</code>,
@@ -1583,19 +1584,19 @@ about 0.8 KB of memory (plus its record buffer for random files).</p>
 <p>Files stay open across lines and statements until CLOSE. RUN, NEW, CLEAR,
 END, the program finishing, an error that stops the program, and SYSTEM
 close every file. Ctrl-C does not, so CONT can carry on.</p>
-<pre><code>10 OPEN "SCORES.TXT" FOR OUTPUT AS #1
-20 WRITE #1, "Ann", 120
-30 CLOSE #1
-40 OPEN "SCORES.TXT" FOR INPUT AS #1
-50 WHILE NOT EOF(1): INPUT #1, N$, S: PRINT N$, S: WEND
-60 CLOSE #1
+<pre><code>OPEN "SCORES.TXT" FOR OUTPUT AS #1
+WRITE #1, "Ann", 120
+CLOSE #1
+OPEN "SCORES.TXT" FOR INPUT AS #1
+WHILE NOT EOF(1): INPUT #1, N$, S: PRINT N$, S: WEND
+CLOSE #1
 </code></pre>
 <p>Random access (a 22-byte record: a 20-character name and a 2-byte number):</p>
-<pre><code>10 OPEN "PEOPLE.DAT" FOR RANDOM AS #1 LEN = 22
-20 FIELD #1, 20 AS NM$, 2 AS AGE$
-30 LSET NM$ = "Grace": LSET AGE$ = MKI$(85): PUT #1, 1
-40 GET #1, 1: PRINT NM$; CVI(AGE$)
-50 CLOSE #1
+<pre><code>OPEN "PEOPLE.DAT" FOR RANDOM AS #1 LEN = 22
+FIELD #1, 20 AS NM$, 2 AS AGE$
+LSET NM$ = "Grace": LSET AGE$ = MKI$(85): PUT #1, 1
+GET #1, 1: PRINT NM$; CVI(AGE$)
+CLOSE #1
 </code></pre>
 <p>MKS$ and MKD$ use Microsoft Binary Format, so
 random files written by BASICs on a PC read correctly here, and the other
@@ -1903,10 +1904,10 @@ GP16-19 SPI0 ...). RUN, NEW and SYSTEM close them.</p>
 <p>A device that doesn't answer gives <code>Device I/O error</code> (57); using I2C or SPI
 before OPEN gives <code>Device unavailable</code> (68). Both can be caught with
 ON ERROR.</p>
-<pre><code>10 I2C OPEN: I2C SCAN
-20 T = I2CREAD(&amp;H48, 0): PRINT "LM75 at &amp;H48:"; T
-30 PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &amp;H9F
-40 ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
+<pre><code>I2C OPEN: I2C SCAN
+T = I2CREAD(&amp;H48, 0): PRINT "LM75 at &amp;H48:"; T
+PIN 5, 1: SPI OPEN: PIN 5, 0: SPI WRITE &amp;H9F
+ID$ = SPI$(STRING$(3, 0)): PIN 5, 1: PRINT LEN(ID$); "bytes"
 </code></pre>
 <h3 id="neopixels-ws2812b-leds">NeoPixels: WS2812B LEDs</h3>
 <p>Strips, rings and single WS2812B ("NeoPixel") LEDs, on any free pin, driven
@@ -1959,9 +1960,9 @@ sent with <code>NEOPIXEL SHOW</code>.</p>
 <p>WS2812B LEDs want 5 V but take the Pico's 3.3 V data on a short wire.
   Power a strip of more than a few LEDs from its own 5 V supply, join its
   GND to the Pico's, and keep <code>BRIGHT</code> modest.</p>
-<p>10 NEOPIXEL OPEN 16, 8: NEOPIXEL BRIGHT 40
-20 FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
-30 NEOPIXEL SHOW</p>
+<p>NEOPIXEL OPEN 16, 8: NEOPIXEL BRIGHT 40
+FOR I = 0 TO 7: NEOPIXEL I, I * 32, 0, 255 - I * 32: NEXT
+NEOPIXEL SHOW</p>
 </li>
 </ul>
 <p><code>examples/NEOPIXEL.BAS</code> shows red, green and blue, then a rainbow;
@@ -2280,7 +2281,7 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 </tr>
 <tr>
 <td>ANALOG.BAS</td>
-<td>shows the ADC inputs and the chip temperature (GP26-29; change line 16 to <code>FIRST = 40: LAST = 46</code> on a Pico Plus 2)</td>
+<td>shows the ADC inputs and the chip temperature (GP26-29; change <code>FIRST = 26: LAST = 29</code> to <code>FIRST = 40: LAST = 46</code> on a Pico Plus 2)</td>
 </tr>
 <tr>
 <td>SERIAL.BAS</td>
