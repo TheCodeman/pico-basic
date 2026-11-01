@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pico BASIC IDE</title>
+<link rel="stylesheet" href="vendor/codemirror/codemirror.css">
+<link rel="stylesheet" href="vendor/codemirror/dialog.css">
+<link rel="stylesheet" href="vendor/codemirror/show-hint.css">
+<link rel="stylesheet" href="vendor/xterm/xterm.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="toolbar">
+  <span class="brand">Pico BASIC</span>
+  <button id="connect" class="primary">Connect</button>
+  <span id="status" class="status off">Not connected</span>
+  <span class="spacer"></span>
+  <button id="helpbtn" title="The BASIC reference (F1 on a word in the editor)">Help</button>
+  <button id="stop" disabled title="Send Ctrl-C to stop a running program">■ Stop</button>
+</header>
+
+<div id="nosupport" class="banner" hidden>
+  This browser has no Web Serial, so it can't reach the board. Open this page in Chrome or Edge.
+</div>
+
+<main class="layout">
+  <aside class="files" id="files">
+    <div class="files-head">
+      <select id="drive" title="Which disk to show">
+        <option value="FLASH:">FLASH:</option>
+        <option value="SD:">SD:</option>
+        <option value="PC:" id="pcoption">PC folder…</option>
+      </select>
+      <button id="refresh" title="List the files again">⟳</button>
+      <button id="newfile" title="A new file here">New</button>
+      <button id="more" title="More: new folder, upload, backup…">⋯</button>
+    </div>
+    <div id="path" class="path"></div>
+    <ul id="filelist" class="filelist"><li class="hint">Connect to see the board's files.</li></ul>
+    <div id="dropnote" class="dropnote" hidden>Drop to copy here</div>
+    <div id="free" class="free"></div>
+    <input id="uploadinput" type="file" multiple hidden>
+  </aside>
+
+  <section class="editor">
+    <div class="editor-head">
+      <div id="tabs" class="tabs"></div>
+      <button id="run" class="primary" disabled title="Save, then RUN it on the board (F5)">▶ Run</button>
+      <button id="save" disabled title="Save (Ctrl-S)">Save</button>
+      <button id="download" disabled title="Download a copy to this PC">⤓</button>
+    </div>
+    <textarea id="text" spellcheck="false"></textarea>
+    <div id="sig" class="sig"></div>
+  </section>
+
+  <section class="console">
+    <div class="console-head">
+      <span>Console</span>
+      <span class="console-note">Click here and type: keys go straight to the board.</span>
+      <span class="spacer"></span>
+      <button id="clear" title="Clear the console">Clear</button>
+    </div>
+    <div id="term" class="term"></div>
+  </section>
+
+  <aside id="help" class="help" hidden>
+    <div class="help-head">
+      <input id="helpsearch" type="search" placeholder="Search the reference" autocomplete="off" spellcheck="false">
+      <button id="helpclose" title="Close the help (Esc)">✕</button>
+    </div>
+    <ul id="helplist" class="helplist"></ul>
+    <div id="helpbody" class="helpbody">
+      <p class="hint">Put the cursor on a word in the editor and press <kbd>F1</kbd>, or pick an entry above.</p>
+    </div>
+  </aside>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+
+<script>if (/[?&]mock\b/.test(location.search)) document.write('<script src="test/mock-serial.js"><\/script>');</script>
+<script src="vendor/codemirror/codemirror.js"></script>
+<script src="vendor/codemirror/matchbrackets.js"></script>
+<script src="vendor/codemirror/active-line.js"></script>
+<script src="vendor/codemirror/comment.js"></script>
+<script src="vendor/codemirror/dialog.js"></script>
+<script src="vendor/codemirror/searchcursor.js"></script>
+<script src="vendor/codemirror/search.js"></script>
+<script src="vendor/codemirror/show-hint.js"></script>
+<script src="vendor/codemirror/runmode.js"></script>
+<script src="vendor/xterm/xterm.js"></script>
+<script src="vendor/xterm/addon-fit.js"></script>
+<script src="js/basic-data.js"></script>
+<script src="js/basic-mode.js"></script>
+<script src="js/util.js"></script>
+<script src="js/help.js"></script>
+<script src="js/hints.js"></script>
+<script src="js/xmodem.js"></script>
+<script src="js/board.js"></script>
+<script src="js/sources.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/terminal.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
