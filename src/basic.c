@@ -73,7 +73,10 @@ enum {
     E_INPUT_PAST_END = 62, E_BAD_RECORD_NUMBER = 63, E_BAD_FILE_NAME = 64,
     E_TOO_MANY_FILES = 67, E_DEVICE_UNAVAILABLE = 68, E_DEVICE_IO = 57, E_FILE_EXISTS = 58, E_DISK_FULL = 61,
     E_PERMISSION = 70, E_DISK_NOT_READY = 71, E_NO_FEATURE = 73, E_PATH_ACCESS = 75, E_PATH_NOT_FOUND = 76,
-    E_UNDEFINED_LABEL = 80, E_DUPLICATE_LABEL = 81, E_PROTECTED = 100, E_BREAK = 1000,
+    E_UNDEFINED_LABEL = 80, E_DUPLICATE_LABEL = 81, E_SUB_WITHOUT_END = 82, E_FN_WITHOUT_END = 83,
+    E_END_SUB_WITHOUT_SUB = 84, E_END_FN_WITHOUT_FN = 85, E_ARG_COUNT = 86, E_PROTECTED = 100,
+    E_BREAK = 1000,
+    E_END_IN_FN = 1001,  ///< (not shown) END in a FUNCTION: the program ends
 };
 
 static const struct {
@@ -85,6 +88,9 @@ static const struct {
     {E_ILLEGAL_CALL, "Illegal function call"}, {E_OVERFLOW, "Overflow"},
     {E_OUT_OF_MEMORY, "Out of memory"}, {E_UNDEFINED_LINE, "Undefined line number"},
     {E_UNDEFINED_LABEL, "Undefined label"}, {E_DUPLICATE_LABEL, "Duplicate label"},
+    {E_SUB_WITHOUT_END, "SUB without END SUB"}, {E_FN_WITHOUT_END, "FUNCTION without END FUNCTION"},
+    {E_END_SUB_WITHOUT_SUB, "END SUB without SUB"}, {E_END_FN_WITHOUT_FN, "END FUNCTION without FUNCTION"},
+    {E_ARG_COUNT, "Wrong number of arguments"},
     {E_SUBSCRIPT, "Subscript out of range"}, {E_DUPLICATE_DEF, "Duplicate Definition"},
     {E_DIV_ZERO, "Division by zero"}, {E_ILLEGAL_DIRECT, "Illegal direct"},
     {E_TYPE_MISMATCH, "Type mismatch"}, {E_STRING_TOO_LONG, "String too long"},
@@ -712,9 +718,13 @@ static char *temp_str(const char *s, int len) {
     return t;
 }
 
+/// free_temps stops here: a FUNCTION's statements free only their own
+/// temporaries, not those of the expression that called it.
+static int temp_floor;
+
 /// Frees the temporaries.
 static void free_temps(void) {
-    while (temp_count)
+    while (temp_count > temp_floor)
         sfree(temps[--temp_count]);
 }
 
@@ -831,6 +841,27 @@ static char program_name[64];
 static bool unnumbered;
 /// The labels need finding again (the program changed).
 static bool labels_stale = true;
+/// The SUBs and FUNCTIONs need finding again (at RUN): the program changed.
+static bool subs_stale = true;
+
+/// A file INCLUDE brings in when the program runs. Its lines go after the
+/// program's own, numbered from base on (base + its line in the file - 1).
+typedef struct {
+    char name[64];  ///< the file
+    uint16_t base;  ///< the number its first line has
+} library_t;
+#define MAX_LIBRARIES 16  ///< the most files INCLUDE brings in
+static library_t libraries[MAX_LIBRARIES];  ///< the files brought in
+static int library_count;  ///< how many
+/// The index of the first library line, or -1 if none are in. The lines
+/// from there on are the libraries': LIST, SAVE and EDIT leave them out.
+static int library_first = -1;
+
+/// The program's own lines (without the libraries').
+/// @return their count
+static int own_line_count(void) {
+    return library_first >= 0 ? library_first : line_count;
+}
 
 /// Where a line number is (or would go).
 /// @param num the number
@@ -853,7 +884,7 @@ static int find_line(int num, bool *exact) {
 /// Deletes a line.
 /// @param i its index
 static void delete_line_at(int i) {
-    labels_stale = true;
+    labels_stale = subs_stale = true;
     free(lines[i].text);
     memmove(&lines[i], &lines[i + 1], (line_count - i - 1) * sizeof *lines);
     --line_count;
@@ -867,6 +898,8 @@ static void clear_program(void) {
     lines = NULL;
     line_cap = 0;
     unnumbered = false;
+    library_first = -1;
+    library_count = 0;
 }
 
 /// Whether a character can start a name.
@@ -924,7 +957,7 @@ static int last_line_num;  ///< the line EDIT . means: the last one typed or tha
 /// @param text its statements
 static void store_line(int num, const char *text) {
     last_line_num = num;
-    labels_stale = true;
+    labels_stale = subs_stale = true;
     bool exact;
     int i = find_line(num, &exact);
     while (*text == ' ')
@@ -1105,8 +1138,14 @@ static bool block_counts(const char *s, int *closes, int *opens) {
             ends = !strncmp(s, "RETURN", 6) || !strncmp(s, "RESUME", 6);
             if (!strncmp(s, "FORMAT", 6))
                 continue;
-            if (!strncmp(s, "FOR", 3) || !strncmp(s, "WHILE", 5)) {
+            if (!strncmp(s, "FOR", 3) || !strncmp(s, "WHILE", 5) || !strncmp(s, "SUB ", 4) ||
+                !strncmp(s, "FUNCTION ", 9)) {
                 ++*opens;
+            } else if (!strncmp(s, "END SUB", 7) || !strncmp(s, "END FUNCTION", 12)) {
+                if (*opens)
+                    --*opens;
+                else
+                    ++*closes;
             } else if (!strncmp(s, "NEXT", 4) || !strncmp(s, "WEND", 4)) {
                 int n = 1;  // NEXT J, I closes two
                 for (const char *q = s + 4; s[0] == 'N' && *q && *q != ':' && *q != '\''; ++q)
@@ -1136,6 +1175,9 @@ static const char *format_line(int i, format_t *f, char *buf, int room) {
     bool ends = block_counts(line_body(i), &closes, &opens);
     f->depth = f->depth > closes ? f->depth - closes : 0;
     bool label = unnumbered && label_at(lines[i].text);
+    const char *body = line_body(i);
+    if (!strncmp(body, "SUB ", 4) || !strncmp(body, "FUNCTION ", 9))
+        f->in_sub = false;  // a SUB starts afresh (its body goes in a level)
     if (label && f->subs && f->subs[i])
         f->in_sub = true;
     else if (label && f->ended)
@@ -1205,7 +1247,7 @@ static void do_format(void);
 /// A variable.
 typedef struct var {
     struct var *next;  ///< the next in its bucket
-    char name[NAME_MAX + 2];  ///< including a $, %, ! or # suffix
+    char name[NAME_MAX + 4];  ///< including a $, %, ! or # suffix (and a call's 2 bytes)
     bool is_str;  ///< a string
     double n;  ///< its number
     char *s;  ///< its string
@@ -1214,7 +1256,7 @@ typedef struct var {
 /// An array.
 typedef struct array {
     struct array *next;  ///< the next in its bucket
-    char name[NAME_MAX + 2];  ///< its name
+    char name[NAME_MAX + 4];  ///< its name (and a call's 2 bytes)
     bool is_str;  ///< of strings
     int dims;  ///< its dimensions
     int size[8];  ///< upper bound + 1 per dimension
@@ -1360,10 +1402,67 @@ static void clear_vars(void) {
     option_base = 0;
 }
 
+// ---- SUB and FUNCTION ---------------------------------------------------------
+//
+// SUB name[(params)] ... END SUB and FUNCTION name[(params)] ... END FUNCTION,
+// found when the program starts (find_subs). A call's variables and arrays
+// are its own: their names get two bytes in front, 1 and the call's scope,
+// unless SHARED names them.
+
+#define MAX_PARAMS 8  ///< a SUB's or FUNCTION's most parameters
+
+/// A SUB or FUNCTION.
+typedef struct {
+    char name[NAME_MAX + 2];  ///< a SUB's as written; a FUNCTION's with its type suffix
+    bool function;  ///< a FUNCTION (else a SUB)
+    int param_count;  ///< its parameters
+    char (*params)[NAME_MAX + 2];  ///< their names, with their suffixes
+    int line, end;  ///< the indexes of its first line and its END line
+} sub_t;
+static sub_t *subs;  ///< the program's SUBs and FUNCTIONs
+static int sub_count;  ///< how many
+
+/// The variables in use: 0 the program's, else a SUB or FUNCTION call's (the
+/// depth of calls it was made at, 1 to STACK_MAX).
+static int scope;
+/// SUB and FUNCTION calls open.
+static int sub_depth;
+/// FUNCTION calls being worked out (each runs its statements in a nested execute).
+static int fn_nesting;
+/// Each scope's SHARED names.
+static struct {
+    char (*names)[NAME_MAX + 2];  ///< the names
+    int count;  ///< how many
+} shared[STACK_MAX + 1];
+
+/// The SUBs and FUNCTIONs are found and the program hasn't changed since.
+/// @return they can be called
+static bool have_subs(void) {
+    return sub_count && !subs_stale;
+}
+
+/// The name a variable or array has in the current scope.
+/// @param name its name as written (with its suffix)
+/// @param buf room for a call's own name (NAME_MAX + 4)
+/// @return name, or buf
+static const char *scoped_name(const char *name, char *buf) {
+    if (!scope)
+        return name;
+    for (int i = 0; i < shared[scope].count; ++i)
+        if (!strcmp(shared[scope].names[i], name))
+            return name;
+    buf[0] = 1;
+    buf[1] = (char)scope;
+    strcpy(buf + 2, name);
+    return buf;
+}
+
 /// A variable, made if new.
 /// @param name its name (with its suffix)
 /// @return it
 static var_t *find_var(const char *name) {
+    char buf[NAME_MAX + 4];
+    name = scoped_name(name, buf);
     unsigned h = hash(name);
     for (var_t *v = vars[h]; v; v = v->next)
         if (!strcmp(v->name, name))
@@ -1399,6 +1498,8 @@ static void set_str(char **slot, const char *s) {
 /// @param name its name
 /// @return it, or NULL
 static array_t *find_array(const char *name) {
+    char buf[NAME_MAX + 4];
+    name = scoped_name(name, buf);
     for (array_t *a = arrays[hash(name)]; a; a = a->next)
         if (!strcmp(a->name, name))
             return a;
@@ -1413,6 +1514,8 @@ static array_t *find_array(const char *name) {
 static array_t *make_array(const char *name, int dims, const int *bounds) {
     if (find_array(name))
         error(E_DUPLICATE_DEF);
+    char buf[NAME_MAX + 4];
+    name = scoped_name(name, buf);
     long count = 1;
     for (int i = 0; i < dims; ++i) {
         if (bounds[i] < 0)
@@ -1450,6 +1553,42 @@ static array_t *make_array(const char *name, int dims, const int *bounds) {
     a->next = arrays[h];
     arrays[h] = a;
     return a;
+}
+
+/// Frees a call's variables, arrays and SHARED names (id 0: every call's).
+/// @param id its scope
+static void free_locals(int id) {
+    for (int b = 0; b < BUCKETS; ++b) {
+        for (var_t **vp = &vars[b]; *vp;) {
+            var_t *v = *vp;
+            if (v->name[0] != 1 || (id && v->name[1] != id)) {
+                vp = &v->next;
+                continue;
+            }
+            *vp = v->next;
+            sfree(v->s);
+            free(v);
+        }
+        for (array_t **ap = &arrays[b]; *ap;) {
+            array_t *a = *ap;
+            if (a->name[0] != 1 || (id && a->name[1] != id)) {
+                ap = &a->next;
+                continue;
+            }
+            *ap = a->next;
+            if (a->s)
+                for (int i = 0; i < a->count; ++i)
+                    sfree(a->s[i]);
+            free(a->s);
+            free(a->n);
+            free(a);
+        }
+    }
+    for (int i = id ? id : 1; i <= (id ? id : STACK_MAX); ++i) {
+        free(shared[i].names);
+        shared[i].names = NULL;
+        shared[i].count = 0;
+    }
 }
 
 // ---- Execution state ------------------------------------------------------
@@ -1495,6 +1634,8 @@ typedef struct {
     int for_base, while_base;
     ///@}
     int event;  ///< the trapped event this GOSUB handles, or -1
+    int sub;  ///< the SUB or FUNCTION called (its index; ret is the calling statement for a FUNCTION), or -1
+    int scope;  ///< the scope to go back to
 } gosub_frame_t;
 /// GOSUBs open.
 static gosub_frame_t *gosub_stack;
@@ -1517,6 +1658,7 @@ static void push_gosub(void);
 /// ON ERROR GOTO: the handler's line number (-1: none), whether it's running,
 /// and what ERR, ERL and RESUME need.
 static int on_error_line = -1;
+static int err_scope;  ///< the scope the error happened in (RESUME goes back to it)
 /// The ON ERROR handler is running.
 static bool in_error_handler;
 /// ERR and ERL.
@@ -1537,6 +1679,42 @@ static void reset_run_state(void) {
     for_depth = gosub_depth = while_depth = 0;
     data_pos.line = 0;
     data_pos.p = NULL;
+    free_locals(0);
+    scope = sub_depth = fn_nesting = 0;
+}
+
+/// Takes out the libraries' lines (before the program is changed); they come
+/// back when it runs again. CONT can't carry on after.
+static void drop_libraries(void) {
+    if (library_first < 0)
+        return;
+    while (line_count > library_first)
+        delete_line_at(line_count - 1);
+    library_first = -1;
+    library_count = 0;
+    cont_pos.line = -2;
+}
+
+/// The library a line number is in.
+/// @param num the number
+/// @return its index, or -1 if it is the program's own line
+static int library_of(int num) {
+    int k = -1;
+    for (int j = 0; j < library_count; ++j)
+        if (num >= libraries[j].base)
+            k = j;  // (an empty file shares the next one's base, and comes first)
+    return k;
+}
+
+/// Whether a line is the last of its file (the program's or a library's), so
+/// running on past it ends the program.
+/// @param i the line's index
+/// @return it is
+static bool last_of_its_file(int i) {
+    if (i + 1 >= line_count || i + 1 == library_first)
+        return true;
+    return library_first >= 0 && i >= library_first &&
+           library_of(lines[i].num) != library_of(lines[i + 1].num);
 }
 
 /// The line running.
@@ -1606,12 +1784,12 @@ static const char *const builtin_words[] = {
 static const char *const statement_words[] = {
     "BASE", "BEEP", "BLOAD", "BSAVE", "BYE", "CALL", "CHAIN", "CHDIR", "CIRCLE", "CLEAR", "CONFIG",
     "CLOSE", "CLS", "COLOR", "COM", "CONT", "DATA", "DATE", "DEF", "DELETE", "DIM", "DRAW",
-    "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "GET",
-    "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
+    "EDIT", "END", "ENVIRON", "ERASE", "ERROR", "EXIT", "FIELD", "FILES", "FONT", "FOR", "FORMAT", "FUNCTION", "GET",
+    "GOSUB", "GOTO", "GPRINT", "I2C", "IF", "IMAGE", "INCLUDE", "INPUT", "IOCTL", "KEY", "KILL", "LET", "LINE", "LIST",
     "LLIST", "LOAD", "LOCATE", "LOCK", "LPRINT", "LSET", "MERGE", "MID", "MKDIR", "MOTOR", "MOUSE", "MQTT", "MUSIC",
     "NAME", "NEOPIXEL", "NEW", "NEXT", "NTP", "NUMBERS", "ON", "OPEN", "OPTION", "OUT", "PAINT", "PALETTE", "PAUSE",
     "PCOPY", "PEN", "PIN", "PLAY", "POKE", "PRESET", "PRINT", "PSET", "PUT", "PWM", "R",
-    "SAVE", "SCREEN", "SERVO", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SWAP", "SYSTEM", "TIME",
+    "SAVE", "SCREEN", "SERVO", "SHARED", "SHELL", "SOUND", "SPI", "SPRITE", "STOP", "STRIG", "SUB", "SWAP", "SYSTEM", "TIME",
     "TROFF", "TRON", "UNLOCK", "VIEW", "WAIT", "WATCHDOG", "WEND", "WHILE", "WIDTH", "WIFI", "WINDOW", "WRITE", "XRECV", "XSEND",
 };
 
@@ -1948,6 +2126,8 @@ static double rnd_next(void) {
 }
 
 static value_t call_fn(const char *name);
+static sub_t *find_function(const char *name);
+static value_t call_function(sub_t *f);
 static value_t environ_value(value_t arg);
 static value_t inkey(void);
 /// KEY ON: the soft keys' labels are shown.
@@ -2586,6 +2766,11 @@ static value_t primary(void) {
     char name[NAME_MAX + 2];
     if (!read_name(name))
         error(E_SYNTAX);
+    if (have_subs()) {
+        sub_t *f = find_function(name);
+        if (f)
+            return call_function(f);
+    }
     skip_spaces();
     if (*p == '(') {
         ++p;
@@ -2963,7 +3148,7 @@ static bool next_statement(void) {
         ++p;
         return true;
     }
-    if (cur_line < 0 || cur_line + 1 >= line_count)
+    if (cur_line < 0 || last_of_its_file(cur_line))
         return false;
     ++cur_line;
     p = line_body(cur_line);
@@ -3021,11 +3206,16 @@ static void print_error(int code) {
     }
     error_label[0] = 0;
     int ln = running ? current_line_number() : -1;
-    if (ln >= 0)
+    int lib = ln >= 0 ? library_of(ln) : -1;
+    if (ln >= 0 && lib < 0)
         last_line_num = ln;
     if (ln >= 0) {
-        char buf[16];
-        snprintf(buf, sizeof buf, unnumbered ? " in line %d" : " in %d", ln);
+        char buf[96];
+        if (lib >= 0)
+            snprintf(buf, sizeof buf, " in line %d of %s", ln - libraries[lib].base + 1,
+                     libraries[lib].name);
+        else
+            snprintf(buf, sizeof buf, unnumbered ? " in line %d" : " in %d", ln);
         out_str(buf);
     }
     out_newline();
@@ -3060,18 +3250,22 @@ static bool load_tokenised(const uint8_t *buf, size_t len);
 
 /// The file's line being loaded, and whether its lines have numbers.
 static int load_line_no;
+/// Added to a file's line numbers as it loads (a library's go after the program).
+static int load_base;
 /// What the lines loaded so far had: none yet, numbers, or none.
 static enum { LOAD_UNKNOWN, LOAD_NUMBERED, LOAD_UNNUMBERED } load_kind;
 
 /// Reads plain-text programs a chunk at a time, so loading needs no more
 /// memory than the program itself. Tokenised (binary) files (first byte 0xFF,
 /// at most 64 KB) are read whole and converted.
-enum { LOAD_MERGE = 1, LOAD_KEEP_VARS = 2 };
+enum { LOAD_MERGE = 1, LOAD_KEEP_VARS = 2, LOAD_LIBRARY = 4 };
 
 /// Loads a program (LOAD_MERGE: adds a plain-text one's lines to the program
-/// in memory; LOAD_KEEP_VARS: leaves the variables, for CHAIN).
+/// in memory; LOAD_KEEP_VARS: leaves the variables, for CHAIN; LOAD_LIBRARY:
+/// adds a plain-text file without line numbers from line load_base + 1 on,
+/// leaving the program's state alone, for INCLUDE).
 /// @param name the file
-/// @param flags LOAD_MERGE, LOAD_KEEP_VARS
+/// @param flags LOAD_MERGE, LOAD_KEEP_VARS, LOAD_LIBRARY
 static void load_file(const char *name, int flags) {
     FIL f;  // (on the stack: kept across the longjmp below, as it's in memory)
     FRESULT r = f_open(&f, name, FA_READ);
@@ -3081,13 +3275,17 @@ static void load_file(const char *name, int flags) {
         f_close(&f);
         error(E_BAD_FILE_MODE);  // MERGE goes by line numbers
     }
-    if (!(flags & LOAD_MERGE))
+    bool library = flags & LOAD_LIBRARY;
+    if (!(flags & LOAD_MERGE) && !library)
         clear_program();
-    if (!(flags & LOAD_KEEP_VARS))
+    if (!(flags & LOAD_KEEP_VARS) && !library)
         clear_vars();
-    reset_run_state();
+    if (!library) {
+        reset_run_state();
+        load_base = 0;
+    }
     load_line_no = 0;
-    load_kind = (flags & LOAD_MERGE) ? LOAD_NUMBERED : LOAD_UNKNOWN;
+    load_kind = (flags & LOAD_MERGE) ? LOAD_NUMBERED : library ? LOAD_UNNUMBERED : LOAD_UNKNOWN;
     static char *whole;
     whole = NULL;
     int err = 0;
@@ -3102,8 +3300,8 @@ static void load_file(const char *name, int flags) {
         if (got && (uint8_t)chunk[0] == 0xFE)
             error(E_PROTECTED);
         if (got && (uint8_t)chunk[0] == 0xFF) {
-            if (flags & LOAD_MERGE)
-                error(E_BAD_FILE_MODE);  // MERGE takes ASCII files only
+            if (flags & (LOAD_MERGE | LOAD_LIBRARY))
+                error(E_BAD_FILE_MODE);  // MERGE and INCLUDE take ASCII files only
             size_t size = f_size(&f);
             whole = checked_malloc(size + 1);
             memcpy(whole, chunk, got);
@@ -3146,12 +3344,13 @@ static void load_file(const char *name, int flags) {
     memcpy(error_jump, saved, sizeof saved);
     free(whole);
     f_close(&f);
+    load_base = 0;
     if (err) {
-        if (!(flags & LOAD_MERGE))
+        if (!(flags & LOAD_MERGE) && !library)
             clear_program();  // don't leave half a program behind
-        error(err);
+        error(err);  // (half a library goes at the next RUN or change)
     }
-    if (!(flags & LOAD_MERGE)) {
+    if (!(flags & LOAD_MERGE) && !library) {
         snprintf(program_name, sizeof program_name, "%s", name);
         unnumbered = load_kind == LOAD_UNNUMBERED;
     }
@@ -3170,12 +3369,12 @@ static bool load_plain_line(char *line) {
     if (!*q)
         return true;
     if (!isdigit((unsigned char)*q)) {
-        if (load_kind == LOAD_NUMBERED || load_line_no > 65529)
+        if (load_kind == LOAD_NUMBERED || load_base + load_line_no > 65529)
             return false;  // "Direct statement in file"
         load_kind = LOAD_UNNUMBERED;
         if (strlen(q) > LINE_MAX_LEN)
             q[LINE_MAX_LEN] = 0;
-        store_line(load_line_no, q);
+        store_line(load_base + load_line_no, q);
         return true;
     }
     if (load_kind == LOAD_UNNUMBERED)
@@ -3358,7 +3557,7 @@ static void save_file(const char *name) {
         error(fresult_error(r));
     format_t fmt;
     format_begin(&fmt);
-    for (int i = 0; i < line_count && r == FR_OK; ++i) {
+    for (int i = 0; i < own_line_count() && r == FR_OK; ++i) {
         char buf[LINE_MAX_LEN + INDENT_MAX + 16], text[LINE_MAX_LEN + INDENT_MAX + 2];
         const char *t = format_line(i, &fmt, text, sizeof text);
         int n;
@@ -3943,7 +4142,7 @@ static void push_gosub(void) {
     if (gosub_depth == STACK_MAX)
         error(E_OUT_OF_MEMORY);
     skip_statement();
-    gosub_stack[gosub_depth++] = (gosub_frame_t){{cur_line, p}, for_depth, while_depth, -1};
+    gosub_stack[gosub_depth++] = (gosub_frame_t){{cur_line, p}, for_depth, while_depth, -1, -1, scope};
 }
 
 // ---- Event trapping -------------------------------------------------------------
@@ -4109,7 +4308,8 @@ static void check_events(void) {
         events[i].in_handler = true;
         if (gosub_depth == STACK_MAX)
             error(E_OUT_OF_MEMORY);
-        gosub_stack[gosub_depth++] = (gosub_frame_t){{cur_line, p}, for_depth, while_depth, i};
+        gosub_stack[gosub_depth++] = (gosub_frame_t){{cur_line, p}, for_depth, while_depth, i, -1, scope};
+        scope = 0;  // the handler uses the program's variables
         jump_to_line(events[i].line);
         return;
     }
@@ -4244,6 +4444,7 @@ static void do_resume(void) {
     if (!next && (isdigit((unsigned char)*p) || is_ident_start((unsigned char)*p)))
         n = read_line_number();
     in_error_handler = false;
+    scope = err_scope;
     if (n) {
         jump_to_line(n);
         return;
@@ -4255,6 +4456,8 @@ static void do_resume(void) {
     jumped = true;
 }
 
+static void unwind_functions(void);
+
 /// Sends an error to the program's ON ERROR handler, if it has one and isn't
 /// in it already. False if the error should stop the program instead.
 /// @param code the error
@@ -4262,6 +4465,10 @@ static void do_resume(void) {
 static bool trap_error(int code) {
     if (!running || cur_line < 0 || on_error_line < 0 || in_error_handler || code > 255)
         return false;
+    if (fn_nesting)
+        unwind_functions();  // the error is the statement's that called the FUNCTION
+    err_scope = scope;
+    scope = 0;  // the handler uses the program's variables, even when a SUB failed
     err_code = code;
     err_pos = stmt_pos;
     err_line = err_pos.line >= 0 ? lines[err_pos.line].num : 65535;
@@ -4361,9 +4568,10 @@ static void do_erase(void) {
         char name[NAME_MAX + 2];
         if (!read_name(name))
             error(E_SYNTAX);
-        unsigned h = hash(name);
-        array_t **ap = &arrays[h];
-        while (*ap && strcmp((*ap)->name, name))
+        char buf[NAME_MAX + 4];
+        const char *sn = scoped_name(name, buf);
+        array_t **ap = &arrays[hash(sn)];
+        while (*ap && strcmp((*ap)->name, sn))
             ap = &(*ap)->next;
         if (!*ap)
             error(E_ILLEGAL_CALL);
@@ -7750,6 +7958,8 @@ static void line_range(int *first, int *last) {
     }
     *first = find_line(lo, NULL);
     *last = find_line(hi + 1, NULL) - 1;
+    if (*last >= own_line_count())
+        *last = own_line_count() - 1;  // not the libraries' lines
 }
 
 /// Pauses LIST: false for Ctrl-C, Q or Esc.
@@ -8824,6 +9034,38 @@ static void do_kill(void) {
 }
 
 static void run_program(int start_line);
+static void find_subs(void);
+
+/// Brings in the files that INCLUDE "file" lines name (INCLUDE starting a
+/// line, in the program or in a library): their lines go after the program's,
+/// each file once. Errors are the INCLUDE line's.
+static void add_libraries(void) {
+    for (int i = 0; i < line_count; ++i) {
+        const char *s = line_body(i);
+        if (strncmp(s, "INCLUDE", 7) || is_label_char((unsigned char)s[7]))
+            continue;
+        cur_line = i;
+        p = s + 7;
+        running = true;
+        char name[64];
+        file_name_arg(name, sizeof name, true);
+        bool seen = false;
+        for (int j = 0; j < library_count && !seen; ++j)
+            seen = !strcasecmp(libraries[j].name, name);
+        if (seen)
+            continue;
+        if (library_count == MAX_LIBRARIES)
+            error(E_TOO_MANY_FILES);
+        int base = line_count ? lines[line_count - 1].num + 1 : 1;
+        if (library_first < 0)
+            library_first = line_count;
+        snprintf(libraries[library_count].name, sizeof libraries[0].name, "%s", name);
+        libraries[library_count++].base = base;
+        load_base = base - 1;
+        load_file(name, LOAD_LIBRARY);
+    }
+    running = false;
+}
 
 /// RUN [line or file].
 static void do_run(void) {
@@ -8913,6 +9155,7 @@ static void do_chain(void) {
         }
     }
     if (merge) {
+        drop_libraries();
         if (del_from >= 0)
             for (int i = del_to; i >= del_from; --i)
                 delete_line_at(i);
@@ -8926,6 +9169,10 @@ static void do_chain(void) {
     common_count = 0;
     if (!line_count)
         error(E_ILLEGAL_CALL);
+    add_libraries();
+    if (labels_stale)
+        find_labels();
+    find_subs();
     if (start >= 0) {
         jump_to_line(start);
     } else {
@@ -8969,9 +9216,326 @@ static void do_edit(void) {
 // ---- The statement loop ---------------------------------------------------
 
 /// What a statement asks for: go on, END, SYSTEM.
-enum { S_CONTINUE, S_END, S_SYSTEM };
+enum { S_CONTINUE, S_END, S_SYSTEM, S_FN_DONE };
 
 static int statement(void);
+static int execute(void);
+
+// ---- SUB and FUNCTION calls -------------------------------------------------
+
+/// A SUB (not a FUNCTION) by name.
+/// @param name its name
+/// @param len its length
+/// @return it, or NULL
+static sub_t *find_sub(const char *name, int len) {
+    for (int i = 0; i < sub_count; ++i)
+        if (!subs[i].function && (int)strlen(subs[i].name) == len && !strncmp(subs[i].name, name, len))
+            return &subs[i];
+    return NULL;
+}
+
+/// A FUNCTION by name.
+/// @param name its name, with its suffix
+/// @return it, or NULL
+static sub_t *find_function(const char *name) {
+    for (int i = 0; i < sub_count; ++i)
+        if (subs[i].function && !strcmp(subs[i].name, name))
+            return &subs[i];
+    return NULL;
+}
+
+/// The SUB or FUNCTION starting at a line.
+/// @param i the line's index
+/// @return it, or NULL
+static sub_t *sub_at_line(int i) {
+    for (int k = 0; k < sub_count; ++k)
+        if (subs[k].line == i)
+            return &subs[k];
+    return NULL;
+}
+
+/// What a line's statements start with: 1 SUB, 2 FUNCTION, else 0.
+/// @param s the statements
+/// @param end look for END SUB and END FUNCTION instead
+/// @return which
+static int sub_word(const char *s, bool end) {
+    if (end) {
+        if (strncmp(s, "END", 3))
+            return 0;
+        for (s += 3; *s == ' '; ++s) {
+        }
+    }
+    if (!strncmp(s, "SUB", 3) && !is_label_char((unsigned char)s[3]))
+        return 1;
+    if (!strncmp(s, "FUNCTION", 8) && !is_label_char((unsigned char)s[8]))
+        return 2;
+    return 0;
+}
+
+/// Frees the SUB and FUNCTION list.
+static void free_subs(void) {
+    for (int i = 0; i < sub_count; ++i)
+        free(subs[i].params);
+    free(subs);
+    subs = NULL;
+    sub_count = 0;
+}
+
+/// Finds the program's (and its libraries') SUBs and FUNCTIONs, each with its
+/// END line. Errors are the SUB line's.
+static void find_subs(void) {
+    free_subs();
+    subs_stale = false;
+    int n = 0;
+    for (int i = 0; i < line_count; ++i)
+        n += sub_word(line_body(i), false) != 0;
+    if (!n)
+        return;
+    subs = checked_malloc(n * sizeof *subs);
+    for (int i = 0; i < line_count; ++i) {
+        const char *body = line_body(i);
+        int kind = sub_word(body, false);
+        if (!kind)
+            continue;
+        cur_line = i;
+        running = true;
+        p = body + (kind == 2 ? 8 : 3);
+        sub_t f = {.function = kind == 2, .line = i, .end = -1};
+        skip_spaces();
+        if (f.function) {
+            if (!read_name(f.name))
+                error(E_SYNTAX);
+        } else {
+            int len = 0;
+            while (is_label_char((unsigned char)p[len]))
+                ++len;
+            if (!is_ident_start((unsigned char)*p) || len > NAME_MAX || statement_name(p, len))
+                error(E_SYNTAX);
+            memcpy(f.name, p, len);
+            f.name[len] = 0;
+            p += len;
+        }
+        char params[MAX_PARAMS][NAME_MAX + 2];
+        if (accept("(") && !accept(")")) {
+            do {
+                if (f.param_count == MAX_PARAMS || !read_name(params[f.param_count++]))
+                    error(E_SYNTAX);
+            } while (accept(","));
+            expect(")");
+        }
+        skip_spaces();
+        if (*p && *p != '\'')
+            error(E_SYNTAX);
+        for (int k = 0; k < sub_count; ++k)
+            if (!strcmp(subs[k].name, f.name))
+                error(E_DUPLICATE_DEF);
+        for (int j = i + 1; j < line_count && f.end < 0; ++j) {
+            const char *t = line_body(j);
+            if (sub_word(t, false))
+                break;  // (no SUB inside another)
+            if (sub_word(t, true) == kind)
+                f.end = j;
+        }
+        if (f.end < 0)
+            error(f.function ? E_FN_WITHOUT_END : E_SUB_WITHOUT_END);
+        if (f.param_count) {
+            f.params = checked_malloc(f.param_count * sizeof *f.params);
+            memcpy(f.params, params, f.param_count * sizeof *f.params);
+        }
+        subs[sub_count++] = f;
+    }
+    running = false;
+}
+
+/// A call's arguments: a list of expressions, in brackets for CALL and a
+/// FUNCTION (where they may be left out with the brackets).
+/// @param args set to them
+/// @param brackets they are in brackets
+/// @return their count
+static int sub_args(value_t *args, bool brackets) {
+    int n = 0;
+    if (brackets ? !accept("(") || accept(")") : at_end_of_statement())
+        return 0;
+    do {
+        if (n == MAX_PARAMS)
+            error(E_ARG_COUNT);
+        args[n++] = expr();
+    } while (accept(","));
+    if (brackets)
+        expect(")");
+    return n;
+}
+
+/// Starts a call: a frame, the call's own scope, and its parameters set to
+/// the arguments (copies: they are passed by value).
+/// @param f the SUB or FUNCTION
+/// @param args the arguments
+/// @param n their count
+/// @param ret where it goes back to (FUNCTION: the statement that called it)
+static void enter_sub(sub_t *f, const value_t *args, int n, pos_t ret) {
+    if (n != f->param_count)
+        error(E_ARG_COUNT);
+    for (int i = 0; i < n; ++i)
+        if (args[i].is_str != (type_of(f->params[i]) == '$'))
+            error(E_TYPE_MISMATCH);
+    if (gosub_depth == STACK_MAX)
+        error(E_OUT_OF_MEMORY);
+    gosub_stack[gosub_depth++] = (gosub_frame_t){ret, for_depth, while_depth, -1, (int)(f - subs), scope};
+    scope = ++sub_depth;
+    for (int i = 0; i < n; ++i) {
+        var_t *v = find_var(f->params[i]);
+        if (v->is_str)
+            set_str(&v->s, args[i].s);
+        else
+            v->n = typed_value(type_of(f->params[i]), args[i].n);
+    }
+    cur_line = f->line;
+    p = lines[f->line].text + strlen(lines[f->line].text);  // its statements start on the next line
+    running = true;
+    jumped = true;
+}
+
+/// Calls a SUB: NAME args or CALL NAME(args). It runs until END SUB.
+/// @param f the SUB
+/// @param brackets the arguments are in brackets (CALL)
+static void call_sub(sub_t *f, bool brackets) {
+    value_t args[MAX_PARAMS];
+    int n = sub_args(args, brackets);
+    skip_statement();
+    enter_sub(f, args, n, (pos_t){cur_line, p});
+}
+
+/// Pops the top GOSUB, SUB or FUNCTION frame: the loops and the scope go
+/// back to what they were, and a call's variables go.
+/// @return the frame
+static gosub_frame_t pop_frame(void) {
+    gosub_frame_t g = gosub_stack[--gosub_depth];
+    if (g.event >= 0)
+        events[g.event].in_handler = false;
+    if (g.sub >= 0) {
+        free_locals(sub_depth);
+        --sub_depth;
+    }
+    scope = g.scope;
+    for_depth = g.for_base;
+    while_depth = g.while_base;
+    return g;
+}
+
+/// A FUNCTION's value (kept by END FUNCTION while its variables go).
+///@{
+static bool fn_result_is_str;
+static double fn_result_n;
+static char *fn_result_s;
+static int fn_result_len;
+///@}
+
+/// END SUB or EXIT SUB, END FUNCTION or EXIT FUNCTION: the innermost call
+/// ends (with any GOSUBs it made).
+/// @param function END FUNCTION
+/// @return S_CONTINUE (SUB) or S_FN_DONE
+static int end_sub(bool function) {
+    int k = gosub_depth - 1;
+    while (k >= 0 && gosub_stack[k].sub < 0)
+        --k;
+    if (k < 0 || subs[gosub_stack[k].sub].function != function)
+        error(function ? E_END_FN_WITHOUT_FN : E_END_SUB_WITHOUT_SUB);
+    if (function) {
+        var_t *v = find_var(subs[gosub_stack[k].sub].name);  // its value, in its scope
+        free(fn_result_s);
+        fn_result_s = NULL;
+        fn_result_is_str = v->is_str;
+        fn_result_n = v->n;
+        fn_result_len = v->is_str && v->s ? slen(v->s) : 0;
+        if (v->is_str) {
+            fn_result_s = checked_malloc(fn_result_len + 1);
+            memcpy(fn_result_s, v->s ? v->s : "", fn_result_len);
+        }
+    }
+    while (gosub_depth > k + 1)
+        pop_frame();
+    gosub_frame_t g = pop_frame();
+    if (function)
+        return S_FN_DONE;
+    cur_line = g.ret.line;
+    p = g.ret.p;
+    jumped = true;
+    return S_CONTINUE;
+}
+
+/// Calls a FUNCTION from an expression: its statements run (a nested
+/// execute) until END FUNCTION, then the expression goes on with its value.
+/// @param f the FUNCTION
+/// @return its value
+static value_t call_function(sub_t *f) {
+    value_t args[MAX_PARAMS];
+    int n = sub_args(args, true);
+    if (port_stack_low())
+        error(E_OUT_OF_MEMORY);
+    int saved_line = cur_line;
+    const char *saved_p = p;
+    pos_t saved_stmt = stmt_pos;
+    bool saved_running = running, saved_jumped = jumped;
+    bfile_t *saved_out = out_dev;
+    int saved_floor = temp_floor;
+    temp_floor = temp_count;
+    out_dev = NULL;
+    enter_sub(f, args, n, stmt_pos);
+    ++fn_nesting;
+    int r = execute();
+    --fn_nesting;
+    if (r != S_FN_DONE)
+        error(E_END_IN_FN);  // END (or SYSTEM) in it: the program ends
+    cur_line = saved_line;
+    p = saved_p;
+    stmt_pos = saved_stmt;
+    running = saved_running;
+    jumped = saved_jumped;
+    out_dev = saved_out;
+    temp_floor = saved_floor;
+    if (!fn_result_is_str)
+        return num(fn_result_n);
+    value_t v = str(fn_result_s, fn_result_len);
+    free(fn_result_s);
+    fn_result_s = NULL;
+    return v;
+}
+
+/// An error in a FUNCTION going to ON ERROR: the calls back to the
+/// outermost FUNCTION end, and the error is the statement's that called it
+/// (RESUME runs that statement again, RESUME NEXT goes on after it).
+static void unwind_functions(void) {
+    int k = 0;
+    while (k < gosub_depth && !(gosub_stack[k].sub >= 0 && subs[gosub_stack[k].sub].function))
+        ++k;
+    if (k < gosub_depth) {
+        pos_t call = gosub_stack[k].ret;
+        while (gosub_depth > k)
+            pop_frame();
+        stmt_pos = call;
+        cur_line = call.line;
+        p = call.p;
+    }
+    fn_nesting = 0;
+}
+
+/// SHARED name[, name...]: in a SUB or FUNCTION, these names (arrays as
+/// A()) are the program's variables rather than the call's own.
+static void do_shared(void) {
+    if (!scope)
+        error(E_ILLEGAL_CALL);  // only in a SUB or FUNCTION
+    do {
+        char name[NAME_MAX + 2];
+        if (!read_name(name))
+            error(E_SYNTAX);
+        if (accept("("))
+            expect(")");
+        int c = shared[scope].count;
+        shared[scope].names = checked_realloc(shared[scope].names, (c + 1) * sizeof *shared[scope].names);
+        strcpy(shared[scope].names[c], name);
+        shared[scope].count = c + 1;
+    } while (accept(","));
+}
 
 /// Runs statements from p until the end of the line (direct mode) or the end
 /// of the program.
@@ -8996,7 +9560,7 @@ static int execute(void) {
             continue;
         }
         if (!*p || *p == '\'') {
-            if (!running || cur_line < 0 || cur_line + 1 >= line_count) {
+            if (!running || cur_line < 0 || last_of_its_file(cur_line)) {
                 if (running && cur_line >= 0 && in_error_handler)
                     error(E_NO_RESUME);  // ran off the end inside an error handler
                 return S_END;
@@ -9033,10 +9597,13 @@ static void run_program(int start_line) {
     clear_vars();
     reset_run_state();
     rnd_state = 0x12345678u;
+    drop_libraries();
     if (!line_count)
         return;
+    add_libraries();
     if (labels_stale)
         find_labels();
+    find_subs();
     if (start_line >= 0) {
         jump_to_line(start_line);
     } else {
@@ -9054,6 +9621,18 @@ static int statement(void) {
     jumped = false;
     const char *start = p;
     stmt_pos = (pos_t){cur_line, start};
+    if (have_subs() && is_ident_start((unsigned char)*p)) {
+        // A SUB called by its name: NAME arg, arg...
+        int len = 0;
+        while (is_label_char((unsigned char)p[len]))
+            ++len;
+        sub_t *s = p[len] && strchr("$%!#", p[len]) ? NULL : find_sub(p, len);
+        if (s) {
+            p += len;
+            call_sub(s, false);
+            return S_CONTINUE;
+        }
+    }
     if (!may_be_keyword(&statement_set, p)) {
         // Implicit LET (the else at the end), without trying every keyword.
         lvalue_t lv = lvalue();
@@ -9067,6 +9646,16 @@ static int statement(void) {
         assign(lv, expr());
     } else if (accept("IF")) {
         do_if();
+    } else if (accept_word("SUB") || accept_word("FUNCTION")) {
+        // Reached by running on: the SUB isn't run, but passed over.
+        sub_t *s = cur_line >= 0 && have_subs() ? sub_at_line(cur_line) : NULL;
+        if (!s)
+            error(E_SYNTAX);
+        cur_line = s->end;
+        p = lines[s->end].text + strlen(lines[s->end].text);
+        jumped = true;
+    } else if (accept_word("SHARED")) {
+        do_shared();
     } else if (accept("GOTO")) {
         do_goto_or_gosub(false);
     } else if (accept("GOSUB")) {
@@ -9079,15 +9668,11 @@ static int statement(void) {
             error(E_ILLEGAL_CALL);
         error(n);
     } else if (accept("RETURN")) {
-        if (!gosub_depth)
+        if (!gosub_depth || gosub_stack[gosub_depth - 1].sub >= 0)
             error(E_RETURN_WITHOUT_GOSUB);
-        gosub_frame_t *g = &gosub_stack[--gosub_depth];
-        if (g->event >= 0)
-            events[g->event].in_handler = false;
-        for_depth = g->for_base;
-        while_depth = g->while_base;
-        cur_line = g->ret.line;
-        p = g->ret.p;
+        gosub_frame_t g = pop_frame();
+        cur_line = g.ret.line;
+        p = g.ret.p;
         jumped = true;
     } else if (accept("FORMAT")) {
         do_format();
@@ -9095,6 +9680,10 @@ static int statement(void) {
         do_for();
     } else if (accept_word("EXIT")) {
         // EXIT FOR (from QuickBASIC): leaves the innermost FOR loop.
+        if (accept_word("SUB"))
+            return end_sub(false);
+        if (accept_word("FUNCTION"))
+            return end_sub(true);
         if (!accept_word("FOR"))
             error(E_SYNTAX);
         if (for_depth == for_base())
@@ -9281,6 +9870,10 @@ static int statement(void) {
     } else if (accept("SOUND")) {
         do_sound();
     } else if (accept("END")) {
+        if (accept_word("SUB"))
+            return end_sub(false);
+        if (accept_word("FUNCTION"))
+            return end_sub(true);
         close_all_files();
         out_flush();
         cont_pos.line = -2;
@@ -9339,6 +9932,7 @@ static int statement(void) {
     } else if (accept_word("MERGE")) {
         char name[64];
         file_name_arg(name, sizeof name, true);
+        drop_libraries();
         load_file(name, LOAD_MERGE | LOAD_KEEP_VARS);
         cont_pos.line = -2;
         return S_END;
@@ -9356,15 +9950,24 @@ static int statement(void) {
         do_files();
     } else if (accept("KILL")) {
         do_kill();
+    } else if (accept_word("INCLUDE")) {
+        // The file came in when the program started (add_libraries).
+        if (cur_line < 0)
+            error(E_ILLEGAL_DIRECT);
+        char name[64];
+        file_name_arg(name, sizeof name, true);
     } else if (accept("DELETE")) {
+        drop_libraries();
         do_delete();
         return S_END;
     } else if (accept("RENUM")) {
+        drop_libraries();
         do_renum();
         return S_END;
     } else if (accept("NUMBERS")) {
         if (cur_line >= 0)
             error(E_ILLEGAL_DIRECT);
+        drop_libraries();
         do_numbers();
         return S_END;
     } else if (accept("TRON")) {
@@ -9441,8 +10044,17 @@ static int statement(void) {
     } else if (accept_word("LOCK") || accept_word("UNLOCK") || accept_word("MOTOR") ||
                accept_word("STRIG") || accept_word("PEN")) {
         skip_statement();  // single-user, no cassette, joystick or light pen
-    } else if (accept_word("OUT") || accept_word("WAIT") || accept_word("CALL") ||
-               accept_word("IOCTL")) {
+    } else if (accept_word("CALL")) {
+        skip_spaces();
+        int len = 0;
+        while (is_label_char((unsigned char)p[len]))
+            ++len;
+        sub_t *s = have_subs() ? find_sub(p, len) : NULL;
+        if (!s)
+            error(E_ILLEGAL_CALL);  // (no machine code)
+        p += len;
+        call_sub(s, true);
+    } else if (accept_word("OUT") || accept_word("WAIT") || accept_word("IOCTL")) {
         error(E_ILLEGAL_CALL);  // no PC I/O ports or machine code
     } else if (accept("SYSTEM") || accept("BYE")) {
         return S_SYSTEM;
@@ -9490,13 +10102,16 @@ static bool direct(const char *text) {
     p = direct_line;
     running = false;
     int code = setjmp(error_jump);
-    if (code)
+    if (code) {
+        temp_floor = 0;
         free_temps();
-    if (code && !trap_error(code)) {
-        if (code == E_BREAK && running && cur_line >= 0 && cont_pos.line < -1)
+    }
+    if (code && code != E_END_IN_FN && !trap_error(code)) {
+        if (code == E_BREAK && running && cur_line >= 0 && cont_pos.line < -1 && !fn_nesting)
             cont_pos = (pos_t){cur_line, p};  // Ctrl-C: CONT resumes here
-        else if (code != E_BREAK)
-            cont_pos.line = -2;
+        else if (code != E_BREAK || fn_nesting)
+            cont_pos.line = -2;  // (not inside a FUNCTION: its caller has gone)
+        fn_nesting = 0;
         print_error(code);
         if (running && code != E_BREAK)
             close_all_files();  // as when a program stops on an error
@@ -9507,7 +10122,8 @@ static bool direct(const char *text) {
         printf("\x1b[0m");  // a program may have left colours set
         return true;
     }
-    int r = execute();
+    int r = code == E_END_IN_FN ? S_END : execute();
+    fn_nesting = 0;
     free_temps();
     in_error_handler = false;
     bool was_running = running;
@@ -9535,6 +10151,7 @@ static bool try_store_line(int n, const char *text) {
     }
     if (n > 65529)
         error(E_SYNTAX);
+    drop_libraries();
     if (unnumbered && line_count) {
         out_str("This program has no line numbers: EDIT it (or NUMBERS ON)");
         out_newline();
@@ -9552,6 +10169,7 @@ static bool try_store_line(int n, const char *text) {
 /// @param start the first
 /// @param step the step
 static void do_auto(int start, int step) {
+    drop_libraries();
     if (unnumbered && line_count) {
         out_str("This program has no line numbers: EDIT it (or NUMBERS ON)");
         out_newline();

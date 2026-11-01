@@ -39,6 +39,8 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#the-terminal">The terminal</a></li>
 <li><a href="#first-program">First program</a></li>
 <li><a href="#programs-without-line-numbers">Programs without line numbers</a></li>
+<li><a href="#library-files-include">Library files: INCLUDE</a></li>
+<li><a href="#sub-and-function">SUB and FUNCTION</a></li>
 <li><a href="#formatted-listings">Formatted listings</a></li>
 <li><a href="#autorunbas">AUTORUN.BAS</a></li>
 <li><a href="#editing-a-line">Editing a line</a></li>
@@ -103,6 +105,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-bload">BLOAD</a></li>
 <li><a href="#ref-bsave">BSAVE</a></li>
 <li><a href="#ref-bye">BYE</a></li>
+<li><a href="#ref-call">CALL</a></li>
 <li><a href="#ref-cdbl">CDBL</a></li>
 <li><a href="#ref-chain">CHAIN</a></li>
 <li><a href="#ref-chdir">CHDIR</a></li>
@@ -154,6 +157,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-format">FORMAT</a></li>
 <li><a href="#ref-fre">FRE</a></li>
 <li><a href="#ref-freefile">FREEFILE</a></li>
+<li><a href="#ref-function">FUNCTION</a></li>
 <li><a href="#ref-get">GET</a></li>
 <li><a href="#ref-gosub">GOSUB</a></li>
 <li><a href="#ref-goto">GOTO</a></li>
@@ -163,6 +167,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-i2cread-1">I2CREAD$</a></li>
 <li><a href="#ref-if">IF</a></li>
 <li><a href="#ref-imp">IMP</a></li>
+<li><a href="#ref-include">INCLUDE</a></li>
 <li><a href="#ref-inkey">INKEY$</a></li>
 <li><a href="#ref-input">INPUT</a></li>
 <li><a href="#ref-input-1">INPUT</a></li>
@@ -247,6 +252,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-screenr-c">SCREEN(r, c)</a></li>
 <li><a href="#ref-servo">SERVO</a></li>
 <li><a href="#ref-sgn">SGN</a></li>
+<li><a href="#ref-shared">SHARED</a></li>
 <li><a href="#ref-sin">SIN</a></li>
 <li><a href="#ref-sound">SOUND</a></li>
 <li><a href="#ref-space">SPACE$</a></li>
@@ -257,6 +263,7 @@ figure img { max-width: 82%; image-rendering: pixelated; border: 1px solid #333;
 <li><a href="#ref-stop">STOP</a></li>
 <li><a href="#ref-str">STR$</a></li>
 <li><a href="#ref-string">STRING$</a></li>
+<li><a href="#ref-sub">SUB</a></li>
 <li><a href="#ref-swap">SWAP</a></li>
 <li><a href="#ref-system">SYSTEM</a></li>
 <li><a href="#ref-tab">TAB</a></li>
@@ -468,6 +475,75 @@ RETURN
   <code>NUMBERS ON</code> numbers the lines 10, 20, 30... (labels stay). Numbers in
   <code>ERL</code> comparisons (<code>IF ERL = 100</code>) aren't changed.</li>
 <li><code>examples/LABELS.BAS</code> is a menu program with labels.</li>
+</ul>
+<h3 id="library-files-include">Library files: INCLUDE</h3>
+<p>SUBs, FUNCTIONs and subroutines you use in many programs can live in a
+library file of their own (without line numbers), and each program brings it
+in with <code>INCLUDE</code>:</p>
+<pre><code>INCLUDE "OLEDLIB"
+OLEDSTART &amp;H3C
+OLEDTEXT 0, 0, "HELLO"
+</code></pre>
+<ul>
+<li><code>INCLUDE "file"</code> goes on a line of its own (a label may come before it).
+  <code>.BAS</code> is added if the name has no extension; a folder or drive may be
+  given (<code>INCLUDE "LIB/OLEDLIB"</code>, <code>INCLUDE "SD:MATHS"</code>).</li>
+<li>RUN reads the files in before the program starts and puts their lines
+  after the program's own, so their SUBs, FUNCTIONs and labels work like the
+  program's. Each
+  file comes in once, however many INCLUDEs name it, and a library may
+  INCLUDE others. Up to 16 files.</li>
+<li>LIST, SAVE and EDIT show only the program's own lines; the libraries' come
+  in again at each RUN (so a changed library is picked up). Changing the
+  program takes them out until the next RUN, and CONT can't carry on.</li>
+<li>An error in a library names its file and line: <code>Division by zero in line
+  5 of OLEDLIB.BAS</code>. One that isn't there is <code>File not found</code> at the INCLUDE
+  line; a library with line numbers is <code>Bad file mode</code>. A label in both the
+  program and a library is <code>Duplicate label</code>.</li>
+<li>Running on past the program's last line ends it, as always: it doesn't
+  carry on into a library. A library's SUBs and FUNCTIONs have variables of
+  their own; what they share (SHARED) should have a prefix, as OLEDLIB's
+  <code>OL.</code> ones do, and its top should say how to call it.</li>
+</ul>
+<h3 id="sub-and-function">SUB and FUNCTION</h3>
+<p>Subroutines with parameters and variables of their own, as in QBasic:</p>
+<pre><code>SHOW "HELLO", 3
+PRINT AREA(3, 4); FACT(10)
+END
+
+SUB SHOW(T$, N)
+  FOR I = 1 TO N: PRINT T$; " ";: NEXT
+  PRINT
+END SUB
+
+FUNCTION AREA(W, H)
+  AREA = W * H
+END FUNCTION
+
+FUNCTION FACT(N)
+  IF N &lt;= 1 THEN FACT = 1 ELSE FACT = N * FACT(N - 1)
+END FUNCTION
+</code></pre>
+<ul>
+<li>A SUB is called by its name and its arguments, <code>SHOW "HI", 2</code>, or with
+  <code>CALL SHOW("HI", 2)</code>; it runs to <code>END SUB</code> (or <code>EXIT SUB</code>) and comes back.
+  A FUNCTION is used in an expression, <code>AREA(3, 4)</code>, and gives back what was
+  last given to its name (<code>AREA = W * H</code>); a string one's name ends in <code>$</code>.</li>
+<li>Each call's variables and arrays are its own: they start at 0 and "", and
+  go when it ends, so a SUB can use I or S$ without touching the program's.
+  <code>SHARED COUNT, NAMES$()</code> in it uses the program's instead. The parameters
+  are set to the arguments as copies (by value). Up to 8 parameters; calls
+  can go 32 deep, recursion included.</li>
+<li>SUB and FUNCTION go on lines of their own, as do their ENDs; one can't be
+  inside another. The program runs on past them without running them, so
+  they can go anywhere. RUN finds them (in INCLUDE libraries too).</li>
+<li>A name is letters, digits, <code>.</code> and <code>_</code>; it must not start with a keyword
+  (<code>PRINTIT</code> would be PRINT) or FN.</li>
+<li>Errors: <code>Wrong number of arguments</code>, <code>SUB without END SUB</code>, <code>END SUB
+  without SUB</code> (and the same for FUNCTION). ON ERROR handlers use the
+  program's variables; an error in a FUNCTION counts as the calling
+  statement's, so <code>RESUME NEXT</code> goes on after that statement.</li>
+<li>LIST and EDIT indent their bodies.</li>
 </ul>
 <h3 id="formatted-listings">Formatted listings</h3>
 <p>LIST, EDIT and SAVE show the program indented: the bodies of FOR ... NEXT
@@ -717,6 +793,10 @@ editor (its own copy and paste are Shift+Ctrl+C and Shift+Ctrl+V).</p>
 <td>Runs another program from a program, keeping open files. Only the variables named in <code>COMMON</code> are passed on, or all of them with <code>ALL</code>. <code>CHAIN MERGE</code> adds the file's lines (after deleting <code>range</code>) and keeps all variables.</td>
 </tr>
 <tr>
+<td><code>INCLUDE "file"</code></td>
+<td>In a program, on a line of its own: brings in a library file's labelled subroutines when the program runs (see Library files).</td>
+</tr>
+<tr>
 <td><code>COMMON var[, var...]</code></td>
 <td>Names the variables CHAIN passes on (arrays as <code>A()</code>).</td>
 </tr>
@@ -876,6 +956,18 @@ SAVE "PRIMES2"
 <tr>
 <td><code>GOSUB line</code> ... <code>RETURN</code></td>
 <td>RETURN ends the FOR and WHILE loops the subroutine started.</td>
+</tr>
+<tr>
+<td><code>SUB name(params)</code> ... <code>END SUB</code></td>
+<td>A subroutine with parameters and its own variables, called as <code>name args</code> or <code>CALL name(args)</code>; <code>EXIT SUB</code> leaves it (section 1).</td>
+</tr>
+<tr>
+<td><code>FUNCTION name(params)</code> ... <code>END FUNCTION</code></td>
+<td>A function of several lines, used as <code>name(args)</code> in expressions; <code>EXIT FUNCTION</code>.</td>
+</tr>
+<tr>
+<td><code>SHARED var, ...</code></td>
+<td>In a SUB or FUNCTION: the program's variables rather than its own.</td>
 </tr>
 <tr>
 <td><code>ON n GOTO l1, l2, ...</code> / <code>ON n GOSUB ...</code></td>
@@ -2293,7 +2385,11 @@ codes print <code>Unprintable error</code>. Ctrl-C prints <code>Break in &lt;lin
 </tr>
 <tr>
 <td>OLED.BAS</td>
-<td>text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &amp;H3C)</td>
+<td>text, a checkerboard, a sine wave, contrast, invert and a live counter on a 128x64 SSD1309 or SSD1306 OLED (I2C on GP2/GP3, address &amp;H3C), with OLEDLIB.BAS</td>
+</tr>
+<tr>
+<td>OLEDLIB.BAS</td>
+<td>a library of SUBs (INCLUDE "OLEDLIB") for that OLED: OLEDSTART, OLEDCLEAR, OLEDTEXT in a 5x7 font, OLEDCENTER, OLEDCONTRAST, OLEDINVERT, OLEDSTOP</td>
 </tr>
 <tr>
 <td>NEODEMO.BAS</td>
@@ -2317,8 +2413,8 @@ RUN "PRIMES"                               (in BASIC)
 <h2 id="12-command-reference">12. Command reference</h2>
 <p>Every statement, command, function and operator, A to Z. Each entry gives its form (<code>[...]</code> is optional, <code>|</code> separates choices), what it does, its limits and errors, an example and what the terminal then shows. Numbers print with a space before them (or a <code>-</code>) and one after.</p>
 <h3 id="index-by-topic">Index by topic</h3>
-<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-mqtt">MQTT</a>, <a href="#ref-mqtt-1">MQTT()</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-on-mqtt">ON MQTT</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-watchdog">WATCHDOG</a>, <a href="#ref-wdreset">WDRESET</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-wifi-1">WIFI()</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
-<p><strong>Flow of control and errors:</strong> <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
+<p><strong>Programs and the disks:</strong> <a href="#ref-auto">AUTO</a>, <a href="#ref-bye">BYE</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-chdir">CHDIR</a>, <a href="#ref-clear">CLEAR</a>, <a href="#ref-common">COMMON</a>, <a href="#ref-config">CONFIG</a>, <a href="#ref-cont">CONT</a>, <a href="#ref-delete">DELETE</a>, <a href="#ref-edit">EDIT</a>, <a href="#ref-files">FILES</a>, <a href="#ref-format">FORMAT</a>, <a href="#ref-include">INCLUDE</a>, <a href="#ref-kill">KILL</a>, <a href="#ref-list">LIST</a>, <a href="#ref-llist">LLIST</a>, <a href="#ref-load">LOAD</a>, <a href="#ref-merge">MERGE</a>, <a href="#ref-mkdir">MKDIR</a>, <a href="#ref-mqtt">MQTT</a>, <a href="#ref-mqtt-1">MQTT()</a>, <a href="#ref-name">NAME</a>, <a href="#ref-new">NEW</a>, <a href="#ref-ntp">NTP</a>, <a href="#ref-numbers">NUMBERS</a>, <a href="#ref-on-mqtt">ON MQTT</a>, <a href="#ref-renum">RENUM</a>, <a href="#ref-reset">RESET</a>, <a href="#ref-rmdir">RMDIR</a>, <a href="#ref-run">RUN</a>, <a href="#ref-save">SAVE</a>, <a href="#ref-system">SYSTEM</a>, <a href="#ref-troff">TROFF</a>, <a href="#ref-tron">TRON</a>, <a href="#ref-watchdog">WATCHDOG</a>, <a href="#ref-wdreset">WDRESET</a>, <a href="#ref-wifi">WIFI</a>, <a href="#ref-wifi-1">WIFI()</a>, <a href="#ref-xrecv">XRECV</a>, <a href="#ref-xsend">XSEND</a></p>
+<p><strong>Flow of control and errors:</strong> <a href="#ref-call">CALL</a>, <a href="#ref-end">END</a>, <a href="#ref-erl">ERL</a>, <a href="#ref-err">ERR</a>, <a href="#ref-error">ERROR</a>, <a href="#ref-exit-for">EXIT FOR</a>, <a href="#ref-for">FOR</a>, <a href="#ref-function">FUNCTION</a>, <a href="#ref-gosub">GOSUB</a>, <a href="#ref-goto">GOTO</a>, <a href="#ref-if">IF</a>, <a href="#ref-next">NEXT</a>, <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-ongosub">ON...GOSUB</a>, <a href="#ref-ongoto">ON...GOTO</a>, <a href="#ref-pause">PAUSE</a>, <a href="#ref-rem">REM</a>, <a href="#ref-resume">RESUME</a>, <a href="#ref-return">RETURN</a>, <a href="#ref-shared">SHARED</a>, <a href="#ref-stop">STOP</a>, <a href="#ref-sub">SUB</a>, <a href="#ref-wend">WEND</a>, <a href="#ref-while">WHILE</a></p>
 <p><strong>Variables and data:</strong> <a href="#ref-data">DATA</a>, <a href="#ref-def-fn">DEF FN</a>, <a href="#ref-def-seg">DEF SEG</a>, <a href="#ref-defdbl">DEFDBL</a>, <a href="#ref-defint">DEFINT</a>, <a href="#ref-defsng">DEFSNG</a>, <a href="#ref-defstr">DEFSTR</a>, <a href="#ref-dim">DIM</a>, <a href="#ref-erase">ERASE</a>, <a href="#ref-let">LET</a>, <a href="#ref-mid-1">MID$ =</a>, <a href="#ref-option-base">OPTION BASE</a>, <a href="#ref-randomize">RANDOMIZE</a>, <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a>, <a href="#ref-swap">SWAP</a></p>
 <p><strong>The screen and keyboard:</strong> <a href="#ref-op-1">?</a>, <a href="#ref-cls">CLS</a>, <a href="#ref-color">COLOR</a>, <a href="#ref-csrlin">CSRLIN</a>, <a href="#ref-inkey">INKEY$</a>, <a href="#ref-input">INPUT</a>, <a href="#ref-input-2">INPUT$</a>, <a href="#ref-key">KEY</a>, <a href="#ref-line-input">LINE INPUT</a>, <a href="#ref-locate">LOCATE</a>, <a href="#ref-lprint">LPRINT</a>, <a href="#ref-pos">POS</a>, <a href="#ref-print">PRINT</a>, <a href="#ref-print-using">PRINT USING</a>, <a href="#ref-spc">SPC</a>, <a href="#ref-tab">TAB</a>, <a href="#ref-view-print">VIEW PRINT</a>, <a href="#ref-width">WIDTH</a>, <a href="#ref-write">WRITE</a></p>
 <p><strong>Numbers:</strong> <a href="#ref-abs">ABS</a>, <a href="#ref-atn">ATN</a>, <a href="#ref-cdbl">CDBL</a>, <a href="#ref-cint">CINT</a>, <a href="#ref-cos">COS</a>, <a href="#ref-csng">CSNG</a>, <a href="#ref-exp">EXP</a>, <a href="#ref-fix">FIX</a>, <a href="#ref-int">INT</a>, <a href="#ref-log">LOG</a>, <a href="#ref-rnd">RND</a>, <a href="#ref-sgn">SGN</a>, <a href="#ref-sin">SIN</a>, <a href="#ref-sqr">SQR</a>, <a href="#ref-tan">TAN</a></p>
@@ -2452,6 +2548,16 @@ RUN "PRIMES"                               (in BASIC)
 <p><em>Command</em> · <code>BYE</code></p>
 <p>The same as SYSTEM.</p>
 <p>See also: <a href="#ref-system">SYSTEM</a></p>
+<h3 id="ref-call">CALL</h3>
+<p><em>Statement</em> · <code>CALL name[(arg[, arg...])]</code></p>
+<p>Calls a SUB; the same as <code>name arg, arg</code>.</p>
+<p>Example:</p>
+<pre><code>CALL SHOW(&quot;HI &quot;, 2)
+</code></pre>
+<p>Shows:</p>
+<pre><code>HI HI
+</code></pre>
+<p>See also: <a href="#ref-sub">SUB</a></p>
 <h3 id="ref-cdbl">CDBL</h3>
 <p><em>Function</em> · <code>CDBL(x)</code></p>
 <p><code>x</code> as a double-precision number.</p>
@@ -2786,8 +2892,8 @@ NEODEMO.BAS
 </code></pre>
 <p>See also: <a href="#ref-list">LIST</a>, <a href="#ref-auto">AUTO</a></p>
 <h3 id="ref-end">END</h3>
-<p><em>Statement</em> · <code>END</code></p>
-<p>Ends the program and closes its files.</p>
+<p><em>Statement</em> · <code>END | END SUB | END FUNCTION</code></p>
+<p>Ends the program and closes its files. END SUB and END FUNCTION end a SUB or FUNCTION.</p>
 <p>Example:</p>
 <pre><code>10 PRINT &quot;DONE&quot;: END
 RUN
@@ -2876,8 +2982,8 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-on-error-goto">ON ERROR GOTO</a>, <a href="#ref-err">ERR</a></p>
 <h3 id="ref-exit-for">EXIT FOR</h3>
-<p><em>Statement</em> · <code>EXIT FOR</code></p>
-<p>Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC).</p>
+<p><em>Statement</em> · <code>EXIT FOR | EXIT SUB | EXIT FUNCTION</code></p>
+<p>Leaves the innermost FOR loop at once, going on after its NEXT (from QuickBASIC); EXIT SUB and EXIT FUNCTION leave a SUB or FUNCTION.</p>
 <p>Example:</p>
 <pre><code>10 FOR I = 1 TO 10: IF I = 3 THEN EXIT FOR
 20 NEXT: PRINT I
@@ -2989,6 +3095,24 @@ LIST
 <pre><code>F = FREEFILE: OPEN &quot;LOG.TXT&quot; FOR APPEND AS #F
 </code></pre>
 <p>See also: <a href="#ref-open">OPEN</a></p>
+<h3 id="ref-function">FUNCTION</h3>
+<p><em>Statement</em> · <code>FUNCTION name[(param[, param...])] ... END FUNCTION</code></p>
+<p>A function of several lines, used in expressions as <code>name(args)</code>: it gives back what was last given to <code>name</code>. EXIT FUNCTION leaves it early. String functions end in $.</p>
+<ul>
+<li>Its variables are its own, as for SUB; arguments are copies.</li>
+<li>An error in a FUNCTION going to ON ERROR is the calling statement's: RESUME NEXT goes on after it.</li>
+<li>Errors: <code>Wrong number of arguments</code> (86), <code>FUNCTION without END FUNCTION</code> (83), <code>END FUNCTION without FUNCTION</code> (85).</li>
+</ul>
+<p>Example:</p>
+<pre><code>FUNCTION FACT(N)
+  IF N &lt;= 1 THEN FACT = 1 ELSE FACT = N * FACT(N - 1)
+END FUNCTION
+PRINT FACT(10)
+</code></pre>
+<p>Shows:</p>
+<pre><code> 3628800
+</code></pre>
+<p>See also: <a href="#ref-sub">SUB</a>, <a href="#ref-def-fn">DEF FN</a></p>
 <h3 id="ref-get">GET</h3>
 <p><em>Statement</em> · <code>GET [#]n[, record]</code></p>
 <p>Reads record <code>record</code> (from 1; default the next) of random file <code>n</code> into its buffer and FIELD variables.</p>
@@ -3097,6 +3221,20 @@ HI
 <pre><code>-1
 </code></pre>
 <p>See also: <a href="#ref-eqv">EQV</a></p>
+<h3 id="ref-include">INCLUDE</h3>
+<p><em>Statement</em> · <code>INCLUDE file$</code></p>
+<p>In a program, on a line of its own: when the program runs, the library file's lines (labelled subroutines, no line numbers) go after the program's, so GOSUB can call them.</p>
+<ul>
+<li><code>.BAS</code> is added if the name has no extension. Each file comes in once; a library may INCLUDE others; up to 16 files.</li>
+<li>LIST, SAVE and EDIT leave the libraries out; each RUN reads them again.</li>
+<li>An error in a library names it: <code>Division by zero in line 5 of OLEDLIB.BAS</code>.</li>
+<li>Errors: <code>File not found</code> (53), <code>Bad file mode</code> (54) for a file with line numbers, <code>Illegal direct</code> (12) in direct mode.</li>
+</ul>
+<p>Example:</p>
+<pre><code>INCLUDE &quot;OLEDLIB&quot;
+GOSUB oledstart
+</code></pre>
+<p>See also: <a href="#ref-gosub">GOSUB</a>, <a href="#ref-chain">CHAIN</a>, <a href="#ref-merge">MERGE</a></p>
 <h3 id="ref-inkey">INKEY$</h3>
 <p><em>Function</em> · <code>INKEY$</code></p>
 <p>The key waiting, or "" if none: it doesn't wait. Cursor and function keys give CHR$(0) and the PC scan code (see INKEY$ key codes).</p>
@@ -3917,6 +4055,19 @@ RUN
 <pre><code>-1  0  1
 </code></pre>
 <p>See also: <a href="#ref-abs">ABS</a></p>
+<h3 id="ref-shared">SHARED</h3>
+<p><em>Statement</em> · <code>SHARED var[, var...]</code></p>
+<p>In a SUB or FUNCTION: these variables (arrays as <code>A()</code>) are the program's rather than the call's own.</p>
+<ul>
+<li>Errors: <code>Illegal function call</code> (5) outside a SUB or FUNCTION.</li>
+</ul>
+<p>Example:</p>
+<pre><code>SUB COUNTUP
+  SHARED COUNT
+  COUNT = COUNT + 1
+END SUB
+</code></pre>
+<p>See also: <a href="#ref-sub">SUB</a>, <a href="#ref-function">FUNCTION</a></p>
 <h3 id="ref-sin">SIN</h3>
 <p><em>Function</em> · <code>SIN(x)</code></p>
 <p>The sine of <code>x</code> radians.</p>
@@ -4011,6 +4162,25 @@ RUN
 <pre><code>*****AAA
 </code></pre>
 <p>See also: <a href="#ref-space">SPACE$</a></p>
+<h3 id="ref-sub">SUB</h3>
+<p><em>Statement</em> · <code>SUB name[(param[, param...])] ... END SUB</code></p>
+<p>A subroutine with parameters and variables of its own, called by its name: <code>name arg, arg</code> or <code>CALL name(arg, arg)</code>. EXIT SUB leaves it early.</p>
+<ul>
+<li>Its variables (and arrays) are its own unless SHARED names them; the parameters are set to the arguments (by value: a copy). Up to 8 parameters; recursion works.</li>
+<li>The program runs on past a SUB without running it. SUBs are found when the program starts, in its INCLUDE libraries too.</li>
+<li>A name must not start with a keyword (<code>PRINTIT</code> would be PRINT).</li>
+<li>Errors: <code>Wrong number of arguments</code> (86), <code>SUB without END SUB</code> (82), <code>END SUB without SUB</code> (84), <code>Duplicate Definition</code> (10).</li>
+</ul>
+<p>Example:</p>
+<pre><code>SUB SHOW(N$, T)
+  FOR I = 1 TO T: PRINT N$;: NEXT: PRINT
+END SUB
+SHOW &quot;HI &quot;, 3
+</code></pre>
+<p>Shows:</p>
+<pre><code>HI HI HI
+</code></pre>
+<p>See also: <a href="#ref-function">FUNCTION</a>, <a href="#ref-shared">SHARED</a>, <a href="#ref-call">CALL</a>, <a href="#ref-gosub">GOSUB</a></p>
 <h3 id="ref-swap">SWAP</h3>
 <p><em>Statement</em> · <code>SWAP a, b</code></p>
 <p>Exchanges two variables of the same type.</p>
