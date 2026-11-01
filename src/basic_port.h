@@ -159,6 +159,10 @@ void port_edit(const char *path);
 /// @param what which
 /// @return the build has it
 bool port_wifi(int what);
+
+/// CLOCK = 12 in CONFIG.TXT: TIME$ gives 12-hour time with AM or PM.
+/// @return it does
+bool port_clock_12h(void);
 /// The same for a text file that isn't the program (EDIT "file").
 /// @param path the file
 void port_edit_file(const char *path);

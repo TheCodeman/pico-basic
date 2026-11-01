@@ -2134,6 +2134,9 @@ static value_t builtin(void) {
         char buf[40];
         if (start[0] == 'D')
             snprintf(buf, sizeof buf, "%02d-%02d-%04d", tm.tm_mon + 1, tm.tm_mday, tm.tm_year + 1900);
+        else if (port_clock_12h())  // CLOCK = 12: "01:30:00 PM"
+            snprintf(buf, sizeof buf, "%02d:%02d:%02d %s", tm.tm_hour % 12 ? tm.tm_hour % 12 : 12,
+                     tm.tm_min, tm.tm_sec, tm.tm_hour < 12 ? "AM" : "PM");
         else
             snprintf(buf, sizeof buf, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
         return str(buf, strlen(buf));
@@ -4352,6 +4355,17 @@ static void set_date_or_time(const char *v, bool date) {
         tm.tm_mday = b;
         tm.tm_year = (c < 80 ? c + 2000 : c < 100 ? c + 1900 : c) - 1900;
     } else {
+        // 24-hour, or 12-hour with AM or PM after it ("1:30 PM")
+        const char *ap = text + strlen(text);
+        while (ap > text && ap[-1] == ' ')
+            --ap;
+        bool pm = ap - text >= 2 && !strncasecmp(ap - 2, "PM", 2);
+        bool am = ap - text >= 2 && !strncasecmp(ap - 2, "AM", 2);
+        if (am || pm) {
+            if (a < 1 || a > 12)
+                error(E_ILLEGAL_CALL);
+            a = a % 12 + (pm ? 12 : 0);
+        }
         if (got < 1 || a < 0 || a > 23 || b < 0 || b > 59 || c < 0 || c > 59)
             error(E_ILLEGAL_CALL);
         tm.tm_hour = a;

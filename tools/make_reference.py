@@ -365,7 +365,7 @@ e('TEMP', 'Function', 'TEMP()', 'The chip\'s temperature in °C (uncalibrated: w
 Y = 'System'
 e('BLOAD', 'Statement', 'BLOAD file$[, offset]', 'Loads a file saved by BSAVE (GW-BASIC\'s 7-byte header) into the emulated memory (DEF SEG).', [], '', '', ['BSAVE', 'DEF SEG'], Y)
 e('BSAVE', 'Statement', 'BSAVE file$, offset, length', 'Saves `length` bytes of the emulated memory (DEF SEG) to a file.', [], '', '', ['BLOAD'], Y)
-e('DATE$', 'Statement / function', 'DATE$ = "mm-dd-yyyy" | DATE$', 'Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up.', [], 'DATE$ = "10-31-2026": PRINT DATE$', '10-31-2026', ['TIME$'], Y)
+e('DATE$', 'Statement / function', 'DATE$ = "mm-dd-yyyy" | DATE$', 'Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up (Wi-Fi builds set it by NTP).', [], 'DATE$ = "10-31-2026": PRINT DATE$', '10-31-2026', ['TIME$'], Y)
 e('ENVIRON', 'Statement', 'ENVIRON "name=value"', 'Sets a string ENVIRON$ gives back (there is no DOS environment).', [], 'ENVIRON "USER=KEN"', '', ['ENVIRON$'], Y)
 e('ENVIRON$', 'Function', 'ENVIRON$(name$) | ENVIRON$(n)', 'The value set for `name$` with ENVIRON, or the n-th "name=value" string; "" if none.', [], 'ENVIRON "USER=KEN": PRINT ENVIRON$("USER")', 'KEN', ['ENVIRON'], Y)
 e('ERDEV', 'Function', 'ERDEV | ERDEV$', 'GW-BASIC\'s device error details: always 0 and "" here.', [], '', '', ['ERR'], Y)
@@ -375,7 +375,8 @@ e('PEEK', 'Function', 'PEEK(offset)', 'A byte of the emulated memory chosen by D
   ['Errors: `Illegal function call` (5) anywhere else.'], 'DEF SEG = 0: PRINT PEEK(&H44A)', ' 80', ['POKE', 'DEF SEG'], Y)
 e('POKE', 'Statement', 'POKE offset, byte', 'Writes a byte to the emulated memory (DEF SEG). The text screen and BIOS bytes accept it and change nothing here.', [], '', '', ['PEEK'], Y)
 e('SCREEN(r, c)', 'Function', 'SCREEN(row, col[, 1])', 'The character at a screen position, or with 1 its colours. A terminal can\'t be read back, so it gives 32 (a space), or 7.', [], 'PRINT SCREEN(1, 1)', ' 32', ['PEEK'], Y)
-e('TIME$', 'Statement / function', 'TIME$ = "hh:mm:ss" | TIME$', 'Sets the time of day, or gives it as "hh:mm:ss" (24-hour, UTC).', [], 'TIME$ = "09:30:00": PRINT TIME$', '09:30:00', ['DATE$', 'TIMER'], Y)
+e('TIME$', 'Statement / function', 'TIME$ = "hh:mm:ss" | TIME$ = "h:mm[:ss] AM|PM" | TIME$', 'Sets the time of day, or gives it as "hh:mm:ss" (24-hour, in the time zone `TZ` in CONFIG.TXT; UTC without it).',
+  ['With `CLOCK = 12` in CONFIG.TXT it gives "hh:mm:ss AM" or "PM" (11 characters).', 'Setting takes 24-hour time or 12-hour with AM/PM, whatever CLOCK says.', 'Wi-Fi builds set the clock by NTP.'], 'TIME$ = "09:30:00": PRINT TIME$', '09:30:00', ['DATE$', 'TIMER'], Y)
 e('TIMER', 'Function', 'TIMER', 'Seconds since the board started, with fractions: for timing things.', [], 'T = TIMER: PAUSE 500: PRINT TIMER - T', ' .500118999', ['PAUSE', 'ON TIMER'], Y)
 
 # ---- Operators --------------------------------------------------------------------------

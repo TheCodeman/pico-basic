@@ -157,7 +157,15 @@ void wifi_start(void) {
 static void local_text(time_t t, char *out, size_t size) {
     struct tm tm;
     localtime_r(&t, &tm);
-    strftime(out, size, "%Y-%m-%d %H:%M:%S %Z", &tm);
+    if (config.clock12) {  // CLOCK = 12: "2026-10-31 6:30:05 PM EDT"
+        size_t n = strftime(out, size, "%Y-%m-%d ", &tm);
+        char zone[16];
+        strftime(zone, sizeof zone, "%Z", &tm);
+        snprintf(out + n, size - n, "%d:%02d:%02d %s %s", tm.tm_hour % 12 ? tm.tm_hour % 12 : 12,
+                 tm.tm_min, tm.tm_sec, tm.tm_hour < 12 ? "AM" : "PM", zone);
+    } else {
+        strftime(out, size, "%Y-%m-%d %H:%M:%S %Z", &tm);
+    }
 }
 
 void wifi_banner(void) {

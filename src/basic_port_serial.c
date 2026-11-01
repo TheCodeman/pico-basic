@@ -1367,6 +1367,10 @@ void port_config_show(void) {
     config_print();
 }
 
+bool port_clock_12h(void) {
+    return config.clock12;
+}
+
 bool port_wifi(int what) {
 #if PICO_BASIC_WIFI
     switch (what) {

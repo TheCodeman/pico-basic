@@ -133,6 +133,11 @@ if(DISK_TRACE)
     target_compile_definitions(pico_basic PRIVATE DISK_TRACE=1)
 endif()
 
+# -DCONFIG_FILE=FLASH:/OTHER.TXT: a test build that reads its settings elsewhere.
+if(DEFINED CONFIG_FILE)
+    target_compile_definitions(pico_basic PRIVATE CONFIG_PATH="${CONFIG_FILE}")
+endif()
+
 if(PICO_BASIC_WIFI)
     # The CYW43 driver and lwIP run in a low-priority interrupt; lwIP's SNTP
     # client sets the clock (src/wifi.c, src/lwipopts.h).

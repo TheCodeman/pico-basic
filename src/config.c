@@ -214,6 +214,11 @@ static void set(int line, const char *key, const char *v) {
         }
     } else if (!strcasecmp(key, "NTP_SERVER")) {
         set_text(line, key, v, config.ntp_server, sizeof config.ntp_server);
+    } else if (!strcasecmp(key, "CLOCK")) {
+        if (!strcmp(v, "12") || !strcmp(v, "24") || !strcasecmp(v, "12H") || !strcasecmp(v, "24H"))
+            config.clock12 = v[0] == '1';
+        else
+            warn("CONFIG.TXT line %d: CLOCK = %s: 12 or 24", line, v);
     } else if (!strcasecmp(key, "TZ")) {
         if (strlen(v) >= sizeof config.tz || !use_tz(v))
             warn("CONFIG.TXT line %d: TZ = %s: a name (EST, PST, UK, CET...), hours from UTC (-5), "
@@ -331,5 +336,7 @@ void config_print(void) {
         printf("  WIFI_SSID = %s (this build has no Wi-Fi)\n", config.wifi_ssid);
 #endif
     printf("  TZ = %s\n", config.tz[0] ? config.tz : "UTC (none set)");
+    if (config.clock12)
+        printf("  CLOCK = 12 (TIME$ 01:30:00 PM)\n");
     config_warnings();
 }

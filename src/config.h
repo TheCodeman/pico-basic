@@ -13,7 +13,9 @@
 #pragma once
 #include <stdbool.h>
 
+#ifndef CONFIG_PATH
 #define CONFIG_PATH "FLASH:/CONFIG.TXT"  ///< where the settings are
+#endif
 #define CONFIG_PULLUPS 4  ///< extra pins SD_PULLUPS can hold up
 
 /// The settings in force.
@@ -34,6 +36,7 @@ typedef struct {
     char wifi_country[3];    ///< WIFI_COUNTRY: two letters, XX worldwide
     char ntp_server[64];     ///< NTP_SERVER
     char tz[64];             ///< TZ as given (a name, a POSIX TZ string or an offset)
+    bool clock12;            ///< CLOCK = 12: TIME$ and the clock shown as 1:30:00 PM
 } config_t;
 
 extern config_t config;  ///< the settings in force

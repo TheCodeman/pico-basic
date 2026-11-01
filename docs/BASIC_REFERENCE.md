@@ -625,7 +625,7 @@ See also: [READ](#ref-read), [RESTORE](#ref-restore)
 
 *Statement / function* · `DATE$ = "mm-dd-yyyy" | DATE$`
 
-Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up.
+Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up (Wi-Fi builds set it by NTP).
 
 Example:
 
@@ -3062,9 +3062,13 @@ See also: [ADC](#ref-adc)
 
 ### TIME$ {#ref-time}
 
-*Statement / function* · `TIME$ = "hh:mm:ss" | TIME$`
+*Statement / function* · `TIME$ = "hh:mm:ss" | TIME$ = "h:mm[:ss] AM|PM" | TIME$`
 
-Sets the time of day, or gives it as "hh:mm:ss" (24-hour, UTC).
+Sets the time of day, or gives it as "hh:mm:ss" (24-hour, in the time zone `TZ` in CONFIG.TXT; UTC without it).
+
+- With `CLOCK = 12` in CONFIG.TXT it gives "hh:mm:ss AM" or "PM" (11 characters).
+- Setting takes 24-hour time or 12-hour with AM/PM, whatever CLOCK says.
+- Wi-Fi builds set the clock by NTP.
 
 Example:
 

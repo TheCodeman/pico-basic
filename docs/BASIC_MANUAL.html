@@ -1339,6 +1339,7 @@ SD_PULLUPS = 13, 14   # pins held up while the card is used (DAT1, DAT2); none
 SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
 NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
 TZ = EST           # the time zone DATE$ and TIME$ show (UTC without it)
+CLOCK = 12         # TIME$ as 01:30:00 PM; 24 (the default): 13:30:00
 WIFI_SSID = HOME   # Wi-Fi builds: the network to join at power-up
 WIFI_PASSWORD = secret
 </code></pre>
@@ -1356,6 +1357,12 @@ WIFI_PASSWORD = secret
   EET, JST, AEST, or EASTERN, PACIFIC...: these follow daylight saving), hours
   from UTC (<code>TZ = -5</code>, <code>TZ = 5.5</code>: no daylight saving), or a POSIX TZ string
   (<code>TZ = EST5EDT,M3.2.0,M11.1.0</code>).</li>
+<li><code>CLOCK = 12</code> (or <code>12H</code>) makes TIME$ 12-hour with AM or PM,
+  <code>"01:30:00 PM"</code>: 11 characters instead of 8, so <code>LEFT$(TIME$, 5)</code> still
+  gives <code>"01:30"</code> but a program that takes TIME$ apart may need changing.
+  <code>CLOCK = 24</code>, the default, keeps GW-BASIC's <code>"13:30:00"</code>. WIFI and NTP show
+  the time the same way. <code>TIME$ = "1:30 PM"</code> and <code>TIME$ = "13:30"</code> both work
+  either way.</li>
 <li><code>examples/CONFIG.TXT</code> is a copy to start from.</li>
 </ul>
 <h3 id="wi-fi-and-the-clock">Wi-Fi and the clock</h3>
@@ -2553,7 +2560,7 @@ RUN
 <p>See also: <a href="#ref-read">READ</a>, <a href="#ref-restore">RESTORE</a></p>
 <h3 id="ref-date">DATE$</h3>
 <p><em>Statement / function</em> · <code>DATE$ = "mm-dd-yyyy" | DATE$</code></p>
-<p>Sets the date, or gives it as "mm-dd-yyyy". <code>-</code> or <code>/</code> and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up.</p>
+<p>Sets the date, or gives it as "mm-dd-yyyy". <code>-</code> or <code>/</code> and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up (Wi-Fi builds set it by NTP).</p>
 <p>Example:</p>
 <pre><code>DATE$ = &quot;10-31-2026&quot;: PRINT DATE$
 </code></pre>
@@ -3919,8 +3926,13 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-adc">ADC</a></p>
 <h3 id="ref-time">TIME$</h3>
-<p><em>Statement / function</em> · <code>TIME$ = "hh:mm:ss" | TIME$</code></p>
-<p>Sets the time of day, or gives it as "hh:mm:ss" (24-hour, UTC).</p>
+<p><em>Statement / function</em> · <code>TIME$ = "hh:mm:ss" | TIME$ = "h:mm[:ss] AM|PM" | TIME$</code></p>
+<p>Sets the time of day, or gives it as "hh:mm:ss" (24-hour, in the time zone <code>TZ</code> in CONFIG.TXT; UTC without it).</p>
+<ul>
+<li>With <code>CLOCK = 12</code> in CONFIG.TXT it gives "hh:mm:ss AM" or "PM" (11 characters).</li>
+<li>Setting takes 24-hour time or 12-hour with AM/PM, whatever CLOCK says.</li>
+<li>Wi-Fi builds set the clock by NTP.</li>
+</ul>
 <p>Example:</p>
 <pre><code>TIME$ = &quot;09:30:00&quot;: PRINT TIME$
 </code></pre>

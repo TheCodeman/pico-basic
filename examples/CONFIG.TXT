@@ -23,6 +23,8 @@ NEOPIXEL = 28
 # The time zone DATE$ and TIME$ show: a name (UTC, EST, CST, MST, PST, UK, CET,
 # EASTERN, PACIFIC...), hours from UTC (-5), or a POSIX TZ string.
 # TZ = EASTERN
+# 12 or 24: CLOCK = 12 makes TIME$ "01:30:00 PM" (24, the default: "13:30:00").
+# CLOCK = 12
 
 # Wi-Fi builds (Pico 2 W, Pico W, Pico Plus 2 + RM2): the network to join at
 # power-up; NTP then sets the clock. The password is kept here as plain text.

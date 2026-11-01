@@ -599,6 +599,7 @@ too).
     SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
     NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
     TZ = EST           # the time zone DATE$ and TIME$ show (UTC without it)
+    CLOCK = 12         # TIME$ as 01:30:00 PM; 24 (the default): 13:30:00
     WIFI_SSID = HOME   # Wi-Fi builds: the network to join at power-up
     WIFI_PASSWORD = secret
 
@@ -615,6 +616,12 @@ too).
   EET, JST, AEST, or EASTERN, PACIFIC...: these follow daylight saving), hours
   from UTC (`TZ = -5`, `TZ = 5.5`: no daylight saving), or a POSIX TZ string
   (`TZ = EST5EDT,M3.2.0,M11.1.0`).
+- `CLOCK = 12` (or `12H`) makes TIME$ 12-hour with AM or PM,
+  `"01:30:00 PM"`: 11 characters instead of 8, so `LEFT$(TIME$, 5)` still
+  gives `"01:30"` but a program that takes TIME$ apart may need changing.
+  `CLOCK = 24`, the default, keeps GW-BASIC's `"13:30:00"`. WIFI and NTP show
+  the time the same way. `TIME$ = "1:30 PM"` and `TIME$ = "13:30"` both work
+  either way.
 - `examples/CONFIG.TXT` is a copy to start from.
 
 ### Wi-Fi and the clock
