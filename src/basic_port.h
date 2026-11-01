@@ -176,6 +176,27 @@ const char *port_wifi_text(int n);
 /// @return it does
 bool port_clock_12h(void);
 
+/// MQTT (Wi-Fi builds; see mqtt.h): whether this build has it.
+/// @return it has
+bool port_mqtt_available(void);
+/// MQTT CONNECT [host$[, port]]: NULL, or why it didn't connect.
+const char *port_mqtt_connect(const char *host, int port);
+/// MQTT DISCONNECT.
+void port_mqtt_disconnect(void);
+/// MQTT PUBLISH: NULL, or why it wasn't sent.
+const char *port_mqtt_publish(const char *topic, const char *payload, int len, int qos, bool retain);
+/// MQTT SUBSCRIBE / UNSUBSCRIBE: NULL, or why not.
+const char *port_mqtt_subscribe(const char *topic, int qos, bool sub);
+/// MQTT: the status.
+void port_mqtt_status(void);
+/// MQTT(n): 0 connected (-1/0), 1 messages waiting, 2 dropped; 0 without MQTT.
+int port_mqtt_value(int n);
+/// MQTT$(0): takes the next message's topic ("" if none); MQTT$(1): its payload.
+/// @param n 0 or 1
+/// @param len set to the length
+/// @return the text
+const char *port_mqtt_text(int n, int *len);
+
 /// WATCHDOG ms (arm, 100 ms up to port_watchdog_max) or 0 (off).
 /// @param ms the timeout
 void port_watchdog_set(int ms);

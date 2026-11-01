@@ -36,6 +36,12 @@ typedef struct {
     char wifi_country[3];    ///< WIFI_COUNTRY: two letters, XX worldwide
     char ntp_server[64];     ///< NTP_SERVER
     char tz[64];             ///< TZ as given (a name, a POSIX TZ string or an offset)
+    bool mqtt;               ///< MQTT = ON: connect to MQTT_BROKER once Wi-Fi is up
+    char mqtt_broker[64];    ///< MQTT_BROKER: a host name or address
+    int mqtt_port;           ///< MQTT_PORT (0: 1883)
+    char mqtt_user[64];      ///< MQTT_USER
+    char mqtt_password[64];  ///< MQTT_PASSWORD
+    char mqtt_client_id[33]; ///< MQTT_CLIENT_ID (none: pico-basic- and the end of the MAC)
     int watchdog;            ///< WATCHDOG = ms: armed before AUTORUN.BAS runs (0: not)
     bool clock12;            ///< CLOCK = 12: TIME$ and the clock shown as 1:30:00 PM
 } config_t;

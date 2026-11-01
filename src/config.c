@@ -214,6 +214,28 @@ static void set(int line, const char *key, const char *v) {
         }
     } else if (!strcasecmp(key, "NTP_SERVER")) {
         set_text(line, key, v, config.ntp_server, sizeof config.ntp_server);
+    } else if (!strcasecmp(key, "MQTT")) {
+        if (!strcasecmp(v, "ON") || !strcasecmp(v, "YES") || !strcmp(v, "1"))
+            config.mqtt = true;
+        else if (!strcasecmp(v, "OFF") || !strcasecmp(v, "NO") || !strcmp(v, "0"))
+            config.mqtt = false;
+        else
+            warn("CONFIG.TXT line %d: MQTT = %s: ON or OFF", line, v);
+    } else if (!strcasecmp(key, "MQTT_BROKER")) {
+        set_text(line, key, v, config.mqtt_broker, sizeof config.mqtt_broker);
+    } else if (!strcasecmp(key, "MQTT_PORT")) {
+        char *end;
+        long n = strtol(v, &end, 10);
+        if (end == v || *end || n < 1 || n > 65535)
+            warn("CONFIG.TXT line %d: MQTT_PORT = %s: 1 to 65535", line, v);
+        else
+            config.mqtt_port = (int)n;
+    } else if (!strcasecmp(key, "MQTT_USER")) {
+        set_text(line, key, v, config.mqtt_user, sizeof config.mqtt_user);
+    } else if (!strcasecmp(key, "MQTT_PASSWORD")) {
+        set_text(line, key, v, config.mqtt_password, sizeof config.mqtt_password);
+    } else if (!strcasecmp(key, "MQTT_CLIENT_ID")) {
+        set_text(line, key, v, config.mqtt_client_id, sizeof config.mqtt_client_id);
     } else if (!strcasecmp(key, "WATCHDOG")) {
         char *end;
         long ms = strtol(v, &end, 10);
@@ -337,6 +359,12 @@ void config_print(void) {
                config.wifi ? "ON" : "OFF", config.wifi_ssid,
                config.wifi_password[0] ? "****" : "none", config.wifi_country);
         printf("  NTP_SERVER = %s\n", config.ntp_server);
+        if (config.mqtt_broker[0])
+            printf("  MQTT = %s: MQTT_BROKER %s, MQTT_PORT %d%s%s%s%s%s\n", config.mqtt ? "ON" : "OFF",
+                   config.mqtt_broker, config.mqtt_port ? config.mqtt_port : 1883,
+                   config.mqtt_user[0] ? ", MQTT_USER " : "", config.mqtt_user,
+                   config.mqtt_password[0] ? ", MQTT_PASSWORD ****" : "",
+                   config.mqtt_client_id[0] ? ", MQTT_CLIENT_ID " : "", config.mqtt_client_id);
     } else {
         printf("  WIFI: no WIFI_SSID\n");
     }

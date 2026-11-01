@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WATCHDOG](#ref-watchdog), [WDRESET](#ref-wdreset), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [MQTT](#ref-mqtt), [MQTT()](#ref-mqtt-1), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [ON MQTT](#ref-on-mqtt), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WATCHDOG](#ref-watchdog), [WDRESET](#ref-wdreset), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -1910,6 +1910,39 @@ The number `x` as a 4-byte single-precision string (Microsoft Binary Format).
 
 See also: [CVS](#ref-cvs)
 
+### MQTT {#ref-mqtt}
+
+*Statement* · `MQTT CONNECT [broker$[, port]] | MQTT DISCONNECT | MQTT PUBLISH topic$, payload$[, qos[, retain]] | MQTT SUBSCRIBE topic$[, qos] | MQTT UNSUBSCRIBE topic$ | MQTT ON|OFF|STOP | MQTT`
+
+MQTT (3.1.1) on Wi-Fi builds: connects to a broker (CONFIG.TXT's `MQTT_BROKER` without `broker$`; port 1883), publishes, and subscribes (+ and # wildcards, 8 at most); messages that come wait in a queue of 8 for MQTT$(0). `MQTT ON`, `OFF` and `STOP` switch ON MQTT's trap; `MQTT` alone shows the state.
+
+- CONNECT waits up to 10 seconds and keeps trying after that; a lost connection is made again (and the subscriptions) every 5 seconds.
+- Errors: `Device I/O error` (57) with the reason (not connected, refused...); `Feature not available` (73) without Wi-Fi.
+
+Example:
+
+```
+MQTT CONNECT "192.168.1.227": MQTT PUBLISH "test/topic", "hello"
+```
+
+See also: [MQTT()](#ref-mqtt-1), [ON MQTT](#ref-on-mqtt), [WIFI](#ref-wifi)
+
+### MQTT() {#ref-mqtt-1}
+
+*Function* · `MQTT(n) | MQTT$(n)`
+
+`MQTT(0)` is -1 while connected to the broker, `MQTT(1)` the messages waiting, `MQTT(2)` the messages dropped (the queue was full). `MQTT$(0)` takes the next message and gives its topic ("" if none); `MQTT$(1)` is then its payload (up to 255 characters).
+
+- Without Wi-Fi: 0 and "".
+
+Example:
+
+```
+WHILE MQTT(1): T$ = MQTT$(0): PRINT T$; " = "; MQTT$(1): WEND
+```
+
+See also: [MQTT](#ref-mqtt), [ON MQTT](#ref-on-mqtt)
+
 ### NAME {#ref-name}
 
 *Statement* · `NAME old$ AS new$`
@@ -2120,6 +2153,24 @@ F1
 ```
 
 See also: [KEY(n)](#ref-keyn), [INKEY$](#ref-inkey)
+
+### ON MQTT {#ref-on-mqtt}
+
+*Statement* · `ON MQTT GOSUB line`
+
+Calls the subroutine at `line` (or a label) when an MQTT message is waiting, once MQTT ON has switched the trap on; it should take the message with MQTT$(0).
+
+- Checked between statements, like ON KEY; MQTT STOP holds it, MQTT OFF turns it off.
+
+Example:
+
+```
+10 ON MQTT GOSUB 100: MQTT ON
+20 GOTO 20
+100 PRINT MQTT$(0); " = "; MQTT$(1): RETURN
+```
+
+See also: [MQTT](#ref-mqtt), [MQTT()](#ref-mqtt-1)
 
 ### ON PLAY {#ref-on-play}
 

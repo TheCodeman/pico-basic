@@ -113,6 +113,16 @@ e('WIFI()', 'Function', 'WIFI(n) | WIFI$(n)',
   'Wi-Fi\'s state for a program: `WIFI(0)` is -1 (true) while connected with an IP address, else 0; `WIFI(1)` the signal in dBm; `WIFI(2)` -1 once NTP has set the clock; `WIFI(3)` the link\'s state (1 joining, 2 waiting for an address, 3 up, 0 down, -1 failed, -2 no such network, -3 wrong password). `WIFI$(0)` is the IP address, `WIFI$(1)` the network\'s name.',
   ['Builds without Wi-Fi give 0 and "" (so a program runs on any board).'],
   'IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "Offline"', 'Online at 192.168.1.215', ['WIFI', 'NTP'], P)
+e('MQTT', 'Statement', 'MQTT CONNECT [broker$[, port]] | MQTT DISCONNECT | MQTT PUBLISH topic$, payload$[, qos[, retain]] | MQTT SUBSCRIBE topic$[, qos] | MQTT UNSUBSCRIBE topic$ | MQTT ON|OFF|STOP | MQTT',
+  'MQTT (3.1.1) on Wi-Fi builds: connects to a broker (CONFIG.TXT\'s `MQTT_BROKER` without `broker$`; port 1883), publishes, and subscribes (+ and # wildcards, 8 at most); messages that come wait in a queue of 8 for MQTT$(0). `MQTT ON`, `OFF` and `STOP` switch ON MQTT\'s trap; `MQTT` alone shows the state.',
+  ['CONNECT waits up to 10 seconds and keeps trying after that; a lost connection is made again (and the subscriptions) every 5 seconds.',
+   'Errors: `Device I/O error` (57) with the reason (not connected, refused...); `Feature not available` (73) without Wi-Fi.'],
+  'MQTT CONNECT "192.168.1.227": MQTT PUBLISH "test/topic", "hello"', '', ['MQTT()', 'ON MQTT', 'WIFI'], P)
+e('MQTT()', 'Function', 'MQTT(n) | MQTT$(n)',
+  '`MQTT(0)` is -1 while connected to the broker, `MQTT(1)` the messages waiting, `MQTT(2)` the messages dropped (the queue was full). `MQTT$(0)` takes the next message and gives its topic ("" if none); `MQTT$(1)` is then its payload (up to 255 characters).',
+  ['Without Wi-Fi: 0 and "".'], 'WHILE MQTT(1): T$ = MQTT$(0): PRINT T$; " = "; MQTT$(1): WEND', '', ['MQTT', 'ON MQTT'], P)
+e('ON MQTT', 'Statement', 'ON MQTT GOSUB line', 'Calls the subroutine at `line` (or a label) when an MQTT message is waiting, once MQTT ON has switched the trap on; it should take the message with MQTT$(0).',
+  ['Checked between statements, like ON KEY; MQTT STOP holds it, MQTT OFF turns it off.'], '10 ON MQTT GOSUB 100: MQTT ON\n20 GOTO 20\n100 PRINT MQTT$(0); " = "; MQTT$(1): RETURN', '', ['MQTT', 'MQTT()'], P)
 e('NTP', 'Command', 'NTP', 'Asks the NTP server (`NTP_SERVER` in CONFIG.TXT, pool.ntp.org to start with) for the time now, sets the clock, and prints it as local time (`TZ`). Waits up to 5 seconds.',
   ['Wi-Fi builds only; BASIC asks by itself once connected, and every hour.'], 'NTP', '2026-10-31 18:30:05 EDT (from pool.ntp.org)', ['WIFI', 'TIME$', 'DATE$'], P)
 e('NUMBERS', 'Command', 'NUMBERS OFF | NUMBERS ON',

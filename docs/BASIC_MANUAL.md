@@ -656,6 +656,49 @@ a board on its own then starts again by itself.
   output); `CLOSE` before a risky part keeps it all.
 - `examples/WATCHDOG.BAS` feeds it ten times, then lets it reset the board.
 
+### MQTT
+
+Wi-Fi builds talk MQTT (3.1.1) to a broker such as Mosquitto or Home
+Assistant's: publishing readings, and getting messages from topics they
+subscribe to.
+
+    MQTT CONNECT "192.168.1.227"          ' (port 1883; or MQTT_BROKER in CONFIG.TXT)
+    MQTT PUBLISH "home/pico/temp", STR$(TEMP())
+    MQTT SUBSCRIBE "home/pico/led"
+    ON MQTT GOSUB got: MQTT ON
+    ...
+    got: T$ = MQTT$(0): PRINT T$; " says "; MQTT$(1): RETURN
+
+- `MQTT CONNECT [broker$[, port]]` connects (to CONFIG.TXT's `MQTT_BROKER`
+  without one) and waits up to 10 seconds; `Device I/O error` (57) with the
+  reason if it can't, and it goes on trying. `MQTT DISCONNECT` ends it.
+- `MQTT PUBLISH topic$, payload$[, qos[, retain]]`: QoS 0 or 1 (2 is sent
+  as 1); retain 1 has the broker keep it for later subscribers. Not
+  connected: `Device I/O error`, so check `MQTT(0)` first in a program that
+  runs on its own.
+- `MQTT SUBSCRIBE topic$[, qos]` (the + and # wildcards work, up to 8
+  subscriptions) and `MQTT UNSUBSCRIBE topic$`. Subscriptions are kept, and
+  made again after a reconnect.
+- Messages that come wait in a queue of 8 (payloads up to 255 characters, a
+  string's limit; a full queue drops the oldest). `MQTT$(0)` takes the next
+  one and gives its topic ("" if none); `MQTT$(1)` is then its payload.
+  `MQTT(0)` is -1 while connected, `MQTT(1)` the messages waiting, `MQTT(2)`
+  how many were dropped.
+- `ON MQTT GOSUB line` with `MQTT ON` calls a subroutine when a message is
+  waiting, between statements like ON KEY; `MQTT OFF` and `MQTT STOP` as
+  for the other events.
+- `MQTT` alone shows the broker, the connection, the subscriptions and the
+  queue.
+- In CONFIG.TXT: `MQTT_BROKER` (a name or an address), `MQTT_PORT` (1883),
+  `MQTT_USER` and `MQTT_PASSWORD` if the broker wants them (kept as plain
+  text, shown as `****`), `MQTT_CLIENT_ID` (pico-basic- and the end of the
+  board's MAC to start with), and `MQTT = ON` to connect at power-up once
+  Wi-Fi is up.
+- A lost connection (Wi-Fi or the broker) is tried again every 5 seconds;
+  a keep-alive every 60 seconds notices a broker that went away.
+- `examples/MQTT.BAS` publishes the time and an ADC reading every 5
+  seconds and sets the LED from a topic.
+
 ### Wi-Fi and the clock
 
 The Wi-Fi builds (a Pico 2 W, a Pico W, or a Pico Plus 2 with Pimoroni's
@@ -1074,6 +1117,7 @@ The source's `examples` folder has these; send them over with `XRECV`
 | Program | What it does |
 |---|---|
 | PRIMES.BAS | prints the primes below 1000 |
+| MQTT.BAS | publishes the time and an ADC reading to an MQTT broker, and sets the LED from a topic (Wi-Fi builds) |
 | WATCHDOG.BAS | arms the watchdog, feeds it ten times, then lets it reset the board |
 | LABELS.BAS | a menu program without line numbers: GOSUB, ON GOSUB, RESTORE, ON ERROR GOTO and RESUME with labels |
 | GUESS.BAS | a guess-the-number game |
