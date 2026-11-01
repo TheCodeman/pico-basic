@@ -13,7 +13,9 @@
 #pragma once
 #include <stdbool.h>
 
+#ifndef CONFIG_PATH
 #define CONFIG_PATH "FLASH:/CONFIG.TXT"  ///< where the settings are
+#endif
 #define CONFIG_PULLUPS 4  ///< extra pins SD_PULLUPS can hold up
 
 /// The settings in force.
@@ -28,6 +30,13 @@ typedef struct {
     int neopixel;     ///< NEOPIXEL OPEN's default pin
     bool from_file;   ///< CONFIG.TXT was read
     bool sd_bad;      ///< the SD card is off because its pins were wrong
+    bool wifi;        ///< WIFI = ON (connect at power-up when there is a network)
+    char wifi_ssid[33];      ///< WIFI_SSID: the network
+    char wifi_password[64];  ///< WIFI_PASSWORD (none for an open network)
+    char wifi_country[3];    ///< WIFI_COUNTRY: two letters, XX worldwide
+    char ntp_server[64];     ///< NTP_SERVER
+    char tz[64];             ///< TZ as given (a name, a POSIX TZ string or an offset)
+    bool clock12;            ///< CLOCK = 12: TIME$ and the clock shown as 1:30:00 PM
 } config_t;
 
 extern config_t config;  ///< the settings in force

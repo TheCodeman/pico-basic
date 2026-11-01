@@ -6,7 +6,7 @@ Every statement, command, function and operator, A to Z. Each entry gives its fo
 
 ### Index by topic
 
-**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
+**Programs and the disks:** [AUTO](#ref-auto), [BYE](#ref-bye), [CHAIN](#ref-chain), [CHDIR](#ref-chdir), [CLEAR](#ref-clear), [COMMON](#ref-common), [CONFIG](#ref-config), [CONT](#ref-cont), [DELETE](#ref-delete), [EDIT](#ref-edit), [FILES](#ref-files), [FORMAT](#ref-format), [KILL](#ref-kill), [LIST](#ref-list), [LLIST](#ref-llist), [LOAD](#ref-load), [MERGE](#ref-merge), [MKDIR](#ref-mkdir), [NAME](#ref-name), [NEW](#ref-new), [NTP](#ref-ntp), [NUMBERS](#ref-numbers), [RENUM](#ref-renum), [RESET](#ref-reset), [RMDIR](#ref-rmdir), [RUN](#ref-run), [SAVE](#ref-save), [SYSTEM](#ref-system), [TROFF](#ref-troff), [TRON](#ref-tron), [WIFI](#ref-wifi), [WIFI()](#ref-wifi-1), [XRECV](#ref-xrecv), [XSEND](#ref-xsend)
 
 **Flow of control and errors:** [END](#ref-end), [ERL](#ref-erl), [ERR](#ref-err), [ERROR](#ref-error), [EXIT FOR](#ref-exit-for), [FOR](#ref-for), [GOSUB](#ref-gosub), [GOTO](#ref-goto), [IF](#ref-if), [NEXT](#ref-next), [ON ERROR GOTO](#ref-on-error-goto), [ON...GOSUB](#ref-ongosub), [ON...GOTO](#ref-ongoto), [PAUSE](#ref-pause), [REM](#ref-rem), [RESUME](#ref-resume), [RETURN](#ref-return), [STOP](#ref-stop), [WEND](#ref-wend), [WHILE](#ref-while)
 
@@ -482,6 +482,7 @@ Settings (FLASH:/CONFIG.TXT):
   SD = OFF
   SPEAKER = GP18
   NEOPIXEL = GP28 (NEOPIXEL OPEN's default)
+  TZ = UTC (none set)
 ```
 
 See also: [EDIT](#ref-edit), [NEOPIXEL](#ref-neopixel), [BEEP](#ref-beep)
@@ -624,7 +625,7 @@ See also: [READ](#ref-read), [RESTORE](#ref-restore)
 
 *Statement / function* · `DATE$ = "mm-dd-yyyy" | DATE$`
 
-Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up.
+Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up (Wi-Fi builds set it by NTP).
 
 Example:
 
@@ -1992,6 +1993,28 @@ Shows:
 
 See also: [AND](#ref-and)
 
+### NTP {#ref-ntp}
+
+*Command* · `NTP`
+
+Asks the NTP server (`NTP_SERVER` in CONFIG.TXT, pool.ntp.org to start with) for the time now, sets the clock, and prints it as local time (`TZ`). Waits up to 5 seconds.
+
+- Wi-Fi builds only; BASIC asks by itself once connected, and every hour.
+
+Example:
+
+```
+NTP
+```
+
+Shows:
+
+```
+2026-10-31 18:30:05 EDT (from pool.ntp.org)
+```
+
+See also: [WIFI](#ref-wifi), [TIME$](#ref-time), [DATE$](#ref-date)
+
 ### NUMBERS {#ref-numbers}
 
 *Command* · `NUMBERS OFF | NUMBERS ON`
@@ -3039,9 +3062,13 @@ See also: [ADC](#ref-adc)
 
 ### TIME$ {#ref-time}
 
-*Statement / function* · `TIME$ = "hh:mm:ss" | TIME$`
+*Statement / function* · `TIME$ = "hh:mm:ss" | TIME$ = "h:mm[:ss] AM|PM" | TIME$`
 
-Sets the time of day, or gives it as "hh:mm:ss" (24-hour, UTC).
+Sets the time of day, or gives it as "hh:mm:ss" (24-hour, in the time zone `TZ` in CONFIG.TXT; UTC without it).
+
+- With `CLOCK = 12` in CONFIG.TXT it gives "hh:mm:ss AM" or "PM" (11 characters).
+- Setting takes 24-hour time or 12-hour with AM/PM, whatever CLOCK says.
+- Wi-Fi builds set the clock by NTP.
 
 Example:
 
@@ -3205,6 +3232,53 @@ See also: [FOR](#ref-for), [IF](#ref-if)
 *Statement* · `WIDTH n`
 
 Accepted for old programs; the screen stays 80 columns.
+
+### WIFI {#ref-wifi}
+
+*Command* · `WIFI | WIFI ON | WIFI OFF | WIFI SCAN`
+
+Wi-Fi (on a Pico 2 W, a Pico W, or a Pico Plus 2 with an RM2 breakout): `WIFI` shows the connection (the network, the signal, the IP address) and the clock; `WIFI ON` connects to CONFIG.TXT's network (again), `WIFI OFF` leaves it; `WIFI SCAN` lists the networks around.
+
+- At power-up BASIC connects in the background to `WIFI_SSID` (with `WIFI_PASSWORD`) from FLASH:/CONFIG.TXT, tries again every 30 seconds when the network is lost, and sets the clock by NTP once it's up, then every hour; DATE$ and TIME$ give the local time (`TZ`).
+- Builds without Wi-Fi say `Feature not available` (73).
+
+Example:
+
+```
+WIFI
+```
+
+Shows:
+
+```
+Connected to HOME, signal -52 dBm
+IP 192.168.1.20, gateway 192.168.1.1, DNS 192.168.1.1
+Clock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT
+```
+
+See also: [NTP](#ref-ntp), [CONFIG](#ref-config), [TIME$](#ref-time)
+
+### WIFI() {#ref-wifi-1}
+
+*Function* · `WIFI(n) | WIFI$(n)`
+
+Wi-Fi's state for a program: `WIFI(0)` is -1 (true) while connected with an IP address, else 0; `WIFI(1)` the signal in dBm; `WIFI(2)` -1 once NTP has set the clock; `WIFI(3)` the link's state (1 joining, 2 waiting for an address, 3 up, 0 down, -1 failed, -2 no such network, -3 wrong password). `WIFI$(0)` is the IP address, `WIFI$(1)` the network's name.
+
+- Builds without Wi-Fi give 0 and "" (so a program runs on any board).
+
+Example:
+
+```
+IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "Offline"
+```
+
+Shows:
+
+```
+Online at 192.168.1.215
+```
+
+See also: [WIFI](#ref-wifi), [NTP](#ref-ntp)
 
 ### WRITE {#ref-write}
 

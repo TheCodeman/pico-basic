@@ -4,7 +4,18 @@ cmake_minimum_required(VERSION 3.13)
 # (RP2350B, 16 MB flash, 8 MB PSRAM) configure with
 #   -DPICO_BOARD=pimoroni_pico_plus2_rp2350
 # and for the original Pico (RP2040, 2 MB flash) with -DPICO_BOARD=pico.
+# Wi-Fi (and the clock from NTP): -DPICO_BOARD=pico2_w or pico_w, or a Pico
+# Plus 2 with Pimoroni's RM2 breakout with -DPICO_BASIC_WIFI=ON.
 set(PICO_BOARD pico2 CACHE STRING "Board type")
+if(PICO_BOARD MATCHES "_w$|_w_")
+    set(WIFI_DEFAULT ON)
+else()
+    set(WIFI_DEFAULT OFF)
+endif()
+option(PICO_BASIC_WIFI "Wi-Fi and NTP (a W board, or a Pico Plus 2 with an RM2 breakout)" ${WIFI_DEFAULT})
+if(PICO_BASIC_WIFI AND PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
+    set(PICO_CYW43_SUPPORTED 1)  # the RM2 breakout: pins set below
+endif()
 
 include(pico_sdk_import.cmake)
 
@@ -120,6 +131,29 @@ target_compile_definitions(pico_basic PRIVATE AUTORUN_SKIP_PIN=${AUTORUN_SKIP_PI
 option(DISK_TRACE "Trace the flash disk's mount and format on the console" OFF)
 if(DISK_TRACE)
     target_compile_definitions(pico_basic PRIVATE DISK_TRACE=1)
+endif()
+
+# -DCONFIG_FILE=FLASH:/OTHER.TXT: a test build that reads its settings elsewhere.
+if(DEFINED CONFIG_FILE)
+    target_compile_definitions(pico_basic PRIVATE CONFIG_PATH="${CONFIG_FILE}")
+endif()
+
+if(PICO_BASIC_WIFI)
+    # The CYW43 driver and lwIP run in a low-priority interrupt; lwIP's SNTP
+    # client sets the clock (src/wifi.c, src/lwipopts.h).
+    target_sources(pico_basic PRIVATE src/wifi.c)
+    target_link_libraries(pico_basic pico_cyw43_arch_lwip_threadsafe_background pico_lwip_sntp)
+    target_compile_definitions(pico_basic PRIVATE PICO_BASIC_WIFI=1 CYW43_HOST_NAME="pico-basic")
+    if(PICO_BOARD STREQUAL "pimoroni_pico_plus2_rp2350")
+        # As pico-os: the RM2 breakout on the SP/CE connector, power GP32,
+        # CS GP33, clock GP34, data GP35; the bus clock retried slower if need be.
+        target_compile_definitions(pico_basic PRIVATE CYW43_PIO_CLOCK_DIV_DYNAMIC=1
+            CYW43_DEFAULT_PIN_WL_REG_ON=32 CYW43_DEFAULT_PIN_WL_CS=33 CYW43_DEFAULT_PIN_WL_CLOCK=34
+            CYW43_DEFAULT_PIN_WL_DATA_OUT=35 CYW43_DEFAULT_PIN_WL_DATA_IN=35
+            CYW43_DEFAULT_PIN_WL_HOST_WAKE=35 CYW43_WL_GPIO_COUNT=3 CYW43_WL_GPIO_LED_PIN=0)
+    endif()
+else()
+    target_compile_definitions(pico_basic PRIVATE PICO_BASIC_WIFI=0)
 endif()
 
 # The console: the board's own USB port, as a USB serial (CDC) device

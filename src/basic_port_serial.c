@@ -36,6 +36,9 @@
 #include "config.h"
 #include "term_editor.h"
 #include "usb_console.h"
+#if PICO_BASIC_WIFI
+#include "wifi.h"
+#endif
 #if PICO_BASIC_SD
 #include "sd_card.h"
 #endif
@@ -542,8 +545,18 @@ bool port_stack_low(void) {
 
 /// GPIO pins.
 #define PIN_COUNT NUM_BANK0_GPIOS
+#if defined(PICO_DEFAULT_LED_PIN) || !PICO_BASIC_WIFI
 /// The LED's pin.
 #define LED_PIN   PICO_DEFAULT_LED_PIN
+/// Pins BASIC knows: the GPIOs.
+#define PINS      PIN_COUNT
+#else
+/// A W board's LED is on the radio chip: BASIC calls it the pin after the
+/// last GPIO (PIN LED, 1 works; PWM just turns it on or off).
+#define LED_PIN   PIN_COUNT
+#define LED_ON_RADIO 1
+#define PINS      (PIN_COUNT + 1)
+#endif
 /// The first ADC pin.
 #define ADC_FIRST ADC_BASE_PIN
 /// The ADC pins (the last channel is the temperature sensor).
@@ -551,7 +564,7 @@ bool port_stack_low(void) {
 
 /// What a pin is being used for.
 enum { UNUSED, INPUT, OUTPUT, PULLUP, PULLDOWN, PWM, ADC };
-static uint8_t pin_use[PIN_COUNT];      ///< what BASIC has set each pin to
+static uint8_t pin_use[PINS];           ///< what BASIC has set each pin to
 /// Each PWM slice's frequency.
 static float slice_freq[NUM_PWM_SLICES];
 
@@ -571,7 +584,7 @@ static const char *freq_text(double f, char *buf, size_t size) {
 }
 
 int port_pin_count(void) {
-    return PIN_COUNT;
+    return PINS;
 }
 
 int port_led_pin(void) {
@@ -593,6 +606,11 @@ static int serial_cts = -1, serial_rts = -1;
 static int pixel_pin = -1;
 
 const char *port_pin_reserved(int pin) {
+#if PICO_BASIC_WIFI
+    if (pin == CYW43_DEFAULT_PIN_WL_REG_ON || pin == CYW43_DEFAULT_PIN_WL_CS ||
+        pin == CYW43_DEFAULT_PIN_WL_CLOCK || pin == CYW43_DEFAULT_PIN_WL_DATA_OUT)
+        return "the Wi-Fi chip";
+#endif
     if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
         return "the COM1 serial port (CLOSE it first)";
     if (pin >= 0 && (pin == i2c_pins[0] || pin == i2c_pins[1]))
@@ -615,6 +633,12 @@ const char *port_pin_reserved(int pin) {
 }
 
 void port_pin_mode(int pin, int mode) {
+#ifdef LED_ON_RADIO
+    if (pin == LED_PIN) {
+        pin_use[pin] = mode == PORT_PIN_OUTPUT ? OUTPUT : INPUT;
+        return;
+    }
+#endif
     if (pin_use[pin] == PWM)
         port_pwm(pin, 0, 0);
     gpio_init(pin);
@@ -629,16 +653,32 @@ void port_pin_mode(int pin, int mode) {
 void port_pin_write(int pin, int level) {
     if (pin_use[pin] != OUTPUT)
         port_pin_mode(pin, PORT_PIN_OUTPUT);
+#ifdef LED_ON_RADIO
+    if (pin == LED_PIN) {
+        wifi_led(level != 0);
+        return;
+    }
+#endif
     gpio_put(pin, level != 0);
 }
 
 int port_pin_read(int pin) {
+#ifdef LED_ON_RADIO
+    if (pin == LED_PIN)
+        return 0;  // (it's an output)
+#endif
     if (pin_use[pin] == UNUSED || pin_use[pin] == PWM || pin_use[pin] == ADC)
         port_pin_mode(pin, PORT_PIN_INPUT);
     return gpio_get(pin);
 }
 
 void port_pwm(int pin, double freq, double duty) {
+#ifdef LED_ON_RADIO
+    if (pin == LED_PIN) {
+        port_pin_write(pin, freq > 0 && duty >= 50);
+        return;
+    }
+#endif
     uint slice = pwm_gpio_to_slice_num(pin);
     uint partner = pin ^ 1;
     if (freq <= 0) {
@@ -1325,4 +1365,42 @@ int port_neopixel_pin(void) {
 
 void port_config_show(void) {
     config_print();
+}
+
+int port_wifi_value(int n) {
+#if PICO_BASIC_WIFI
+    return wifi_value(n);
+#else
+    (void)n;
+    return 0;
+#endif
+}
+
+const char *port_wifi_text(int n) {
+#if PICO_BASIC_WIFI
+    return wifi_text(n);
+#else
+    (void)n;
+    return "";
+#endif
+}
+
+bool port_clock_12h(void) {
+    return config.clock12;
+}
+
+bool port_wifi(int what) {
+#if PICO_BASIC_WIFI
+    switch (what) {
+    case 0: wifi_status(); break;
+    case 1: wifi_switch(true); break;
+    case 2: wifi_switch(false); break;
+    case 3: wifi_scan(); break;
+    default: wifi_ntp(); break;
+    }
+    return true;
+#else
+    (void)what;
+    return false;
+#endif
 }

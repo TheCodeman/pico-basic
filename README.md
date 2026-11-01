@@ -44,6 +44,23 @@ while plugging the board into USB and copy the file over; once BASIC runs,
 `picotool load -f` can reboot it and load a new one through the same port. A
 Debug Probe on the SWD pins works too (OpenOCD: see the manual).
 
+Wi-Fi, with the clock set by NTP (`WIFI`, `NTP`, and `WIFI_SSID`,
+`WIFI_PASSWORD` and `TZ` in `FLASH:/CONFIG.TXT`), comes with the W boards'
+builds:
+
+| Board | Configure with | Program | Wi-Fi |
+|---|---|---|---|
+| Pico 2 | (default) | 283 KB | no |
+| Pico 2 W | `-DPICO_BOARD=pico2_w` | 575 KB | yes |
+| Pico Plus 2 | `-DPICO_BOARD=pimoroni_pico_plus2_rp2350` | 255 KB | no |
+| Pico Plus 2 + RM2 breakout (GP32-35, as pico-os) | the same and `-DPICO_BASIC_WIFI=ON` | 576 KB | yes |
+| Pico (RP2040) | `-DPICO_BOARD=pico` | 260 KB | no |
+| Pico W | `-DPICO_BOARD=pico_w` | 583 KB | yes |
+
+Wi-Fi adds about 290 KB of flash (220 KB of it the radio's firmware) and
+15 KB of RAM; the program still fits below the flash disk (1 MB in), so the
+disk keeps its size and files.
+
 Options: `-DSOUND_PIN=18` sets the speaker pin. `-DFLASH_DISK_OFFSET=0x100000`
 sets where the disk starts in the flash; the program must fit below it.
 

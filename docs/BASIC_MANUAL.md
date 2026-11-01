@@ -598,6 +598,10 @@ too).
     SD_PULLUPS = 13, 14   # pins held up while the card is used (DAT1, DAT2); none
     SPEAKER = 18       # BEEP, SOUND and PLAY's pin; none
     NEOPIXEL = 28      # NEOPIXEL OPEN's default pin
+    TZ = EST           # the time zone DATE$ and TIME$ show (UTC without it)
+    CLOCK = 12         # TIME$ as 01:30:00 PM; 24 (the default): 13:30:00
+    WIFI_SSID = HOME   # Wi-Fi builds: the network to join at power-up
+    WIFI_PASSWORD = secret
 
 - Keys and values are any case, with or without spaces; pins can be `18`
   or `GP18`. Lines it doesn't know are reported and left out.
@@ -608,7 +612,56 @@ too).
 - On a board without a card slot, `SD = OFF` saves the moment start-up
   spends looking for one (BASIC gives up after a tenth of a second when
   nothing answers at all).
+- `TZ` is a name (UTC, EST, CST, MST, PST, AKST, HST, ARIZONA, UK, CET,
+  EET, JST, AEST, or EASTERN, PACIFIC...: these follow daylight saving), hours
+  from UTC (`TZ = -5`, `TZ = 5.5`: no daylight saving), or a POSIX TZ string
+  (`TZ = EST5EDT,M3.2.0,M11.1.0`).
+- `CLOCK = 12` (or `12H`) makes TIME$ 12-hour with AM or PM,
+  `"01:30:00 PM"`: 11 characters instead of 8, so `LEFT$(TIME$, 5)` still
+  gives `"01:30"` but a program that takes TIME$ apart may need changing.
+  `CLOCK = 24`, the default, keeps GW-BASIC's `"13:30:00"`. WIFI and NTP show
+  the time the same way. `TIME$ = "1:30 PM"` and `TIME$ = "13:30"` both work
+  either way.
 - `examples/CONFIG.TXT` is a copy to start from.
+
+### Wi-Fi and the clock
+
+The Wi-Fi builds (a Pico 2 W, a Pico W, or a Pico Plus 2 with Pimoroni's
+RM2 breakout: see the README) join a network at power-up and set the clock
+from the internet (NTP), so DATE$ and TIME$ are right without setting them.
+CONFIG.TXT says which network:
+
+    WIFI_SSID = HOME          # the network's name
+    WIFI_PASSWORD = secret    # leave it out for an open network
+    WIFI_COUNTRY = US         # two letters; XX (the default) works anywhere
+    TZ = EASTERN              # local time for DATE$ and TIME$
+    NTP_SERVER = pool.ntp.org # the default
+    WIFI = ON                 # OFF: don't connect at power-up
+
+- Connecting goes on in the background: the prompt doesn't wait. The banner
+  says how far it got (`Wi-Fi: connecting to HOME`), and `WIFI` tells you
+  later: the network, the signal, the IP address, and when NTP last set the
+  clock.
+- A network that goes away is tried again every 30 seconds; NTP asks again
+  every hour. `NTP` asks now and prints the time; `WIFI OFF` and `WIFI ON`
+  leave and join again; `WIFI SCAN` lists the networks around.
+- The password is kept as plain text in CONFIG.TXT on the board's flash
+  disk: anyone with the board (or `XSEND "FLASH:CONFIG.TXT"`) can read it.
+  CONFIG shows it as `****`.
+- On a Pico 2 W and a Pico W, GP23, GP24, GP25 and GP29 belong to the radio
+  (BASIC refuses them), and the LED is on the radio chip: `PIN LED, 1`
+  still lights it (PWM on it just turns it on or off). On the RM2 breakout
+  the radio has GP32-35.
+- A program can check: `WIFI(0)` is -1 (true) while connected, `WIFI(1)`
+  the signal (dBm), `WIFI(2)` -1 once NTP has set the clock; `WIFI$(0)` is
+  the IP address and `WIFI$(1)` the network. To wait up to 20 seconds:
+
+      T = TIMER
+      WHILE NOT WIFI(0) AND TIMER - T < 20: PAUSE 250: WEND
+      IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "No Wi-Fi"
+
+- Other builds say `Feature not available` to WIFI and NTP (WIFI() gives 0
+  and WIFI$() ""); TZ works on every build (for DATE$ and TIME$ set by hand).
 
 ### Files from programs
 

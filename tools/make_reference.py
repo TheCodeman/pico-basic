@@ -51,7 +51,7 @@ e('COMMON', 'Statement', 'COMMON var[, var...]',
 e('CONFIG', 'Command', 'CONFIG',
   'Shows the board\'s settings: whether the SD card is used and its pins, the speaker\'s pin and NEOPIXEL\'s default pin, from FLASH:/CONFIG.TXT or the build\'s defaults, and any problems CONFIG.TXT has.',
   ['Change them with `EDIT "FLASH:CONFIG.TXT"`; they take effect at the next power-up or reset (see the manual\'s Settings section).'],
-  'CONFIG', 'Settings (FLASH:/CONFIG.TXT):\n  SD = OFF\n  SPEAKER = GP18\n  NEOPIXEL = GP28 (NEOPIXEL OPEN\'s default)', ['EDIT', 'NEOPIXEL', 'BEEP'], P)
+  'CONFIG', 'Settings (FLASH:/CONFIG.TXT):\n  SD = OFF\n  SPEAKER = GP18\n  NEOPIXEL = GP28 (NEOPIXEL OPEN\'s default)\n  TZ = UTC (none set)', ['EDIT', 'NEOPIXEL', 'BEEP'], P)
 e('CONT', 'Command', 'CONT',
   'Carries on with the program after Ctrl-C or STOP, from where it stopped.',
   ['Errors: `Can\'t continue` (17) after the program has been changed or after an error.'],
@@ -96,6 +96,17 @@ e('FORMAT', 'Command', 'FORMAT ON | FORMAT OFF | FORMAT n',
   'Whether LIST, EDIT and SAVE indent the program: FOR ... NEXT and WHILE ... WEND bodies by `n` spaces a level (2 to start with, 1-8), and in a program without line numbers the subroutines (the lines under a label GOSUB calls or ON ERROR GOTO goes to; labels stay at the left).',
   ['Only the look changes: loading a program takes the indent off again.', 'On at start-up.'],
   '10 FOR I = 1 TO 2\n20 PRINT I\n30 NEXT\nLIST', '10 FOR I = 1 TO 2\n20   PRINT I\n30 NEXT', ['LIST', 'EDIT', 'SAVE'], P)
+e('WIFI', 'Command', 'WIFI | WIFI ON | WIFI OFF | WIFI SCAN',
+  'Wi-Fi (on a Pico 2 W, a Pico W, or a Pico Plus 2 with an RM2 breakout): `WIFI` shows the connection (the network, the signal, the IP address) and the clock; `WIFI ON` connects to CONFIG.TXT\'s network (again), `WIFI OFF` leaves it; `WIFI SCAN` lists the networks around.',
+  ['At power-up BASIC connects in the background to `WIFI_SSID` (with `WIFI_PASSWORD`) from FLASH:/CONFIG.TXT, tries again every 30 seconds when the network is lost, and sets the clock by NTP once it\'s up, then every hour; DATE$ and TIME$ give the local time (`TZ`).',
+   'Builds without Wi-Fi say `Feature not available` (73).'],
+  'WIFI', 'Connected to HOME, signal -52 dBm\nIP 192.168.1.20, gateway 192.168.1.1, DNS 192.168.1.1\nClock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT', ['NTP', 'CONFIG', 'TIME$'], P)
+e('WIFI()', 'Function', 'WIFI(n) | WIFI$(n)',
+  'Wi-Fi\'s state for a program: `WIFI(0)` is -1 (true) while connected with an IP address, else 0; `WIFI(1)` the signal in dBm; `WIFI(2)` -1 once NTP has set the clock; `WIFI(3)` the link\'s state (1 joining, 2 waiting for an address, 3 up, 0 down, -1 failed, -2 no such network, -3 wrong password). `WIFI$(0)` is the IP address, `WIFI$(1)` the network\'s name.',
+  ['Builds without Wi-Fi give 0 and "" (so a program runs on any board).'],
+  'IF WIFI(0) THEN PRINT "Online at "; WIFI$(0) ELSE PRINT "Offline"', 'Online at 192.168.1.215', ['WIFI', 'NTP'], P)
+e('NTP', 'Command', 'NTP', 'Asks the NTP server (`NTP_SERVER` in CONFIG.TXT, pool.ntp.org to start with) for the time now, sets the clock, and prints it as local time (`TZ`). Waits up to 5 seconds.',
+  ['Wi-Fi builds only; BASIC asks by itself once connected, and every hour.'], 'NTP', '2026-10-31 18:30:05 EDT (from pool.ntp.org)', ['WIFI', 'TIME$', 'DATE$'], P)
 e('NUMBERS', 'Command', 'NUMBERS OFF | NUMBERS ON',
   '`NUMBERS OFF` takes the line numbers off the program: each line a GOTO, GOSUB, THEN, ELSE, RESTORE, RESUME or RUN goes to gets a label, L and its old number (`L100:`), and those use the label. `NUMBERS ON` numbers the lines 10, 20, 30... again, keeping the labels.',
   ['A program without numbers is listed, saved and edited without them; its lines\' numbers (in errors, ERL, TRON) are their lines in the file.',
@@ -358,7 +369,7 @@ e('TEMP', 'Function', 'TEMP()', 'The chip\'s temperature in °C (uncalibrated: w
 Y = 'System'
 e('BLOAD', 'Statement', 'BLOAD file$[, offset]', 'Loads a file saved by BSAVE (GW-BASIC\'s 7-byte header) into the emulated memory (DEF SEG).', [], '', '', ['BSAVE', 'DEF SEG'], Y)
 e('BSAVE', 'Statement', 'BSAVE file$, offset, length', 'Saves `length` bytes of the emulated memory (DEF SEG) to a file.', [], '', '', ['BLOAD'], Y)
-e('DATE$', 'Statement / function', 'DATE$ = "mm-dd-yyyy" | DATE$', 'Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up.', [], 'DATE$ = "10-31-2026": PRINT DATE$', '10-31-2026', ['TIME$'], Y)
+e('DATE$', 'Statement / function', 'DATE$ = "mm-dd-yyyy" | DATE$', 'Sets the date, or gives it as "mm-dd-yyyy". `-` or `/` and two-digit years are accepted. There is no battery clock: it starts at 01-01-1970 at power-up (Wi-Fi builds set it by NTP).', [], 'DATE$ = "10-31-2026": PRINT DATE$', '10-31-2026', ['TIME$'], Y)
 e('ENVIRON', 'Statement', 'ENVIRON "name=value"', 'Sets a string ENVIRON$ gives back (there is no DOS environment).', [], 'ENVIRON "USER=KEN"', '', ['ENVIRON$'], Y)
 e('ENVIRON$', 'Function', 'ENVIRON$(name$) | ENVIRON$(n)', 'The value set for `name$` with ENVIRON, or the n-th "name=value" string; "" if none.', [], 'ENVIRON "USER=KEN": PRINT ENVIRON$("USER")', 'KEN', ['ENVIRON'], Y)
 e('ERDEV', 'Function', 'ERDEV | ERDEV$', 'GW-BASIC\'s device error details: always 0 and "" here.', [], '', '', ['ERR'], Y)
@@ -368,7 +379,8 @@ e('PEEK', 'Function', 'PEEK(offset)', 'A byte of the emulated memory chosen by D
   ['Errors: `Illegal function call` (5) anywhere else.'], 'DEF SEG = 0: PRINT PEEK(&H44A)', ' 80', ['POKE', 'DEF SEG'], Y)
 e('POKE', 'Statement', 'POKE offset, byte', 'Writes a byte to the emulated memory (DEF SEG). The text screen and BIOS bytes accept it and change nothing here.', [], '', '', ['PEEK'], Y)
 e('SCREEN(r, c)', 'Function', 'SCREEN(row, col[, 1])', 'The character at a screen position, or with 1 its colours. A terminal can\'t be read back, so it gives 32 (a space), or 7.', [], 'PRINT SCREEN(1, 1)', ' 32', ['PEEK'], Y)
-e('TIME$', 'Statement / function', 'TIME$ = "hh:mm:ss" | TIME$', 'Sets the time of day, or gives it as "hh:mm:ss" (24-hour, UTC).', [], 'TIME$ = "09:30:00": PRINT TIME$', '09:30:00', ['DATE$', 'TIMER'], Y)
+e('TIME$', 'Statement / function', 'TIME$ = "hh:mm:ss" | TIME$ = "h:mm[:ss] AM|PM" | TIME$', 'Sets the time of day, or gives it as "hh:mm:ss" (24-hour, in the time zone `TZ` in CONFIG.TXT; UTC without it).',
+  ['With `CLOCK = 12` in CONFIG.TXT it gives "hh:mm:ss AM" or "PM" (11 characters).', 'Setting takes 24-hour time or 12-hour with AM/PM, whatever CLOCK says.', 'Wi-Fi builds set the clock by NTP.'], 'TIME$ = "09:30:00": PRINT TIME$', '09:30:00', ['DATE$', 'TIMER'], Y)
 e('TIMER', 'Function', 'TIMER', 'Seconds since the board started, with fractions: for timing things.', [], 'T = TIMER: PAUSE 500: PRINT TIMER - T', ' .500118999', ['PAUSE', 'ON TIMER'], Y)
 
 # ---- Operators --------------------------------------------------------------------------

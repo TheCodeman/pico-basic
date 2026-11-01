@@ -16,6 +16,8 @@
 #include <string.h>
 #include <strings.h>
 
+#include <time.h>
+
 #include "ff.h"
 #include "hardware/gpio.h"
 
@@ -104,6 +106,67 @@ static void check_sd_pins(void) {
     config.sd_spi = spi;
 }
 
+/// Time zones by name, as POSIX TZ strings (US and EU daylight saving rules).
+static const struct {
+    const char *name;   ///< TZ's name (any case)
+    const char *posix;  ///< the TZ string
+} zones[] = {
+    {"UTC", "UTC0"}, {"GMT", "GMT0"},
+    {"PST", "PST8PDT,M3.2.0,M11.1.0"}, {"PACIFIC", "PST8PDT,M3.2.0,M11.1.0"},
+    {"MST", "MST7MDT,M3.2.0,M11.1.0"}, {"MOUNTAIN", "MST7MDT,M3.2.0,M11.1.0"},
+    {"ARIZONA", "MST7"},
+    {"CST", "CST6CDT,M3.2.0,M11.1.0"}, {"CENTRAL", "CST6CDT,M3.2.0,M11.1.0"},
+    {"EST", "EST5EDT,M3.2.0,M11.1.0"}, {"EASTERN", "EST5EDT,M3.2.0,M11.1.0"},
+    {"AKST", "AKST9AKDT,M3.2.0,M11.1.0"}, {"ALASKA", "AKST9AKDT,M3.2.0,M11.1.0"},
+    {"HST", "HST10"}, {"HAWAII", "HST10"},
+    {"UK", "GMT0BST,M3.5.0/1,M10.5.0"}, {"CET", "CET-1CEST,M3.5.0,M10.5.0/3"},
+    {"EET", "EET-2EEST,M3.5.0/3,M10.5.0/4"}, {"JST", "JST-9"},
+    {"AEST", "AEST-10AEDT,M10.1.0,M4.1.0/3"},
+};
+
+/// Uses a TZ setting: a name from the list above, an offset from UTC in
+/// hours (-5, +5.5), or a POSIX TZ string (EST5EDT,M3.2.0,M11.1.0).
+/// @param v the setting
+/// @return it was understood
+static bool use_tz(const char *v) {
+    const char *posix = NULL;
+    char buf[64];
+    for (size_t i = 0; i < sizeof zones / sizeof *zones && !posix; ++i)
+        if (!strcasecmp(v, zones[i].name))
+            posix = zones[i].posix;
+    char *end;
+    double h = strtod(v, &end);
+    if (!posix && end != v && !*end && h >= -14 && h <= 14) {
+        // POSIX counts the other way: UTC-5 is "UTC5"
+        int m = (int)(h * 60 + (h < 0 ? -0.5 : 0.5));
+        int a = m < 0 ? -m : m;
+        snprintf(buf, sizeof buf, "UTC%s%d:%02d", m > 0 ? "-" : "", a / 60, a % 60);
+        posix = buf;
+    }
+    if (!posix) {
+        if (!isalpha((unsigned char)v[0]) || !isalpha((unsigned char)v[1]) ||
+            !isalpha((unsigned char)v[2]))
+            return false;  // a POSIX TZ starts with its zone's name
+        posix = v;
+    }
+    setenv("TZ", posix, 1);
+    tzset();
+    return true;
+}
+
+/// Copies a text setting, warning if it's too long.
+/// @param line the line's number
+/// @param key the key
+/// @param v its value
+/// @param out where it goes
+/// @param size room in out
+static void set_text(int line, const char *key, const char *v, char *out, size_t size) {
+    if (strlen(v) >= size)
+        warn("CONFIG.TXT line %d: %s is too long (%u at most)", line, key, (unsigned)size - 1);
+    else
+        strcpy(out, v);
+}
+
 /// Sets one setting from a KEY = value line.
 /// @param line the line's number (for messages)
 /// @param key the key
@@ -129,6 +192,39 @@ static void set(int line, const char *key, const char *v) {
             config.sd = false;
         else
             warn("CONFIG.TXT line %d: SD = %s: ON or OFF", line, v);
+    } else if (!strcasecmp(key, "WIFI")) {
+        if (!strcasecmp(v, "ON") || !strcasecmp(v, "YES") || !strcmp(v, "1"))
+            config.wifi = true;
+        else if (!strcasecmp(v, "OFF") || !strcasecmp(v, "NO") || !strcmp(v, "0"))
+            config.wifi = false;
+        else
+            warn("CONFIG.TXT line %d: WIFI = %s: ON or OFF", line, v);
+    } else if (!strcasecmp(key, "WIFI_SSID")) {
+        set_text(line, key, v, config.wifi_ssid, sizeof config.wifi_ssid);
+    } else if (!strcasecmp(key, "WIFI_PASSWORD")) {
+        set_text(line, key, v, config.wifi_password, sizeof config.wifi_password);
+    } else if (!strcasecmp(key, "WIFI_COUNTRY")) {
+        if (strlen(v) == 2 && isalpha((unsigned char)v[0]) && isalpha((unsigned char)v[1])) {
+            config.wifi_country[0] = toupper((unsigned char)v[0]);
+            config.wifi_country[1] = toupper((unsigned char)v[1]);
+            config.wifi_country[2] = 0;
+        } else {
+            warn("CONFIG.TXT line %d: WIFI_COUNTRY = %s: two letters (US, GB, DE...; XX: anywhere)",
+                 line, v);
+        }
+    } else if (!strcasecmp(key, "NTP_SERVER")) {
+        set_text(line, key, v, config.ntp_server, sizeof config.ntp_server);
+    } else if (!strcasecmp(key, "CLOCK")) {
+        if (!strcmp(v, "12") || !strcmp(v, "24") || !strcasecmp(v, "12H") || !strcasecmp(v, "24H"))
+            config.clock12 = v[0] == '1';
+        else
+            warn("CONFIG.TXT line %d: CLOCK = %s: 12 or 24", line, v);
+    } else if (!strcasecmp(key, "TZ")) {
+        if (strlen(v) >= sizeof config.tz || !use_tz(v))
+            warn("CONFIG.TXT line %d: TZ = %s: a name (EST, PST, UK, CET...), hours from UTC (-5), "
+                 "or a POSIX TZ string", line, v);
+        else
+            strcpy(config.tz, v);
     } else if (!strcasecmp(key, "SD_MODE")) {
         if (strlen(v) == 1 && v[0] >= '0' && v[0] <= '3')
             config.sd_mode = v[0] - '0';
@@ -156,12 +252,15 @@ void config_load(void) {
     config = (config_t){
         .sd = PICO_BASIC_SD, .sd_sck = SD_SCK, .sd_mosi = SD_MOSI, .sd_miso = SD_MISO,
         .sd_cs = SD_CS, .sd_mode = 3, .speaker = SOUND_PIN, .neopixel = NEOPIXEL_PIN,
+        .wifi = true, .wifi_country = "XX", .ntp_server = "pool.ntp.org",
     };
     if (SD_DAT1 >= 0)
         config.sd_pullups[config.sd_npullups++] = SD_DAT1;
     if (SD_DAT2 >= 0)
         config.sd_pullups[config.sd_npullups++] = SD_DAT2;
     nwarnings = 0;
+    unsetenv("TZ");  // UTC unless CONFIG.TXT says
+    tzset();
     FIL f;
     if (f_open(&f, CONFIG_PATH, FA_READ) == FR_OK) {
         config.from_file = true;
@@ -223,5 +322,21 @@ void config_print(void) {
     else
         printf("  SPEAKER = none\n");
     printf("  NEOPIXEL = GP%d (NEOPIXEL OPEN's default)\n", config.neopixel);
+#if PICO_BASIC_WIFI
+    if (config.wifi_ssid[0]) {
+        printf("  WIFI = %s: WIFI_SSID %s, WIFI_PASSWORD %s, WIFI_COUNTRY %s\n",
+               config.wifi ? "ON" : "OFF", config.wifi_ssid,
+               config.wifi_password[0] ? "****" : "none", config.wifi_country);
+        printf("  NTP_SERVER = %s\n", config.ntp_server);
+    } else {
+        printf("  WIFI: no WIFI_SSID\n");
+    }
+#else
+    if (config.wifi_ssid[0])
+        printf("  WIFI_SSID = %s (this build has no Wi-Fi)\n", config.wifi_ssid);
+#endif
+    printf("  TZ = %s\n", config.tz[0] ? config.tz : "UTC (none set)");
+    if (config.clock12)
+        printf("  CLOCK = 12 (TIME$ 01:30:00 PM)\n");
     config_warnings();
 }

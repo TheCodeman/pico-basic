@@ -153,6 +153,28 @@ bool port_stack_low(void);
 /// Opens `path` in the full-screen editor and returns when it is closed.
 /// @param path the file
 void port_edit(const char *path);
+
+/// WIFI [ON | OFF | SCAN] (what: 0 the status, 1 on, 2 off, 3 scan) and NTP
+/// (what: 4); false if the build has no Wi-Fi.
+/// @param what which
+/// @return the build has it
+bool port_wifi(int what);
+
+/// WIFI(n): 0 connected (-1, else 0), 1 the signal in dBm (0: none), 2 the
+/// clock set by NTP (-1, else 0), 3 the link's state (CYW43_LINK_*); 0 for
+/// all without Wi-Fi.
+/// @param n which
+/// @return it
+int port_wifi_value(int n);
+
+/// WIFI$(n): 0 the IP address, 1 the network's name ("" if none).
+/// @param n which
+/// @return it
+const char *port_wifi_text(int n);
+
+/// CLOCK = 12 in CONFIG.TXT: TIME$ gives 12-hour time with AM or PM.
+/// @return it does
+bool port_clock_12h(void);
 /// The same for a text file that isn't the program (EDIT "file").
 /// @param path the file
 void port_edit_file(const char *path);
