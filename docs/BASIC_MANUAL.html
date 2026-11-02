@@ -1730,6 +1730,10 @@ the terminal line:</p>
 <td><code>XSEND "file"</code></td>
 <td>Sends the file to the terminal's XMODEM receive, in 1K blocks with CRC-16, or 128-byte blocks with a checksum if the receiver asks for those.</td>
 </tr>
+<tr>
+<td><code>XRECV "file", "Y"</code>, <code>XSEND "file", "Y"</code></td>
+<td>The same by YMODEM (<code>"Z"</code>: ZMODEM). These send the file's size, so nothing is taken off the end; XRECV still saves the file as <code>file</code>.</td>
+</tr>
 </tbody>
 </table>
 <p>Type the command; BASIC says <code>Start the XMODEM send on the terminal now.</code>
@@ -1916,7 +1920,7 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 </tr>
 <tr>
 <td><code>PINS</code></td>
-<td>Lists every pin and what it is doing.</td>
+<td>Draws the board with every pin's number, name and what it is doing (below); on the Pico Plus 2, a list.</td>
 </tr>
 <tr>
 <td><code>NEOPIXEL ...</code></td>
@@ -1924,6 +1928,32 @@ control, VBUS sense, the LED and VSYS / 3); the Pico Plus 2 has GP0-47.</p>
 </tr>
 </tbody>
 </table>
+<p>PINS on a Pico 2 W with I2C open, GP15 driven high and the speaker on GP18
+(the Pico, Pico W and Pico 2 look the same, with their own pins on the board):</p>
+<pre><code>                          +--[ USB ]--+
+            free  GP0  1 o|           |o 40 VBUS
+            free  GP1  2 o| LED       |o 39 VSYS
+                  GND  3 o|           |o 38 GND
+        I2C1 SDA  GP2  4 o|           |o 37 3V3_EN
+        I2C1 SCL  GP3  5 o|           |o 36 3V3
+            free  GP4  6 o|           |o 35 ADC_VREF
+            free  GP5  7 o|           |o 34 GP28     free (ADC2)
+                  GND  8 o|           |o 33 GND
+            free  GP6  9 o|           |o 32 GP27     free (ADC1)
+            free  GP7 10 o| Pico BASIC|o 31 GP26     free (ADC0)
+            free  GP8 11 o| pico2_w   |o 30 RUN
+            free  GP9 12 o|           |o 29 GP22     free
+                  GND 13 o|           |o 28 GND
+            free GP10 14 o|           |o 27 GP21     free
+            free GP11 15 o|           |o 26 GP20     free
+            free GP12 16 o|           |o 25 GP19     free
+            free GP13 17 o|           |o 24 GP18     speaker
+                  GND 18 o|           |o 23 GND
+            free GP14 19 o|           |o 22 GP17     free
+           out 1 GP15 20 o|           |o 21 GP16     free
+                          +-----------+
+On the board: GP23 Wi-Fi chip, GP24 Wi-Fi chip, GP25 Wi-Fi chip, GP29 Wi-Fi chip, LED (on the Wi-Fi chip)
+</code></pre>
 <ul>
 <li>PWM pins come in pairs that share one frequency (GP0/1, GP2/3 and so on);
   changing one's frequency prints a warning naming its partner. The chip has
@@ -3021,11 +3051,12 @@ RUN
 </code></pre>
 <p>See also: <a href="#ref-get">GET</a>, <a href="#ref-put">PUT</a>, <a href="#ref-lset">LSET</a></p>
 <h3 id="ref-files">FILES</h3>
-<p><em>Command</em> · <code>FILES [pattern$]</code></p>
+<p><em>Command</em> · <code>FILES [pattern$][, long]</code></p>
 <p>Lists files, four to a line (folders marked <code>&lt;DIR&gt;</code>), then the free space on that drive.</p>
 <ul>
 <li>The pattern may have <code>*</code> and <code>?</code> and a drive and folder in front: <code>FILES "*.BAS"</code>, <code>FILES "SD:"</code>, <code>FILES "SD:/GAMES/*.BAS"</code>.</li>
 <li>Without one, all files in the current folder.</li>
+<li>With <code>long</code> not 0 (<code>FILES "*", 1</code>), one a line: the size in bytes (or <code>&lt;DIR&gt;</code>) in 10 columns, two spaces, and the whole name (the four-to-a-line list cuts names at 14 characters). The PC editor reads this.</li>
 <li><code>File not found</code> is printed (not an error) when nothing matches.</li>
 </ul>
 <p>Example:</p>
@@ -3795,12 +3826,21 @@ RUN
 <p>See also: <a href="#ref-pin">PIN</a></p>
 <h3 id="ref-pins">PINS</h3>
 <p><em>Command</em> · <code>PINS</code></p>
-<p>Lists every pin and what it is doing (free, in, out, PWM, ADC, the speaker, SD card, I2C, SPI, COM1, NeoPixel...).</p>
+<p>Draws the board seen from above, USB at the top, with each of its 40 pins: number, name and what it is doing (free, in or out and its level, PWM, ADC, the speaker, SD card, I2C, SPI, COM1, NeoPixel...).</p>
+<ul>
+<li>Free ADC pins say which channel. The GPIOs on the board itself (GP23-25 and GP29: the Wi-Fi chip on a W board) are listed under it.</li>
+<li>The Pico Plus 2 (48 GPIOs) gets a list instead.</li>
+</ul>
 <p>Example:</p>
 <pre><code>PINS
 </code></pre>
 <p>Shows:</p>
-<pre><code>GP0  free           GP8  free  ...
+<pre><code>                          +--[ USB ]--+
+            free  GP0  1 o|           |o 40 VBUS
+            free  GP1  2 o| LED       |o 39 VSYS
+                  GND  3 o|           |o 38 GND
+        I2C1 SDA  GP2  4 o|           |o 37 3V3_EN
+...
 </code></pre>
 <p>See also: <a href="#ref-pin">PIN</a></p>
 <h3 id="ref-play">PLAY</h3>
@@ -4409,10 +4449,11 @@ Clock: 2026-10-31 18:30:05 EDT, from pool.ntp.org at 2026-10-31 18:29:58 EDT
 </code></pre>
 <p>See also: <a href="#ref-or">OR</a></p>
 <h3 id="ref-xrecv">XRECV</h3>
-<p><em>Statement</em> · <code>XRECV file$</code></p>
+<p><em>Statement</em> · <code>XRECV file$[, protocol$]</code></p>
 <p>Receives a file from the terminal by XMODEM and saves it as <code>file$</code>, replacing one of that name. Start the terminal's XMODEM send within a minute.</p>
 <ul>
 <li>CRC-16 or checksum; 128- or 1K-byte blocks. XMODEM's ^Z padding is taken off the end.</li>
+<li><code>protocol$</code> <code>"Y"</code> takes YMODEM and <code>"Z"</code> ZMODEM instead (<code>"X"</code>, XMODEM, is the default). They send the file's size, so a file that ends in ^Z bytes keeps them; the file is still saved as <code>file$</code>, whatever the sender calls it.</li>
 <li>A failed transfer deletes the partial file and gives <code>Device I/O error</code> (57). Ctrl-X a few times cancels.</li>
 <li>Works to either drive: <code>XRECV "SD:PIC.BMP"</code>.</li>
 </ul>
@@ -4425,9 +4466,10 @@ Received 1 file, 2048 bytes.
 </code></pre>
 <p>See also: <a href="#ref-xsend">XSEND</a>, <a href="#ref-load">LOAD</a></p>
 <h3 id="ref-xsend">XSEND</h3>
-<p><em>Statement</em> · <code>XSEND file$</code></p>
+<p><em>Statement</em> · <code>XSEND file$[, protocol$]</code></p>
 <p>Sends a file to the terminal by XMODEM (1K blocks with CRC-16, or 128-byte ones with a checksum if the receiver asks).</p>
 <ul>
+<li><code>protocol$</code> <code>"Y"</code> sends by YMODEM (the name and size go first) and <code>"Z"</code> by ZMODEM; <code>"X"</code> is the default.</li>
 <li>Errors: <code>Device I/O error</code> (57) if it fails or the file can't be read.</li>
 </ul>
 <p>Example:</p>

@@ -2446,7 +2446,10 @@ See also: [PIN](#ref-pin)
 
 *Command* · `PINS`
 
-Lists every pin and what it is doing (free, in, out, PWM, ADC, the speaker, SD card, I2C, SPI, COM1, NeoPixel...).
+Draws the board seen from above, USB at the top, with each of its 40 pins: number, name and what it is doing (free, in or out and its level, PWM, ADC, the speaker, SD card, I2C, SPI, COM1, NeoPixel...).
+
+- Free ADC pins say which channel. The GPIOs on the board itself (GP23-25 and GP29: the Wi-Fi chip on a W board) are listed under it.
+- The Pico Plus 2 (48 GPIOs) gets a list instead.
 
 Example:
 
@@ -2457,7 +2460,12 @@ PINS
 Shows:
 
 ```
-GP0  free           GP8  free  ...
+                          +--[ USB ]--+
+            free  GP0  1 o|           |o 40 VBUS
+            free  GP1  2 o| LED       |o 39 VSYS
+                  GND  3 o|           |o 38 GND
+        I2C1 SDA  GP2  4 o|           |o 37 3V3_EN
+...
 ```
 
 See also: [PIN](#ref-pin)

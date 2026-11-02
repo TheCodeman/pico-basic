@@ -757,8 +757,108 @@ double port_temperature(void) {
     return 27 - (volts - 0.706) / 0.001721;  // the RP2040 and RP2350 datasheets' formula
 }
 
-void port_pins_list(void) {
+/// What a pin is doing, for PINS: "free", "out 1", "I2C1 SDA", "PWM 1000Hz"...
+/// @param pin the pin
+/// @param what the text
+/// @param size room in what
+static void pin_text(int pin, char *what, size_t size) {
     static const char *const names[] = {"", "in", "out", "in up", "in down", "PWM", "ADC"};
+#if PICO_BASIC_WIFI
+    if (pin == CYW43_DEFAULT_PIN_WL_REG_ON || pin == CYW43_DEFAULT_PIN_WL_CS ||
+        pin == CYW43_DEFAULT_PIN_WL_CLOCK || pin == CYW43_DEFAULT_PIN_WL_DATA_OUT) {
+        snprintf(what, size, "Wi-Fi chip");
+        return;
+    }
+#endif
+    const char *why = port_pin_reserved(pin);
+    if (pin == i2c_pins[0] || pin == i2c_pins[1])
+        snprintf(what, size, "I2C%d %s", (pin / 2) & 1, pin == i2c_pins[0] ? "SDA" : "SCL");
+    else if (pin == spi_pins[0] || pin == spi_pins[1] || pin == spi_pins[2])
+        snprintf(what, size, "SPI%d %s", (pin / 8) & 1,
+                 pin == spi_pins[0] ? "SCK" : pin == spi_pins[1] ? "MOSI" : "MISO");
+    else if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
+        snprintf(what, size, "COM1 %s", pin == serial_tx ? "TX" : pin == serial_rx ? "RX"
+                                        : pin == serial_cts ? "CTS" : "RTS");
+    else if (pin == pixel_pin)
+        snprintf(what, size, "NeoPixel x%d", port_pixels_count());
+    else if (why)
+        snprintf(what, size, "%s", pin == SPEAKER_PIN ? "speaker"
+#if PICO_BASIC_SD
+                                   : sd_card_pin(pin) ? "SD card"
+#endif
+                                   : "PSRAM");
+#ifdef LED_ON_RADIO
+    else if (pin == LED_PIN)
+        snprintf(what, size, "%s", pin_use[pin] == OUTPUT ? "LED out" : "LED");
+#endif
+    else if (pin_use[pin] == UNUSED)
+        snprintf(what, size, "free%s", pin == LED_PIN ? " (LED)" : "");
+    else if (pin_use[pin] == PWM) {
+        char text[16];
+        snprintf(what, size, "PWM %sHz", freq_text(slice_freq[pwm_gpio_to_slice_num(pin)], text, sizeof text));
+    } else if (pin_use[pin] == ADC)
+        snprintf(what, size, "ADC%d", pin - ADC_FIRST);
+    else
+        snprintf(what, size, "%s %d", names[pin_use[pin]], gpio_get(pin));
+}
+
+#if PIN_COUNT == 30
+/// The Pico's 40 pins, down its left side (1-20) and up its right (21-40, so
+/// listed from 40): a GPIO number, or one of these.
+enum { GND = -1, VBUS = -2, VSYS = -3, EN3V3 = -4, OUT3V3 = -5, VREF = -6, RUN = -7 };
+static const int8_t header_left[20] = {0, 1, GND, 2, 3, 4, 5, GND, 6, 7, 8, 9, GND, 10, 11, 12, 13, GND, 14, 15};
+static const int8_t header_right[20] = {VBUS, VSYS, GND, EN3V3, OUT3V3, VREF, 28, GND, 27, 26, RUN, 22, GND,
+                                        21, 20, 19, 18, GND, 17, 16};
+
+/// A header pin's name and what it is doing.
+/// @param pin a GPIO number or a power pin
+/// @param name set to its name
+/// @param what set to what it is doing ("" for a power pin)
+static void header_text(int pin, char name[9], char what[24]) {
+    static const char *const power[] = {"", "GND", "VBUS", "VSYS", "3V3_EN", "3V3", "ADC_VREF", "RUN"};
+    if (pin < 0) {
+        snprintf(name, 9, "%s", power[-pin]);
+        what[0] = 0;
+        return;
+    }
+    snprintf(name, 9, "GP%d", pin);
+    pin_text(pin, what, 24);
+    if (!strcmp(what, "free") && pin >= ADC_FIRST && pin < ADC_FIRST + ADC_PINS)
+        snprintf(what, 24, "free (ADC%d)", pin - ADC_FIRST);
+}
+#endif
+
+void port_pins_list(void) {
+#if PIN_COUNT == 30
+    // The board seen from above, USB at the top, each pin with its number,
+    // its name and what it is doing.
+    static const char *const middle[20] = {"", " LED", "", "", "", "", "", "", "", " Pico BASIC",
+                                           " " PICO_BASIC_BOARD, "", "", "", "", "", "", "", "", ""};
+    printf("%26s+--[ USB ]--+\n", "");
+    for (int row = 0; row < 20; ++row) {
+        char lname[9], lwhat[24], rname[9], rwhat[24];
+        header_text(header_left[row], lname, lwhat);
+        header_text(header_right[row], rname, rwhat);
+        printf("%16s %4s %2d o|%-11.11s|o %-2d %-8s %s\n", lwhat, lname, row + 1, middle[row], 40 - row,
+               rname, rwhat);
+    }
+    printf("%26s+-----------+\n", "");
+    // The GPIOs on the board itself rather than the header.
+    printf("On the board:");
+    static const int8_t inside[] = {23, 24, 25, 29};
+    for (unsigned i = 0; i < sizeof inside; ++i) {
+        char what[24];
+        pin_text(inside[i], what, sizeof what);
+        printf("%s GP%d %s", i ? "," : "", inside[i], what);
+    }
+#ifdef LED_ON_RADIO
+    char what[24];
+    pin_text(LED_PIN, what, sizeof what);
+    printf(", %s (on the Wi-Fi chip)", what);
+#endif
+    printf("\n");
+#else
+    // Pico Plus 2 (RP2350B): too many GPIOs for the Pico's header, so a list.
     int rows = (PIN_COUNT + 3) / 4;
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < 4; ++col) {
@@ -767,38 +867,12 @@ void port_pins_list(void) {
                 printf("\n");
                 break;
             }
-            const char *why = port_pin_reserved(pin);
             char what[24];
-            if (pin == i2c_pins[0] || pin == i2c_pins[1])
-                snprintf(what, sizeof what, "I2C%d %s", (pin / 2) & 1, pin == i2c_pins[0] ? "SDA" : "SCL");
-            else if (pin == spi_pins[0] || pin == spi_pins[1] || pin == spi_pins[2])
-                snprintf(what, sizeof what, "SPI%d %s", (pin / 8) & 1,
-                         pin == spi_pins[0] ? "SCK" : pin == spi_pins[1] ? "MOSI" : "MISO");
-            else if (pin == serial_tx || pin == serial_rx || pin == serial_cts || pin == serial_rts)
-                snprintf(what, sizeof what, "COM1 %s", pin == serial_tx ? "TX" : pin == serial_rx ? "RX"
-                                                       : pin == serial_cts ? "CTS" : "RTS");
-            else if (pin == pixel_pin)
-                snprintf(what, sizeof what, "NeoPixel x%d", port_pixels_count());
-            else if (why)
-                snprintf(what, sizeof what, "%s", pin == SPEAKER_PIN ? "speaker"
-#if PICO_BASIC_SD
-                                                  : sd_card_pin(pin) ? "SD card"
-#endif
-                                                  : "PSRAM");
-            else if (pin_use[pin] == UNUSED)
-                snprintf(what, sizeof what, "free%s", pin == LED_PIN ? " (LED)" : "");
-            else if (pin_use[pin] == PWM) {
-                char text[16];
-                snprintf(what, sizeof what, "PWM %sHz",
-                         freq_text(slice_freq[pwm_gpio_to_slice_num(pin)], text, sizeof text));
-            }
-            else if (pin_use[pin] == ADC)
-                snprintf(what, sizeof what, "ADC");
-            else
-                snprintf(what, sizeof what, "%s %d", names[pin_use[pin]], gpio_get(pin));
+            pin_text(pin, what, sizeof what);
             printf("GP%-2d %-14s%s", pin, what, col < 3 ? " " : "\n");
         }
     }
+#endif
 }
 
 void port_i2c_close(void);
