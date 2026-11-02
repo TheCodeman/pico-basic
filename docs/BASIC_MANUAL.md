@@ -993,8 +993,35 @@ Pins BASIC itself uses are refused, e.g. `GP18 is used by the speaker
 | `SERVO pin, angle` | A hobby servo, 0-180 degrees (0.5-2.5 ms pulses at 50 Hz). `SERVO 16, 90` |
 | `ADC(pin)` | An analog input, 0-4095 for 0-3.3 V: GP26-29 on the Pico and Pico 2, GP40-46 on the Pico Plus 2. `V = ADC(26) * 3.3 / 4095` |
 | `TEMP()` | The chip's temperature in °C (uncalibrated: within a few degrees). |
-| `PINS` | Lists every pin and what it is doing. |
+| `PINS` | Draws the board with every pin's number, name and what it is doing (below); on the Pico Plus 2, a list. |
 | `NEOPIXEL ...` | WS2812B LEDs (below). |
+
+PINS on a Pico 2 W with I2C open, GP15 driven high and the speaker on GP18
+(the Pico, Pico W and Pico 2 look the same, with their own pins on the board):
+
+                              +--[ USB ]--+
+                free  GP0  1 o|           |o 40 VBUS
+                free  GP1  2 o| LED       |o 39 VSYS
+                      GND  3 o|           |o 38 GND
+            I2C1 SDA  GP2  4 o|           |o 37 3V3_EN
+            I2C1 SCL  GP3  5 o|           |o 36 3V3
+                free  GP4  6 o|           |o 35 ADC_VREF
+                free  GP5  7 o|           |o 34 GP28     free (ADC2)
+                      GND  8 o|           |o 33 GND
+                free  GP6  9 o|           |o 32 GP27     free (ADC1)
+                free  GP7 10 o| Pico BASIC|o 31 GP26     free (ADC0)
+                free  GP8 11 o| pico2_w   |o 30 RUN
+                free  GP9 12 o|           |o 29 GP22     free
+                      GND 13 o|           |o 28 GND
+                free GP10 14 o|           |o 27 GP21     free
+                free GP11 15 o|           |o 26 GP20     free
+                free GP12 16 o|           |o 25 GP19     free
+                free GP13 17 o|           |o 24 GP18     speaker
+                      GND 18 o|           |o 23 GND
+                free GP14 19 o|           |o 22 GP17     free
+               out 1 GP15 20 o|           |o 21 GP16     free
+                              +-----------+
+    On the board: GP23 Wi-Fi chip, GP24 Wi-Fi chip, GP25 Wi-Fi chip, GP29 Wi-Fi chip, LED (on the Wi-Fi chip)
 
 - PWM pins come in pairs that share one frequency (GP0/1, GP2/3 and so on);
   changing one's frequency prints a warning naming its partner. The chip has
